@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Override Tailwind base to fix overscroll background */
+html {
+  background-color: rgb(249 250 251) !important; /* gray-50 */
+}
+
+html.dark {
+  background-color: rgb(17 24 39) !important; /* gray-900 */
+}
+
+body {
+  background-color: rgb(249 250 251) !important; /* gray-50 */
+  overscroll-behavior: none;
+}
+
+.dark body {
+  background-color: rgb(17 24 39) !important; /* gray-900 */
+}
+
+/* System preference fallback */
+@media (prefers-color-scheme: dark) {
+  html:not([class*="light"]) {
+    background-color: rgb(17 24 39) !important;
+  }
+  body {
+    background-color: rgb(17 24 39) !important;
+  }
+}
+
 /* Test Tailwind classes */
 .test-tailwind {
   background-color: blue;
