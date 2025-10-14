@@ -334,6 +334,23 @@ export const useAdminData = () => {
     }
   }, [fetchAdminData]);
 
+  // Edit a pending update (admins can modify pending updates before approval)
+  const editUpdate = useCallback(async (updateId: string, updates: { content?: string; author?: string }) => {
+    try {
+      const { error } = await supabase
+        .from('prayer_updates')
+        // @ts-ignore
+        .update(updates)
+        .eq('id', updateId)
+        .eq('approval_status', 'pending'); // only allow editing pending updates
+      if (error) throw error;
+      await fetchAdminData();
+    } catch (error) {
+      console.error('Failed to edit update:', error);
+      handleSupabaseError(error);
+    }
+  }, [fetchAdminData]);
+
   const editPrayer = useCallback(async (prayerId: string, updates: { title?: string; description?: string; requester?: string; prayer_for?: string; email?: string | null }) => {
     try {
       const { error } = await supabase
@@ -476,5 +493,6 @@ export const useAdminData = () => {
     refresh: fetchAdminData,
     approveUpdateDeletionRequest,
     denyUpdateDeletionRequest
+    ,editUpdate
   };
 };

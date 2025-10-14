@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings } from 'lucide-react';
 import { PendingPrayerCard } from './PendingPrayerCard';
 import { PendingUpdateCard } from './PendingUpdateCard';
@@ -33,6 +33,7 @@ export const AdminPortal: React.FC = () => {
     denyPrayer,
     approveUpdate,
     denyUpdate,
+  editUpdate,
     approveDeletionRequest,
     denyDeletionRequest,
     approveStatusChangeRequest,
@@ -44,9 +45,10 @@ export const AdminPortal: React.FC = () => {
 
   const { changePassword } = useAdminAuth();
 
-  // Automatically select the first tab with pending items
+  // Automatically select the first tab with pending items on initial load only
+  const initialAutoSelectRef = useRef(false);
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !initialAutoSelectRef.current) {
       if (pendingPrayers.length > 0) {
         setActiveTab('prayers');
       } else if (pendingUpdates.length > 0) {
@@ -56,9 +58,12 @@ export const AdminPortal: React.FC = () => {
       } else if (pendingStatusChangeRequests.length > 0) {
         setActiveTab('status-changes');
       }
-      // If no pending items, keep default 'prayers' tab
+      // Mark that we've auto-selected once so we don't override user's tab after refreshes
+      initialAutoSelectRef.current = true;
     }
-  }, [loading, pendingPrayers.length, pendingUpdates.length, pendingDeletionRequests.length, pendingUpdateDeletionRequests.length, pendingStatusChangeRequests.length]);
+    // Intentionally only run once when loading becomes false the first time
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   if (loading) {
     return (
@@ -294,6 +299,7 @@ export const AdminPortal: React.FC = () => {
                     update={update}
                     onApprove={(id) => approveUpdate(id)}
                     onDeny={(id, reason) => denyUpdate(id, reason)}
+                    onEdit={(id, updates) => editUpdate(id, updates)}
                   />
                 ))}
               </div>
