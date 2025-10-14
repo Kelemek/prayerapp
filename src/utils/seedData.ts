@@ -1,7 +1,6 @@
 import { supabase } from '../lib/supabase';
 
 export const seedTestPrayers = async () => {
-  console.log('Seeding test prayers...');
   
   const testPrayers = [
     {
@@ -35,12 +34,8 @@ export const seedTestPrayers = async () => {
       .select();
 
     if (error) {
-      console.error('Error seeding prayers:', error);
-      return false;
-    }
-
-    console.log('Successfully seeded prayers:', data);
-    return true;
+    console.error('Failed to seed prayers:', error);
+  }
   } catch (error) {
     console.error('Failed to seed prayers:', error);
     return false;

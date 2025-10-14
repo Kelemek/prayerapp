@@ -14,13 +14,15 @@ export const usePrayerManager = () => {
 
   // Convert database prayer to app prayer format
   const convertDbPrayer = (dbPrayer: DbPrayer, updates: DbPrayerUpdate[] = []): PrayerRequest => {
-    // Filter to only show approved updates
-    const approvedUpdates = updates.filter(update => update.approval_status === 'approved');
+    // Filter to only show approved updates and sort by newest first
+    const approvedUpdates = updates
+      .filter(update => update.approval_status === 'approved')
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     
     return {
       id: dbPrayer.id,
       title: dbPrayer.title,
-      description: dbPrayer.description,
+      description: dbPrayer.description || 'No description provided',
       status: dbPrayer.status as PrayerStatus,
       requester: dbPrayer.requester,
       prayer_for: dbPrayer.prayer_for,
@@ -198,14 +200,14 @@ export const usePrayerManager = () => {
 
   const addPrayerUpdate = async (prayerId: string, content: string, author: string) => {
     try {
-      // Don't optimistically update since updates need approval
+      // Submit update for admin approval
       const { error } = await supabase
         .from('prayer_updates')
         .insert({
           prayer_id: prayerId,
           content,
           author,
-          approval_status: 'approved' // Auto-approve updates for now
+          approval_status: 'pending' // Require admin approval
         } as any);
 
       if (error) {

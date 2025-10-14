@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
-import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2 } from 'lucide-react';
+import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings } from 'lucide-react';
 import { PendingPrayerCard } from './PendingPrayerCard';
 import { PendingUpdateCard } from './PendingUpdateCard';
 import { PendingDeletionCard } from './PendingDeletionCard';
+import { PendingStatusChangeCard } from './PendingStatusChangeCard';
+import { PasswordChange } from './PasswordChange';
 import { useAdminData } from '../hooks/useAdminData';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 
-type AdminTab = 'prayers' | 'updates' | 'deletions' | 'overview';
+type AdminTab = 'prayers' | 'updates' | 'deletions' | 'status-changes' | 'approved' | 'denied' | 'settings';
 
 export const AdminPortal: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>('prayers');
   const {
     pendingPrayers,
     pendingUpdates,
     pendingDeletionRequests,
+    pendingStatusChangeRequests,
+    approvedPrayers,
+    approvedUpdates,
+    deniedPrayers,
+    deniedUpdates,
     approvedPrayersCount,
     approvedUpdatesCount,
     deniedPrayersCount,
@@ -24,15 +32,12 @@ export const AdminPortal: React.FC = () => {
     denyUpdate,
     approveDeletionRequest,
     denyDeletionRequest,
+    approveStatusChangeRequest,
+    denyStatusChangeRequest,
     editPrayer
   } = useAdminData();
 
-  const tabs = [
-    { id: 'overview' as AdminTab, label: 'Overview', icon: Shield },
-    { id: 'prayers' as AdminTab, label: `Pending Prayers (${pendingPrayers.length})`, icon: Users },
-    { id: 'updates' as AdminTab, label: `Pending Updates (${pendingUpdates.length})`, icon: MessageSquare },
-    { id: 'deletions' as AdminTab, label: `Deletion Requests (${pendingDeletionRequests.length})`, icon: Trash2 }
-  ];
+  const { changePassword } = useAdminAuth();
 
   if (loading) {
     return (
@@ -75,111 +80,139 @@ export const AdminPortal: React.FC = () => {
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-6xl mx-auto px-4">
-          <nav className="flex space-x-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
-                  }`}
-                >
-                  <Icon size={16} />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
-
       {/* Content */}
       <main className="max-w-6xl mx-auto px-4 py-6">
-        {activeTab === 'overview' && (
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Admin Overview</h2>
-            
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <Clock className="text-orange-500" size={24} />
-                  <div>
-                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                      {pendingPrayers.length}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Pending Prayers</div>
-                  </div>
+        {/* Stats Grid - Clickable Filter Buttons */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 mb-8">
+          <button
+            onClick={() => setActiveTab('prayers')}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+              activeTab === 'prayers' ? 'ring-2 ring-orange-500 border-orange-500' : 'hover:border-orange-300 dark:hover:border-orange-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Clock className="text-orange-500" size={20} />
+              <div className="text-center">
+                <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                  {pendingPrayers.length}
                 </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="text-blue-500" size={24} />
-                  <div>
-                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                      {pendingUpdates.length}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Pending Updates</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <Trash2 className="text-red-500" size={24} />
-                  <div>
-                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                      {pendingDeletionRequests.length}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Deletion Requests</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="text-green-500" size={24} />
-                  <div>
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      {approvedPrayersCount + approvedUpdatesCount}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Total Approved</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3">
-                  <XCircle className="text-red-500" size={24} />
-                  <div>
-                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                      {deniedPrayersCount + deniedUpdatesCount}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">Total Denied</div>
-                  </div>
-                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">Prayers</div>
               </div>
             </div>
-
-            {/* Alerts */}
-            {(pendingPrayers.length > 0 || pendingUpdates.length > 0 || pendingDeletionRequests.length > 0) && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="text-yellow-600 dark:text-yellow-400" size={20} />
-                  <p className="text-yellow-800 dark:text-yellow-200">
-                    You have {pendingPrayers.length + pendingUpdates.length + pendingDeletionRequests.length} items pending approval.
-                  </p>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('updates')}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+              activeTab === 'updates' ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <MessageSquare className="text-blue-500" size={20} />
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                  {pendingUpdates.length}
                 </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">Updates</div>
               </div>
-            )}
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('deletions')}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+              activeTab === 'deletions' ? 'ring-2 ring-red-500 border-red-500' : 'hover:border-red-300 dark:hover:border-red-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Trash2 className="text-red-500" size={20} />
+              <div className="text-center">
+                <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                  {pendingDeletionRequests.length}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">Deletions</div>
+              </div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('status-changes')}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+              activeTab === 'status-changes' ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <RefreshCw className="text-blue-500" size={20} />
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                  {pendingStatusChangeRequests.length}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">Status</div>
+              </div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('approved')}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+              activeTab === 'approved' ? 'ring-2 ring-green-500 border-green-500' : 'hover:border-green-300 dark:hover:border-green-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <CheckCircle className="text-green-500" size={20} />
+              <div className="text-center">
+                <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                  {approvedPrayersCount + approvedUpdatesCount}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">Approved</div>
+              </div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('denied')}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+              activeTab === 'denied' ? 'ring-2 ring-red-500 border-red-500' : 'hover:border-red-300 dark:hover:border-red-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <XCircle className="text-red-500" size={20} />
+              <div className="text-center">
+                <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                  {deniedPrayersCount + deniedUpdatesCount}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">Denied</div>
+              </div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+              activeTab === 'settings' ? 'ring-2 ring-purple-500 border-purple-500' : 'hover:border-purple-300 dark:hover:border-purple-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Settings className="text-purple-500" size={20} />
+              <div className="text-center">
+                <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                  Settings
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">Config</div>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {/* Alerts */}
+        {(pendingPrayers.length > 0 || pendingUpdates.length > 0 || pendingDeletionRequests.length > 0 || pendingStatusChangeRequests.length > 0) && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="text-yellow-600 dark:text-yellow-400" size={20} />
+              <p className="text-yellow-800 dark:text-yellow-200">
+                You have {pendingPrayers.length + pendingUpdates.length + pendingDeletionRequests.length + pendingStatusChangeRequests.length} items pending approval.
+              </p>
+            </div>
           </div>
         )}
 
@@ -274,6 +307,230 @@ export const AdminPortal: React.FC = () => {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'status-changes' && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
+              Pending Status Change Requests ({pendingStatusChangeRequests.length})
+            </h2>
+            
+            {pendingStatusChangeRequests.length === 0 ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
+                <CheckCircle className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
+                <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  No pending status change requests
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  All status change requests have been reviewed.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingStatusChangeRequests.map((request) => (
+                  <PendingStatusChangeCard
+                    key={request.id}
+                    statusChangeRequest={request}
+                    onApprove={(id: string) => approveStatusChangeRequest(id)}
+                    onDeny={(id: string, reason: string) => denyStatusChangeRequest(id, reason)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'approved' && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
+              Approved Items ({approvedPrayers.length + approvedUpdates.length})
+            </h2>
+            
+            {approvedPrayers.length === 0 && approvedUpdates.length === 0 ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
+                <CheckCircle className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
+                <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  No approved items yet
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Approved prayers and updates will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Approved Prayers */}
+                {approvedPrayers.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">
+                      Approved Prayers ({approvedPrayers.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {approvedPrayers.map((prayer) => (
+                        <div key={prayer.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                                Prayer for {prayer.prayer_for}
+                              </h4>
+                              <p className="text-gray-600 dark:text-gray-300 mb-2">
+                                {prayer.description}
+                              </p>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                <p>Requested by: {prayer.requester}</p>
+                                <p>Status: {prayer.status}</p>
+                              </div>
+                            </div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                              Approved
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Approved Updates */}
+                {approvedUpdates.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">
+                      Approved Updates ({approvedUpdates.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {approvedUpdates.map((update) => (
+                        <div key={update.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <MessageSquare size={14} />
+                                <span>Update for: {update.prayer_title}</span>
+                              </div>
+                              <p className="text-gray-700 dark:text-gray-300 mb-2">
+                                {update.content}
+                              </p>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                <p>By: {update.author}</p>
+                              </div>
+                            </div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                              Approved
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'denied' && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
+              Denied Items ({deniedPrayers.length + deniedUpdates.length})
+            </h2>
+            
+            {deniedPrayers.length === 0 && deniedUpdates.length === 0 ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
+                <XCircle className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
+                <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  No denied items yet
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  Denied prayers and updates will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Denied Prayers */}
+                {deniedPrayers.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">
+                      Denied Prayers ({deniedPrayers.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {deniedPrayers.map((prayer) => (
+                        <div key={prayer.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                                Prayer for {prayer.prayer_for}
+                              </h4>
+                              <p className="text-gray-600 dark:text-gray-300 mb-2">
+                                {prayer.description}
+                              </p>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                <p>Requested by: {prayer.requester}</p>
+                                {prayer.denial_reason && (
+                                  <p className="text-red-600 dark:text-red-400 mt-2">
+                                    Denial reason: {prayer.denial_reason}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                              Denied
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Denied Updates */}
+                {deniedUpdates.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">
+                      Denied Updates ({deniedUpdates.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {deniedUpdates.map((update) => (
+                        <div key={update.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <MessageSquare size={14} />
+                                <span>Update for: {update.prayer_title}</span>
+                              </div>
+                              <p className="text-gray-700 dark:text-gray-300 mb-2">
+                                {update.content}
+                              </p>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                <p>By: {update.author}</p>
+                                {update.denial_reason && (
+                                  <p className="text-red-600 dark:text-red-400 mt-2">
+                                    Denial reason: {update.denial_reason}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                              Denied
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
+              Admin Settings
+            </h2>
+            
+            <div className="max-w-2xl">
+              <PasswordChange onPasswordChange={changePassword} />
+            </div>
           </div>
         )}
       </main>

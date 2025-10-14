@@ -8,6 +8,7 @@ import { ToastProvider } from './components/Toast';
 import { AdminPortal } from './components/AdminPortal';
 import { AdminLogin } from './components/AdminLogin';
 import { AdminAuthProvider, useAdminAuth } from './hooks/useAdminAuth';
+import type { PrayerStatus } from './types/prayer';
 import { usePrayerManager } from './hooks/usePrayerManager';
 import { useTheme } from './hooks/useTheme';
 import { supabase } from './lib/supabase';
@@ -221,10 +222,31 @@ function AppContent() {
                 onUpdateStatus={updatePrayerStatus}
                 onAddUpdate={addPrayerUpdate}
                 onDelete={deletePrayer}
+                onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string) => {
+                  try {
+                    const { data, error } = await supabase
+                      .from('status_change_requests')
+                      .insert({
+                        prayer_id: prayerId,
+                        requested_status: newStatus,
+                        reason: reason,
+                        requested_by: requesterName
+                      } as any)
+                      .select();
+                    
+                    if (error) {
+                      console.error('Supabase error:', error);
+                      throw error;
+                    }
+                    
+                    alert('Status change request submitted successfully! An admin will review it shortly.');
+                  } catch (error) {
+                    console.error('Failed to submit status change request:', error);
+                    alert('Failed to submit status change request. Please try again.');
+                  }
+                }}
                 onRequestDelete={async (prayerId: string, reason: string, requesterName: string) => {
                   try {
-                    console.log('Submitting deletion request:', { prayerId, reason, requesterName });
-                    
                     const { data, error } = await supabase
                       .from('deletion_requests')
                       .insert({
@@ -239,7 +261,6 @@ function AppContent() {
                       throw error;
                     }
                     
-                    console.log('Deletion request submitted successfully:', data);
                     alert('Deletion request submitted successfully! An admin will review it shortly.');
                   } catch (error) {
                     console.error('Failed to submit deletion request:', error);

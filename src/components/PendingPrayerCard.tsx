@@ -66,13 +66,13 @@ export const PendingPrayerCard: React.FC<PendingPrayerCardProps> = ({
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editForm.title.trim() || !editForm.requester.trim() || !editForm.prayer_for.trim()) return;
+    if (!editForm.description.trim() || !editForm.requester.trim() || !editForm.prayer_for.trim()) return;
 
     setLoading('edit');
     try {
       await onEdit(prayer.id, {
-        title: editForm.title,
-        description: editForm.description || undefined,
+        title: `Prayer for ${editForm.prayer_for}`,
+        description: editForm.description,
         requester: editForm.requester,
         prayer_for: editForm.prayer_for,
         email: editForm.email || null
@@ -107,26 +107,14 @@ export const PendingPrayerCard: React.FC<PendingPrayerCardProps> = ({
             <form onSubmit={handleEdit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  value={editForm.title}
-                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description
+                  Prayer Request Details *
                 </label>
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   rows={3}
+                  required
                 />
               </div>
               
@@ -192,21 +180,13 @@ export const PendingPrayerCard: React.FC<PendingPrayerCardProps> = ({
           ) : (
             <>
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">
-                {prayer.title}
+                Prayer for {prayer.prayer_for}
               </h3>
 
-              {/* Prayer For */}
-              <div className="mb-3">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Prayer for: </span>
-                <span className="text-gray-800 dark:text-gray-200">{prayer.prayer_for}</span>
-              </div>
-
               {/* Prayer Details */}
-              {prayer.description && (
-                <div className="mb-4">
-                  <p className="text-gray-600 dark:text-gray-300">{prayer.description}</p>
-                </div>
-              )}
+              <div className="mb-4">
+                <p className="text-gray-600 dark:text-gray-300">{prayer.description}</p>
+              </div>
 
               {/* Meta Information */}
               <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400 mb-4">

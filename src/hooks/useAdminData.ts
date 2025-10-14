@@ -1,11 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
-import type { PrayerRequest, PrayerUpdate, DeletionRequest } from '../types/prayer';
+import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest } from '../types/prayer';
 
 interface AdminData {
   pendingPrayers: PrayerRequest[];
   pendingUpdates: (PrayerUpdate & { prayer_title?: string })[];
   pendingDeletionRequests: (DeletionRequest & { prayer_title?: string })[];
+  pendingStatusChangeRequests: (StatusChangeRequest & { prayer_title?: string })[];
+  approvedPrayers: PrayerRequest[];
+  approvedUpdates: (PrayerUpdate & { prayer_title?: string })[];
+  deniedPrayers: PrayerRequest[];
+  deniedUpdates: (PrayerUpdate & { prayer_title?: string })[];
   approvedPrayersCount: number;
   approvedUpdatesCount: number;
   deniedPrayersCount: number;
@@ -19,6 +24,11 @@ export const useAdminData = () => {
     pendingPrayers: [],
     pendingUpdates: [],
     pendingDeletionRequests: [],
+    pendingStatusChangeRequests: [],
+    approvedPrayers: [],
+    approvedUpdates: [],
+    deniedPrayers: [],
+    deniedUpdates: [],
     approvedPrayersCount: 0,
     approvedUpdatesCount: 0,
     deniedPrayersCount: 0,
@@ -64,6 +74,24 @@ export const useAdminData = () => {
 
       if (deletionRequestsError) throw deletionRequestsError;
 
+      // Fetch pending status change requests with prayer titles
+      const { data: pendingStatusChangeRequests, error: statusChangeRequestsError } = await supabase
+        .from('status_change_requests')
+        .select(`
+          *,
+          prayers!inner(title)
+        `)
+        .eq('approval_status', 'pending')
+        .order('created_at', { ascending: false });
+
+      // Handle case where table doesn't exist yet
+      if (statusChangeRequestsError && statusChangeRequestsError.code === '42P01') {
+        console.warn('status_change_requests table does not exist yet. Please run the migration.');
+        // Continue with empty array
+      } else if (statusChangeRequestsError) {
+        throw statusChangeRequestsError;
+      }
+
       // Fetch approved counts
       const { count: approvedPrayersCount } = await supabase
         .from('prayers')
@@ -86,6 +114,48 @@ export const useAdminData = () => {
         .select('*', { count: 'exact', head: true })
         .eq('approval_status', 'denied');
 
+      // Fetch approved prayers
+      const { data: approvedPrayers, error: approvedPrayersError } = await supabase
+        .from('prayers')
+        .select('*')
+        .eq('approval_status', 'approved')
+        .order('approved_at', { ascending: false });
+
+      if (approvedPrayersError) throw approvedPrayersError;
+
+      // Fetch approved updates with prayer titles
+      const { data: approvedUpdates, error: approvedUpdatesError } = await supabase
+        .from('prayer_updates')
+        .select(`
+          *,
+          prayers!inner(title)
+        `)
+        .eq('approval_status', 'approved')
+        .order('approved_at', { ascending: false });
+
+      if (approvedUpdatesError) throw approvedUpdatesError;
+
+      // Fetch denied prayers
+      const { data: deniedPrayers, error: deniedPrayersError } = await supabase
+        .from('prayers')
+        .select('*')
+        .eq('approval_status', 'denied')
+        .order('approved_at', { ascending: false });
+
+      if (deniedPrayersError) throw deniedPrayersError;
+
+      // Fetch denied updates with prayer titles
+      const { data: deniedUpdates, error: deniedUpdatesError } = await supabase
+        .from('prayer_updates')
+        .select(`
+          *,
+          prayers!inner(title)
+        `)
+        .eq('approval_status', 'denied')
+        .order('approved_at', { ascending: false });
+
+      if (deniedUpdatesError) throw deniedUpdatesError;
+
       // Transform pending updates to include prayer title
       const transformedUpdates = pendingUpdates?.map((update: any) => ({
         ...update,
@@ -98,10 +168,33 @@ export const useAdminData = () => {
         prayer_title: request.prayers?.title
       })) || [];
 
+      // Transform pending status change requests to include prayer title
+      const transformedStatusChangeRequests = pendingStatusChangeRequests?.map((request: any) => ({
+        ...request,
+        prayer_title: request.prayers?.title
+      })) || [];
+
+      // Transform approved updates to include prayer title
+      const transformedApprovedUpdates = approvedUpdates?.map((update: any) => ({
+        ...update,
+        prayer_title: update.prayers?.title
+      })) || [];
+
+      // Transform denied updates to include prayer title
+      const transformedDeniedUpdates = deniedUpdates?.map((update: any) => ({
+        ...update,
+        prayer_title: update.prayers?.title
+      })) || [];
+
       setData({
         pendingPrayers: pendingPrayers || [],
         pendingUpdates: transformedUpdates,
         pendingDeletionRequests: transformedDeletionRequests,
+        pendingStatusChangeRequests: transformedStatusChangeRequests,
+        approvedPrayers: approvedPrayers || [],
+        approvedUpdates: transformedApprovedUpdates,
+        deniedPrayers: deniedPrayers || [],
+        deniedUpdates: transformedDeniedUpdates,
         approvedPrayersCount: approvedPrayersCount || 0,
         approvedUpdatesCount: approvedUpdatesCount || 0,
         deniedPrayersCount: deniedPrayersCount || 0,
@@ -285,6 +378,85 @@ export const useAdminData = () => {
     }
   }, [fetchAdminData]);
 
+  const approveStatusChangeRequest = useCallback(async (requestId: string) => {
+    try {
+      // Get the status change request to find the prayer ID and new status
+      const { data: statusChangeRequest, error: fetchError } = await supabase
+        .from('status_change_requests')
+        .select('prayer_id, requested_status')
+        .eq('id', requestId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Approve the status change request
+      const { error: approveError } = await supabase
+        .from('status_change_requests')
+        .update({
+          approval_status: 'approved',
+          reviewed_by: 'admin',
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+      if (approveError) throw approveError;
+
+      // Update the prayer status
+      const { error: updateError } = await supabase
+        .from('prayers')
+        .update({
+          status: statusChangeRequest.requested_status,
+          date_answered: statusChangeRequest.requested_status === 'answered' ? new Date().toISOString() : null
+        })
+        .eq('id', statusChangeRequest.prayer_id);
+
+      if (updateError) throw updateError;
+
+      // Immediately update local state to remove the request from pending list
+      setData(prev => ({
+        ...prev,
+        pendingStatusChangeRequests: prev.pendingStatusChangeRequests.filter(req => req.id !== requestId)
+      }));
+
+      // Fallback refresh to ensure consistency
+      setTimeout(async () => {
+        await fetchAdminData();
+      }, 1000);
+    } catch (error) {
+      console.error('Error approving status change request:', error);
+      handleSupabaseError(error);
+    }
+  }, [fetchAdminData]);
+
+  const denyStatusChangeRequest = useCallback(async (requestId: string, reason: string) => {
+    try {
+      const { error } = await supabase
+        .from('status_change_requests')
+        .update({
+          approval_status: 'denied',
+          reviewed_by: 'admin',
+          reviewed_at: new Date().toISOString(),
+          denial_reason: reason
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      // Immediately update local state to remove the request from pending list
+      setData(prev => ({
+        ...prev,
+        pendingStatusChangeRequests: prev.pendingStatusChangeRequests.filter(req => req.id !== requestId)
+      }));
+
+      // Fallback refresh to ensure consistency
+      setTimeout(async () => {
+        await fetchAdminData();
+      }, 1000);
+    } catch (error) {
+      handleSupabaseError(error);
+    }
+  }, [fetchAdminData]);
+
   // Initial data fetch
   useEffect(() => {
     fetchAdminData();
@@ -331,8 +503,22 @@ export const useAdminData = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'deletion_requests',
-          filter: 'approval_status=eq.pending'
+          table: 'deletion_requests'
+        },
+        () => {
+          fetchAdminData();
+        }
+      )
+      .subscribe();
+
+    const statusChangeRequestsSubscription = supabase
+      .channel('admin_status_change_requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'status_change_requests'
         },
         () => {
           fetchAdminData();
@@ -344,6 +530,7 @@ export const useAdminData = () => {
       supabase.removeChannel(prayersSubscription);
       supabase.removeChannel(updatesSubscription);
       supabase.removeChannel(deletionRequestsSubscription);
+      supabase.removeChannel(statusChangeRequestsSubscription);
     };
   }, [fetchAdminData]);
 
@@ -355,6 +542,8 @@ export const useAdminData = () => {
     denyUpdate,
     approveDeletionRequest,
     denyDeletionRequest,
+    approveStatusChangeRequest,
+    denyStatusChangeRequest,
     editPrayer,
     refresh: fetchAdminData
   };

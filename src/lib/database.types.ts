@@ -138,6 +138,47 @@ export interface Database {
           updated_at?: string
         }
       }
+      status_change_requests: {
+        Row: {
+          id: string
+          prayer_id: string
+          requested_status: string
+          reason: string | null
+          requested_by: string
+          approval_status: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+          denial_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          prayer_id: string
+          requested_status: string
+          reason?: string | null
+          requested_by: string
+          approval_status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          denial_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          prayer_id?: string
+          requested_status?: string
+          reason?: string | null
+          requested_by?: string
+          approval_status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          denial_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       admin_users: {
         Row: {
           id: string

@@ -1,7 +1,7 @@
 export interface PrayerRequest {
   id: string;
   title: string;
-  description: string | null;
+  description: string;
   status: PrayerStatus;
   requester: string;
   prayer_for: string;
@@ -25,6 +25,20 @@ export interface PrayerUpdate {
 export interface DeletionRequest {
   id: string;
   prayer_id: string;
+  reason?: string | null;
+  requested_by: string;
+  approval_status: 'pending' | 'approved' | 'denied';
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  denial_reason?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StatusChangeRequest {
+  id: string;
+  prayer_id: string;
+  requested_status: PrayerStatus;
   reason?: string | null;
   requested_by: string;
   approval_status: 'pending' | 'approved' | 'denied';

@@ -3,7 +3,7 @@ import { Shield, Lock, User, AlertCircle } from 'lucide-react';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 
 export const AdminLogin: React.FC = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,9 +15,9 @@ export const AdminLogin: React.FC = () => {
     setLoading(true);
 
     try {
-      const success = await login(username, password);
+      const success = await login(email, password);
       if (!success) {
-        setError('Invalid username or password');
+        setError('Invalid email or password');
       }
     } catch (error) {
       setError('Login failed. Please try again.');
@@ -41,20 +41,20 @@ export const AdminLogin: React.FC = () => {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="username" className="sr-only">
-              Username
+            <label htmlFor="email" className="sr-only">
+              Email Address
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
-                id="username"
-                name="username"
-                type="text"
+                id="email"
+                name="email"
+                type="email"
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="pl-12 pr-3 py-3 w-full border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                placeholder="Username"
+                placeholder="Email Address"
               />
             </div>
           </div>
@@ -99,12 +99,6 @@ export const AdminLogin: React.FC = () => {
               'Sign in'
             )}
           </button>
-
-          <div className="text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Demo credentials: admin / admin123
-            </p>
-          </div>
         </form>
       </div>
     </div>

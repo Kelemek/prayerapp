@@ -1,9 +1,13 @@
 import { useState, createContext, useContext, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 interface AdminAuthContextType {
   isAdmin: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  user: User | null;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  changePassword: (newPassword: string) => Promise<boolean>;
   loading: boolean;
 }
 
@@ -22,46 +26,113 @@ interface AdminAuthProviderProps {
 }
 
 export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is already logged in on mount
-  useEffect(() => {
-    const adminToken = localStorage.getItem('admin_session');
-    if (adminToken) {
-      // In a real app, verify the token with the server
-      setIsAdmin(true);
+  // Check if the current user is an admin
+  const checkAdminStatus = (currentUser: User | null) => {
+    if (!currentUser) {
+      setIsAdmin(false);
+      return;
     }
-    setLoading(false);
+
+    // Check if user email is in admin list or has admin role
+    // For this demo, we'll use a specific admin email
+    // In production, you'd check user metadata or a separate admin table
+    const adminEmails = ['admin@prayerapp.com', 'admin@example.com'];
+    const isUserAdmin = adminEmails.includes(currentUser.email || '');
+    setIsAdmin(isUserAdmin);
+  };
+
+  // Initialize auth state and listen for changes
+  useEffect(() => {
+    // Get initial session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        setUser(session?.user ?? null);
+        checkAdminStatus(session?.user ?? null);
+      } catch (error) {
+        console.error('Error getting session:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        checkAdminStatus(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      // Simple authentication - in a real app, this would call your backend
-      // For demo purposes, using hardcoded credentials
-      if (username === 'admin' && password === 'admin123') {
-        const adminToken = 'admin_session_' + Date.now();
-        localStorage.setItem('admin_session', adminToken);
-        setIsAdmin(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('Login error:', error.message);
+        return false;
+      }
+
+      if (data.user) {
         return true;
       }
+
       return false;
     } catch (error) {
-      console.error('Admin login error:', error);
+      console.error('Login error:', error);
       return false;
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('admin_session');
-    setIsAdmin(false);
+  const changePassword = async (newPassword: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        console.error('Password change error:', error.message);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Password change error:', error);
+      return false;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
-    <AdminAuthContext.Provider value={{ isAdmin, login, logout, loading }}>
+    <AdminAuthContext.Provider value={{ isAdmin, user, login, logout, changePassword, loading }}>
       {children}
     </AdminAuthContext.Provider>
   );
