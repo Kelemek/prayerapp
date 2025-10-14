@@ -35,7 +35,14 @@ export const ThemeToggle = () => {
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+        <div
+          className="absolute mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50"
+          style={{
+            right: '0',
+            left: 'auto',
+            ...(window.innerWidth <= 640 ? { left: '0', right: 'auto' } : {})
+          }}
+        >
           <div className="py-2">
             <button
               onClick={() => {
