@@ -138,6 +138,44 @@ export interface Database {
           updated_at?: string
         }
       }
+      update_deletion_requests: {
+        Row: {
+          id: string
+          update_id: string
+          reason: string | null
+          requested_by: string
+          approval_status: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+          denial_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          update_id: string
+          reason?: string | null
+          requested_by: string
+          approval_status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          denial_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          update_id?: string
+          reason?: string | null
+          requested_by?: string
+          approval_status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          denial_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       status_change_requests: {
         Row: {
           id: string

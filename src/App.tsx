@@ -30,7 +30,9 @@ function AppContent() {
     addPrayerUpdate, 
     deletePrayer,
     getFilteredPrayers,
-    refresh 
+    refresh,
+    deletePrayerUpdate,
+    requestUpdateDeletion
   } = usePrayerManager();
 
   const [showForm, setShowForm] = useState(false);
@@ -80,7 +82,6 @@ function AppContent() {
         <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6" style={{ margin: '0 auto', maxWidth: '72rem' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Heart className="text-blue-600 dark:text-blue-400 flex-shrink-0" size={32} />
               <div className="min-w-0 flex-1">
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 truncate">Church Prayer Manager</h1>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hidden sm:block mt-1">Keeping our community connected in prayer</p>
@@ -196,12 +197,6 @@ function AppContent() {
         <div className="space-y-4">
           {filteredPrayers.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
-              <img
-                src="/cross-pointe-logo.png"
-                alt="Cross Pointe Church Logo"
-                style={{ width: 40, height: 40, objectFit: 'contain' }}
-                className="flex-shrink-0"
-              />
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
                 {prayers.length === 0 ? "No prayer requests yet" : "No prayers match your filters"}
               </h3>
@@ -229,79 +224,14 @@ function AppContent() {
                 onAddUpdate={addPrayerUpdate}
                 onDelete={deletePrayer}
                 onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string) => {
-                  try {
-                    // Find the prayer to get its title and current status
-                    const prayer = prayers.find(p => p.id === prayerId);
-                    
-                    const { data, error } = await supabase
-                      .from('status_change_requests')
-                      .insert({
-                        prayer_id: prayerId,
-                        requested_status: newStatus,
-                        reason: reason,
-                        requested_by: requesterName
-                      } as any)
-                      .select();
-                    
-                    if (error) {
-                      console.error('Supabase error:', error);
-                      throw error;
-                    }
-                    
-                    // Send email notification to admins
-                    if (prayer) {
-                      sendAdminNotification({
-                        type: 'status-change',
-                        title: prayer.title,
-                        currentStatus: prayer.status,
-                        requestedStatus: newStatus,
-                        reason: reason,
-                        requestedBy: requesterName
-                      }).catch(err => console.error('Failed to send email notification:', err));
-                    }
-                    
-                    alert('Status change request submitted successfully! An admin will review it shortly.');
-                  } catch (error) {
-                    console.error('Failed to submit status change request:', error);
-                    alert('Failed to submit status change request. Please try again.');
-                  }
+                  // ...existing code...
                 }}
                 onRequestDelete={async (prayerId: string, reason: string, requesterName: string) => {
-                  try {
-                    // Find the prayer to get its title
-                    const prayer = prayers.find(p => p.id === prayerId);
-                    
-                    const { data, error } = await supabase
-                      .from('deletion_requests')
-                      .insert({
-                        prayer_id: prayerId,
-                        reason: reason,
-                        requested_by: requesterName
-                      } as any)
-                      .select();
-                    
-                    if (error) {
-                      console.error('Supabase error:', error);
-                      throw error;
-                    }
-                    
-                    // Send email notification to admins
-                    if (prayer) {
-                      sendAdminNotification({
-                        type: 'deletion',
-                        title: prayer.title,
-                        reason: reason,
-                        requestedBy: requesterName
-                      }).catch(err => console.error('Failed to send email notification:', err));
-                    }
-                    
-                    alert('Deletion request submitted successfully! An admin will review it shortly.');
-                  } catch (error) {
-                    console.error('Failed to submit deletion request:', error);
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    alert(`Failed to submit deletion request: ${errorMessage}`);
-                    throw error;
-                  }
+                  // ...existing code...
+                }}
+                onDeleteUpdate={deletePrayerUpdate}
+                onRequestUpdateDelete={async (updateId: string, reason: string, requesterName: string) => {
+                  return await requestUpdateDeletion(updateId, reason, requesterName);
                 }}
                 isAdmin={isAdmin}
               />

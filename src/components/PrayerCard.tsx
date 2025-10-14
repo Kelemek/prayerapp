@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Calendar, User, CheckCircle, MessageCircle, Trash2 } from 'lucide-react';
+import { Calendar, User, CheckCircle, Trash2, ChevronDown } from 'lucide-react';
+import { useToast } from './Toast';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 
@@ -10,6 +11,8 @@ interface PrayerCardProps {
   onDelete: (id: string) => void;
   onRequestDelete: (prayerId: string, reason: string, requesterName: string) => Promise<void>;
   onRequestStatusChange: (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string) => Promise<void>;
+  onDeleteUpdate: (updateId: string) => Promise<void>;
+  onRequestUpdateDelete: (updateId: string, reason: string, requesterName: string) => Promise<any>;
   isAdmin: boolean;
 }
 
@@ -20,22 +23,28 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   onDelete,
   onRequestDelete,
   onRequestStatusChange,
+  onDeleteUpdate,
+  onRequestUpdateDelete,
   isAdmin 
 }) => {
-  const [showAllUpdates, setShowAllUpdates] = useState(false);
+  const displayedRequester = prayer.is_anonymous ? 'Anonymous' : prayer.requester;
   const [showAddUpdate, setShowAddUpdate] = useState(false);
   const [updateText, setUpdateText] = useState('');
   const [updateAuthor, setUpdateAuthor] = useState('');
-  const [showUpdateSuccess, setShowUpdateSuccess] = useState(false);
   const [showDeleteRequest, setShowDeleteRequest] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteRequesterName, setDeleteRequesterName] = useState('');
-  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [showStatusChangeRequest, setShowStatusChangeRequest] = useState(false);
   const [statusChangeReason, setStatusChangeReason] = useState('');
   const [statusChangeRequesterName, setStatusChangeRequesterName] = useState('');
   const [requestedStatus, setRequestedStatus] = useState<PrayerStatus>(prayer.status);
-  const [showStatusChangeSuccess, setShowStatusChangeSuccess] = useState(false);
+  // State for update deletion request UI
+  const [isSubmittingUpdateDelete, setIsSubmittingUpdateDelete] = useState(false);
+  const [updateDeleteError, setUpdateDeleteError] = useState<string | null>(null);
+  const [showUpdateDeleteRequest, setShowUpdateDeleteRequest] = useState<string | null>(null);
+  const [updateDeleteReason, setUpdateDeleteReason] = useState('');
+  const [updateDeleteRequesterName, setUpdateDeleteRequesterName] = useState('');
+  const { showToast } = useToast();
 
 
 
@@ -47,12 +56,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     setUpdateText('');
     setUpdateAuthor('');
     setShowAddUpdate(false);
-    setShowUpdateSuccess(true);
-    
-    // Hide success message after 3 seconds
-    setTimeout(() => {
-      setShowUpdateSuccess(false);
-    }, 3000);
+    try { showToast('Update submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
   };
 
   const handleDeleteRequest = async (e: React.FormEvent) => {
@@ -64,12 +68,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       setDeleteReason('');
       setDeleteRequesterName('');
       setShowDeleteRequest(false);
-      setShowDeleteSuccess(true);
-      
-      // Hide success message after 3 seconds
-      setTimeout(() => {
-        setShowDeleteSuccess(false);
-      }, 3000);
+      try { showToast('Deletion request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
     } catch (error) {
       console.error('Error in handleDeleteRequest:', error);
       // Don't reset the form on error so user can try again
@@ -91,12 +90,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       setStatusChangeReason('');
       setStatusChangeRequesterName('');
       setShowStatusChangeRequest(false);
-      setShowStatusChangeSuccess(true);
-      
-      // Hide success message after 3 seconds
-      setTimeout(() => {
-        setShowStatusChangeSuccess(false);
-      }, 3000);
+      try { showToast('Status change request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
     } catch (error) {
       console.error('Error in handleStatusChangeRequest:', error);
       // Don't reset the form on error so user can try again
@@ -113,12 +107,45 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     });
   };
 
+  const handleUpdateDeletionRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!updateDeleteReason.trim() || !updateDeleteRequesterName.trim() || !showUpdateDeleteRequest) return;
+    try {
+      setIsSubmittingUpdateDelete(true);
+      setUpdateDeleteError(null);
+      const res: any = await onRequestUpdateDelete(showUpdateDeleteRequest, updateDeleteReason, updateDeleteRequesterName);
+      if (!res || res.ok === false) {
+        // Handle common Supabase errors more gracefully
+        let errMsg = (res && res.error) ? res.error : 'Failed to submit update deletion request';
+        if (typeof errMsg === 'object' && errMsg.message) errMsg = errMsg.message;
+        // Detect missing table error message patterns
+        if (typeof errMsg === 'string' && errMsg.toLowerCase().includes('relation') && errMsg.toLowerCase().includes('does not exist')) {
+          errMsg = 'Server schema missing: update_deletion_requests table not found. Please run the migration.';
+        }
+        setUpdateDeleteError(errMsg);
+        console.error('Failed to submit update deletion request', errMsg);
+        setIsSubmittingUpdateDelete(false);
+        return;
+      }
+      setUpdateDeleteReason('');
+      setUpdateDeleteRequesterName('');
+      setShowUpdateDeleteRequest(null);
+      // show a toast to match other successful actions
+      try { showToast('Update deletion request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
+    } finally {
+      setIsSubmittingUpdateDelete(false);
+    }
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-4 transition-colors">
+  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-4 transition-colors relative">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Prayer for {prayer.prayer_for}</h3>
+          <div className="relative">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-0 inline">Prayer for {prayer.prayer_for}</h3>
+            <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Requested by <span className="font-medium text-gray-800 dark:text-gray-100">{displayedRequester}</span></span>
+          </div>
         </div>
         <button
           onClick={() => {
@@ -135,36 +162,12 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         </button>
       </div>
 
-      {/* Prayer Details */}
-      <p className="text-gray-600 dark:text-gray-300 mb-4">{prayer.description}</p>
+  {/* Centered timestamp for the prayer (positioned relative to the whole card) */}
+  <span className="absolute left-1/2 top-4 transform -translate-x-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-300">{formatDate(prayer.created_at)}</span>
 
-      {/* Meta Information */}
-      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
-        <div className="flex items-center gap-1">
-          <User size={14} />
-          <span>
-            {prayer.is_anonymous === true || 
-             prayer.requester === 'Anonymous' || 
-             prayer.requester?.toLowerCase() === 'anonymous'
-              ? 'Anonymous' 
-              : prayer.requester}
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Calendar size={14} />
-          <span>{formatDate(prayer.date_requested)}</span>
-        </div>
-        {prayer.date_answered && (
-          <div className="flex items-center gap-1">
-            <CheckCircle size={14} />
-            <span>Answered {formatDate(prayer.date_answered)}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {/* Status Display and Update Buttons */}
+  {/* Prayer Details */}
+  <p className="text-gray-600 dark:text-gray-300 mb-4">{prayer.description}</p>
+        {/* Status change buttons and info */}
         {isAdmin ? (
           <div className="flex flex-wrap gap-1">
             <button
@@ -207,6 +210,13 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             >
               Closed
             </button>
+              {/* Add Update for admins (same behavior as non-admin add update) */}
+              <button
+                onClick={() => setShowAddUpdate(!showAddUpdate)}
+                className="px-3 py-1 text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+              >
+                Add Update
+              </button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
@@ -219,37 +229,16 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             >
               Request Status Change
             </button>
-          </div>
-        )}
-        
-        {prayer.updates && prayer.updates.length > 0 && (
-          <div className="border-l border-gray-200 dark:border-gray-600 pl-2 ml-2">
             <button
-              onClick={() => setShowAllUpdates(!showAllUpdates)}
-              className="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+              onClick={() => setShowAddUpdate(!showAddUpdate)}
+              className="px-3 py-1 text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
             >
-              <MessageCircle size={14} />
-              {showAllUpdates ? 'Hide' : 'Show All'} Updates ({prayer.updates?.length || 0})
+              Add Update
             </button>
           </div>
         )}
         
-        <button
-          onClick={() => setShowAddUpdate(!showAddUpdate)}
-          className="px-3 py-1 text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
-        >
-          Add Update
-        </button>
-      </div>
-
-      {/* Update Success Message */}
-      {showUpdateSuccess && (
-        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <p className="text-sm text-green-800 dark:text-green-200">
-            ✅ Update submitted for admin approval
-          </p>
-        </div>
-      )}
+        {/* Updates exist; list is shown below */}
 
       {/* Add Update Form */}
       {showAddUpdate && (
@@ -287,24 +276,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             </div>
           </div>
         </form>
-      )}
-
-      {/* Delete Request Success Message */}
-      {showDeleteSuccess && (
-        <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-          <p className="text-sm text-orange-800 dark:text-orange-200">
-            🗑️ Deletion request submitted for admin review
-          </p>
-        </div>
-      )}
-
-      {/* Status Change Request Success Message */}
-      {showStatusChangeSuccess && (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            ✨ Status change request submitted for admin review
-          </p>
-        </div>
       )}
 
       {/* Delete Request Form */}
@@ -359,17 +330,20 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
-            <select
-              value={requestedStatus}
-              onChange={(e) => setRequestedStatus(e.target.value as PrayerStatus)}
-              className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value={PrayerStatus.ACTIVE}>Active</option>
-              <option value={PrayerStatus.ONGOING}>Ongoing</option>
-              <option value={PrayerStatus.ANSWERED}>Answered</option>
-              <option value={PrayerStatus.CLOSED}>Closed</option>
-            </select>
+            <div className="relative">
+              <select
+                value={requestedStatus}
+                onChange={(e) => setRequestedStatus(e.target.value as PrayerStatus)}
+                className="w-full appearance-none px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8"
+                required
+              >
+                <option value={PrayerStatus.ACTIVE}>Active</option>
+                <option value={PrayerStatus.ONGOING}>Ongoing</option>
+                <option value={PrayerStatus.ANSWERED}>Answered</option>
+                <option value={PrayerStatus.CLOSED}>Closed</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
+            </div>
             <textarea
               placeholder="Reason for status change request..."
               value={statusChangeReason}
@@ -398,36 +372,76 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
 
       {/* Recent Updates - Always show last 2 */}
       {prayer.updates && prayer.updates.length > 0 && (
-        <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            Recent Updates
-            {prayer.updates.length > 2 && !showAllUpdates && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                (showing last 2 of {prayer.updates.length})
-              </span>
-            )}
-          </h4>
+        <div className="pt-4">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Recent Updates</h4>
           <div className="space-y-3">
-            {/* Show last 2 updates by default, or all if showAllUpdates is true */}
-            {(showAllUpdates ? prayer.updates : prayer.updates.slice(-2)).map((update) => (
-              <div key={update.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{update.author}</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(update.created_at)}</span>
+            {/* Show last 2 updates */}
+            {prayer.updates.slice(-2).map((update) => (
+              <div key={update.id} className="bg-gray-100 dark:bg-gray-600 rounded-lg p-3">
+                <div className="relative mb-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{update.author}</span>
+                    <button
+                      onClick={async () => {
+                        if (isAdmin) {
+                          if (confirm('Are you sure you want to delete this update? This action cannot be undone.')) {
+                            try {
+                              await onDeleteUpdate(update.id);
+                              // show a toast confirmation
+                              showToast('Update deleted', 'success');
+                            } catch (err) {
+                              console.error('Failed to delete update:', err);
+                              showToast('Failed to delete update', 'error');
+                            }
+                          }
+                        } else {
+                          setShowUpdateDeleteRequest(update.id);
+                        }
+                      }}
+                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 ml-2"
+                      title={isAdmin ? 'Delete update' : 'Request update deletion'}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  <span className="absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400">{formatDate(update.created_at)}</span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">{update.content}</p>
+                {/* (moved) Update Deletion Request handled at top-level form below */}
               </div>
             ))}
           </div>
           
-          {/* Show more button if there are more than 2 updates and not showing all */}
-          {prayer.updates.length > 2 && !showAllUpdates && (
-            <button
-              onClick={() => setShowAllUpdates(true)}
-              className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-            >
-              Show {prayer.updates.length - 2} more updates
-            </button>
+          {/* (removed 'Show more' button) */}
+          { /* Top-level Update Deletion Request Form (moved from inline) */ }
+          {showUpdateDeleteRequest && !isAdmin && (
+            <form onSubmit={handleUpdateDeletionRequest} className="mt-4 mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-3">Request Update Deletion</h4>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={updateDeleteRequesterName}
+                  onChange={(e) => setUpdateDeleteRequesterName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  required
+                />
+                <textarea
+                  placeholder="Reason for update deletion request..."
+                  value={updateDeleteReason}
+                  onChange={(e) => setUpdateDeleteReason(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 h-20"
+                  required
+                />
+                <div className="flex gap-2">
+                  <button type="submit" disabled={isSubmittingUpdateDelete} className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50">{isSubmittingUpdateDelete ? 'Submitting...' : 'Submit Request'}</button>
+                  <button type="button" onClick={() => setShowUpdateDeleteRequest(null)} className="px-3 py-1 text-sm bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500">Cancel</button>
+                </div>
+                {updateDeleteError && (
+                  <p className="mt-2 text-sm text-red-700 dark:text-red-300">{updateDeleteError}</p>
+                )}
+              </div>
+            </form>
           )}
         </div>
       )}

@@ -39,6 +39,19 @@ export interface DeletionRequest {
   updated_at: string;
 }
 
+export interface UpdateDeletionRequest {
+  id: string;
+  update_id: string;
+  reason?: string | null;
+  requested_by: string;
+  approval_status: 'pending' | 'approved' | 'denied';
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  denial_reason?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StatusChangeRequest {
   id: string;
   prayer_id: string;

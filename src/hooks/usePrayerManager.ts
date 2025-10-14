@@ -292,6 +292,67 @@ export const usePrayerManager = () => {
     });
   };
 
+  // Request deletion of a prayer update (user)
+  const requestUpdateDeletion = async (updateId: string, reason: string, requester: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('update_deletion_requests')
+        .insert({
+          update_id: updateId,
+          reason,
+          requested_by: requester,
+          approval_status: 'pending'
+        })
+        .select()
+        .single();
+      if (error) throw error;
+
+      // Fetch the update/prayer info for notification (best-effort)
+      try {
+        const { data: updateRow } = await supabase
+          .from('prayer_updates')
+          .select(`*, prayers (title)`)
+          .eq('id', updateId)
+          .single();
+
+        const title = updateRow?.prayers?.title || 'Unknown Prayer';
+        const author = updateRow?.author || undefined;
+        const content = updateRow?.content || undefined;
+
+        sendAdminNotification({
+          type: 'deletion',
+          title,
+          reason,
+          requester: requester,
+          author,
+          content
+        }).catch(err => console.error('Failed to send email notification for update deletion request:', err));
+      } catch (notifyErr) {
+        console.warn('Could not fetch update/prayer details for notification:', notifyErr);
+      }
+
+      return { ok: true, data };
+    } catch (error: any) {
+      console.error('requestUpdateDeletion error:', error);
+      handleSupabaseError(error);
+      return { ok: false, error: error?.message || String(error) };
+    }
+  };
+
+  // Directly delete a prayer update (admin)
+  const deletePrayerUpdate = async (updateId: string) => {
+    try {
+      const { error } = await supabase
+        .from('prayer_updates')
+        .delete()
+        .eq('id', updateId);
+      if (error) throw error;
+      loadPrayers();
+    } catch (error: any) {
+      handleSupabaseError(error);
+    }
+  };
+
   return {
     prayers,
     loading,
@@ -300,6 +361,8 @@ export const usePrayerManager = () => {
     updatePrayerStatus,
     addPrayerUpdate,
     deletePrayer,
+    requestUpdateDeletion,
+    deletePrayerUpdate,
     getFilteredPrayers,
     refresh: loadPrayers
   };

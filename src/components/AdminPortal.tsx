@@ -18,10 +18,12 @@ export const AdminPortal: React.FC = () => {
     pendingUpdates,
     pendingDeletionRequests,
     pendingStatusChangeRequests,
+    pendingUpdateDeletionRequests,
     approvedPrayers,
     approvedUpdates,
     deniedPrayers,
     deniedUpdates,
+  deniedStatusChangeRequests,
     approvedPrayersCount,
     approvedUpdatesCount,
     deniedPrayersCount,
@@ -35,6 +37,8 @@ export const AdminPortal: React.FC = () => {
     denyDeletionRequest,
     approveStatusChangeRequest,
     denyStatusChangeRequest,
+    approveUpdateDeletionRequest,
+    denyUpdateDeletionRequest,
     editPrayer
   } = useAdminData();
 
@@ -47,14 +51,14 @@ export const AdminPortal: React.FC = () => {
         setActiveTab('prayers');
       } else if (pendingUpdates.length > 0) {
         setActiveTab('updates');
-      } else if (pendingDeletionRequests.length > 0) {
+      } else if (pendingDeletionRequests.length > 0 || pendingUpdateDeletionRequests.length > 0) {
         setActiveTab('deletions');
       } else if (pendingStatusChangeRequests.length > 0) {
         setActiveTab('status-changes');
       }
       // If no pending items, keep default 'prayers' tab
     }
-  }, [loading, pendingPrayers.length, pendingUpdates.length, pendingDeletionRequests.length, pendingStatusChangeRequests.length]);
+  }, [loading, pendingPrayers.length, pendingUpdates.length, pendingDeletionRequests.length, pendingUpdateDeletionRequests.length, pendingStatusChangeRequests.length]);
 
   if (loading) {
     return (
@@ -145,12 +149,13 @@ export const AdminPortal: React.FC = () => {
               <Trash2 className="text-red-500" size={20} />
               <div className="text-center">
                 <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                  {pendingDeletionRequests.length}
+                  {pendingDeletionRequests.length + pendingUpdateDeletionRequests.length}
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-300">Deletions</div>
               </div>
             </div>
           </button>
+          
           
           <button
             onClick={() => setActiveTab('status-changes')}
@@ -196,7 +201,7 @@ export const AdminPortal: React.FC = () => {
               <XCircle className="text-red-500" size={20} />
               <div className="text-center">
                 <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                  {deniedPrayersCount + deniedUpdatesCount}
+                  {deniedPrayersCount + deniedUpdatesCount + (deniedStatusChangeRequests?.length || 0)}
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-300">Denied</div>
               </div>
@@ -222,12 +227,12 @@ export const AdminPortal: React.FC = () => {
         </div>
 
         {/* Alerts */}
-        {(pendingPrayers.length > 0 || pendingUpdates.length > 0 || pendingDeletionRequests.length > 0 || pendingStatusChangeRequests.length > 0) && (
+        {(pendingPrayers.length > 0 || pendingUpdates.length > 0 || pendingDeletionRequests.length > 0 || pendingUpdateDeletionRequests.length > 0 || pendingStatusChangeRequests.length > 0) && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
             <div className="flex items-center gap-2">
               <AlertTriangle className="text-yellow-600 dark:text-yellow-400" size={20} />
               <p className="text-yellow-800 dark:text-yellow-200">
-                You have {pendingPrayers.length + pendingUpdates.length + pendingDeletionRequests.length + pendingStatusChangeRequests.length} items pending approval.
+                You have {pendingPrayers.length + pendingUpdates.length + pendingDeletionRequests.length + pendingUpdateDeletionRequests.length + pendingStatusChangeRequests.length} items pending approval.
               </p>
             </div>
           </div>
@@ -299,31 +304,81 @@ export const AdminPortal: React.FC = () => {
         {activeTab === 'deletions' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
-              Pending Deletion Requests ({pendingDeletionRequests.length})
+              Pending Deletion Requests ({pendingDeletionRequests.length + pendingUpdateDeletionRequests.length})
             </h2>
-            
-            {pendingDeletionRequests.length === 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
-                <CheckCircle className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
-                <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  No pending deletion requests
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  All deletion requests have been reviewed.
-                </p>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">Prayer Deletions ({pendingDeletionRequests.length})</h3>
+                {pendingDeletionRequests.length === 0 ? (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center border border-gray-200 dark:border-gray-700">
+                    <p className="text-gray-500 dark:text-gray-400">No pending prayer deletions</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingDeletionRequests.map((request) => (
+                      <PendingDeletionCard
+                        key={request.id}
+                        deletionRequest={request}
+                        onApprove={(id: string) => approveDeletionRequest(id)}
+                        onDeny={(id: string, reason: string) => denyDeletionRequest(id, reason)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="space-y-4">
-                {pendingDeletionRequests.map((request) => (
-                  <PendingDeletionCard
-                    key={request.id}
-                    deletionRequest={request}
-                    onApprove={(id: string) => approveDeletionRequest(id)}
-                    onDeny={(id: string, reason: string) => denyDeletionRequest(id, reason)}
-                  />
-                ))}
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">Update Deletions ({pendingUpdateDeletionRequests.length})</h3>
+                {pendingUpdateDeletionRequests.length === 0 ? (
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center border border-gray-200 dark:border-gray-700">
+                    <p className="text-gray-500 dark:text-gray-400">No pending update deletions</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingUpdateDeletionRequests.map((request) => (
+                      <div key={request.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                              <MessageSquare size={14} />
+                              <span>Update for: {request.prayer_updates?.prayers?.title ?? 'Unknown Prayer'}</span>
+                            </div>
+                            <p className="text-gray-700 dark:text-gray-300 mb-2">
+                              {request.prayer_updates?.content}
+                            </p>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              <p>By: {request.prayer_updates?.author}</p>
+                              <p>Requested by: {request.requested_by}</p>
+                              <p>Reason: {request.reason}</p>
+                            </div>
+                          </div>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400">
+                            Pending
+                          </span>
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => approveUpdateDeletionRequest(request.id)}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => {
+                              const reason = prompt('Reason for denial (required):');
+                              if (reason && reason.trim()) denyUpdateDeletionRequest(request.id, reason);
+                            }}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                          >
+                            Deny
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -447,10 +502,10 @@ export const AdminPortal: React.FC = () => {
         {activeTab === 'denied' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
-              Denied Items ({deniedPrayers.length + deniedUpdates.length})
+              Denied Items ({deniedPrayers.length + deniedUpdates.length + (deniedStatusChangeRequests?.length || 0)})
             </h2>
             
-            {deniedPrayers.length === 0 && deniedUpdates.length === 0 ? (
+            {deniedPrayers.length === 0 && deniedUpdates.length === 0 && (!deniedStatusChangeRequests || deniedStatusChangeRequests.length === 0) ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
                 <XCircle className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
@@ -522,6 +577,40 @@ export const AdminPortal: React.FC = () => {
                                   <p className="text-red-600 dark:text-red-400 mt-2">
                                     Denial reason: {update.denial_reason}
                                   </p>
+                                )}
+                              </div>
+                            </div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                              Denied
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Denied Status Change Requests */}
+                {deniedStatusChangeRequests && deniedStatusChangeRequests.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">
+                      Denied Status Change Requests ({deniedStatusChangeRequests.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {deniedStatusChangeRequests.map((req) => (
+                        <div key={req.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <RefreshCw size={14} />
+                                <span>Status change for: {req.prayer_title}</span>
+                              </div>
+                              <p className="text-gray-700 dark:text-gray-300 mb-2">
+                                Requested status: {req.requested_status}
+                              </p>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                <p>Requested by: {req.requested_by}</p>
+                                {req.denial_reason && (
+                                  <p className="text-red-600 dark:text-red-400 mt-2">Denial reason: {req.denial_reason}</p>
                                 )}
                               </div>
                             </div>
