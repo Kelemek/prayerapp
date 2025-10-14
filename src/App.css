@@ -1,0 +1,36 @@
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* App container */
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Custom component styles that work with Tailwind */
+
+/* Ensure buttons inherit font family */
+button {
+  font-family: inherit;
+}
+
+/* Ensure proper text rendering */
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
