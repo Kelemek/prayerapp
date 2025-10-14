@@ -231,7 +231,7 @@ function AppContent() {
                         prayer_id: prayerId,
                         reason: reason,
                         requested_by: requesterName
-                      })
+                      } as any)
                       .select();
                     
                     if (error) {

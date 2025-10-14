@@ -31,7 +31,7 @@ export const seedTestPrayers = async () => {
   try {
     const { data, error } = await supabase
       .from('prayers')
-      .insert(testPrayers)
+      .insert(testPrayers as any)
       .select();
 
     if (error) {

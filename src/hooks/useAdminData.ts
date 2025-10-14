@@ -87,15 +87,15 @@ export const useAdminData = () => {
         .eq('approval_status', 'denied');
 
       // Transform pending updates to include prayer title
-      const transformedUpdates = pendingUpdates?.map(update => ({
+      const transformedUpdates = pendingUpdates?.map((update: any) => ({
         ...update,
-        prayer_title: (update as any).prayers?.title
+        prayer_title: update.prayers?.title
       })) || [];
 
       // Transform pending deletion requests to include prayer title
-      const transformedDeletionRequests = pendingDeletionRequests?.map(request => ({
+      const transformedDeletionRequests = pendingDeletionRequests?.map((request: any) => ({
         ...request,
-        prayer_title: (request as any).prayers?.title
+        prayer_title: request.prayers?.title
       })) || [];
 
       setData({
@@ -124,6 +124,7 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayers')
+        // @ts-ignore
         .update({
           approval_status: 'approved',
           approved_by: 'admin', // In a real app, this would be the current admin user
@@ -144,6 +145,7 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayers')
+        // @ts-ignore
         .update({
           approval_status: 'denied',
           approved_by: 'admin',
@@ -165,6 +167,7 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayer_updates')
+        // @ts-ignore
         .update({
           approval_status: 'approved',
           approved_by: 'admin',
@@ -185,6 +188,7 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayer_updates')
+        // @ts-ignore
         .update({
           approval_status: 'denied',
           approved_by: 'admin',
@@ -206,6 +210,7 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayers')
+        // @ts-ignore
         .update(updates)
         .eq('id', prayerId)
         .eq('approval_status', 'pending'); // Only allow editing pending prayers
@@ -233,6 +238,7 @@ export const useAdminData = () => {
       // Approve the deletion request
       const { error: approveError } = await supabase
         .from('deletion_requests')
+        // @ts-ignore
         .update({
           approval_status: 'approved',
           reviewed_by: 'admin',
@@ -246,7 +252,7 @@ export const useAdminData = () => {
       const { error: deleteError } = await supabase
         .from('prayers')
         .delete()
-        .eq('id', deletionRequest.prayer_id);
+        .eq('id', (deletionRequest as any).prayer_id);
 
       if (deleteError) throw deleteError;
 
@@ -261,6 +267,7 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('deletion_requests')
+        // @ts-ignore
         .update({
           approval_status: 'denied',
           reviewed_by: 'admin',

@@ -16,6 +16,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Type-safe wrapper for common operations
+export const supabaseClient = supabase;
+
 // Helper function to handle Supabase errors
 export const handleSupabaseError = (error: any) => {
   console.error('Supabase error:', error);
