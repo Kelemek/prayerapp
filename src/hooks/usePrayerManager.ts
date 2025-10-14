@@ -3,6 +3,7 @@ import { supabase, handleSupabaseError } from '../lib/supabase';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 import type { Database } from '../lib/database.types';
+import { sendAdminNotification } from '../lib/emailNotifications';
 
 type DbPrayer = Database['public']['Tables']['prayers']['Row'];
 type DbPrayerUpdate = Database['public']['Tables']['prayer_updates']['Row'];
@@ -155,6 +156,14 @@ export const usePrayerManager = () => {
 
       if (error) throw error;
       
+      // Send email notification to admins
+      sendAdminNotification({
+        type: 'prayer',
+        title: prayer.title,
+        description: prayer.description,
+        requester: prayer.requester
+      }).catch(err => console.error('Failed to send email notification:', err));
+      
       // Don't add to local state since it's pending approval
       // Show success message that prayer is submitted for review
       return data; // Return the data but don't add to local state
@@ -200,6 +209,9 @@ export const usePrayerManager = () => {
 
   const addPrayerUpdate = async (prayerId: string, content: string, author: string) => {
     try {
+      // Get prayer title for notification
+      const prayer = prayers.find(p => p.id === prayerId);
+      
       // Submit update for admin approval
       const { error } = await supabase
         .from('prayer_updates')
@@ -212,6 +224,16 @@ export const usePrayerManager = () => {
 
       if (error) {
         throw error;
+      }
+
+      // Send email notification to admins
+      if (prayer) {
+        sendAdminNotification({
+          type: 'update',
+          title: prayer.title,
+          author,
+          content
+        }).catch(err => console.error('Failed to send email notification:', err));
       }
 
       // Return success but don't update local state
@@ -250,11 +272,21 @@ export const usePrayerManager = () => {
       if (status && prayer.status !== status) return false;
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
-        return (
-          prayer.title.toLowerCase().includes(term) ||
-          (prayer.description && prayer.description.toLowerCase().includes(term)) ||
-          prayer.requester.toLowerCase().includes(term)
-        );
+        // Search all string fields in the prayer object and its updates
+        const prayerMatches = Object.values(prayer).some(value => {
+          if (typeof value === 'string') {
+            return value.toLowerCase().includes(term);
+          }
+          return false;
+        });
+        const updatesMatches = Array.isArray(prayer.updates)
+          ? prayer.updates.some(update =>
+              Object.values(update).some(value =>
+                typeof value === 'string' && value.toLowerCase().includes(term)
+              )
+            )
+          : false;
+        return prayerMatches || updatesMatches;
       }
       return true;
     });

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings } from 'lucide-react';
 import { PendingPrayerCard } from './PendingPrayerCard';
 import { PendingUpdateCard } from './PendingUpdateCard';
 import { PendingDeletionCard } from './PendingDeletionCard';
 import { PendingStatusChangeCard } from './PendingStatusChangeCard';
 import { PasswordChange } from './PasswordChange';
+import { EmailSettings } from './EmailSettings';
 import { useAdminData } from '../hooks/useAdminData';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 
@@ -38,6 +39,22 @@ export const AdminPortal: React.FC = () => {
   } = useAdminData();
 
   const { changePassword } = useAdminAuth();
+
+  // Automatically select the first tab with pending items
+  useEffect(() => {
+    if (!loading) {
+      if (pendingPrayers.length > 0) {
+        setActiveTab('prayers');
+      } else if (pendingUpdates.length > 0) {
+        setActiveTab('updates');
+      } else if (pendingDeletionRequests.length > 0) {
+        setActiveTab('deletions');
+      } else if (pendingStatusChangeRequests.length > 0) {
+        setActiveTab('status-changes');
+      }
+      // If no pending items, keep default 'prayers' tab
+    }
+  }, [loading, pendingPrayers.length, pendingUpdates.length, pendingDeletionRequests.length, pendingStatusChangeRequests.length]);
 
   if (loading) {
     return (
@@ -528,7 +545,8 @@ export const AdminPortal: React.FC = () => {
               Admin Settings
             </h2>
             
-            <div className="max-w-2xl">
+            <div className="max-w-2xl space-y-6">
+              <EmailSettings />
               <PasswordChange onPasswordChange={changePassword} />
             </div>
           </div>

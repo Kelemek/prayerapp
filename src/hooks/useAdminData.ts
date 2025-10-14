@@ -215,44 +215,50 @@ export const useAdminData = () => {
 
   const approvePrayer = useCallback(async (prayerId: string) => {
     try {
+      console.log('Approving prayer:', prayerId);
       const { error } = await supabase
         .from('prayers')
-        // @ts-ignore
         .update({
-          approval_status: 'approved',
-          approved_by: 'admin', // In a real app, this would be the current admin user
-          approved_at: new Date().toISOString()
+          approval_status: 'approved'
         })
         .eq('id', prayerId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error approving prayer:', error);
+        throw error;
+      }
 
+      console.log('Prayer approved successfully');
       // Refresh data after approval
       await fetchAdminData();
     } catch (error) {
-      handleSupabaseError(error);
+      console.error('Failed to approve prayer:', error);
+      alert('Failed to approve prayer. Please try again.');
     }
   }, [fetchAdminData]);
 
   const denyPrayer = useCallback(async (prayerId: string, reason: string) => {
     try {
+      console.log('Denying prayer:', prayerId, 'with reason:', reason);
       const { error } = await supabase
         .from('prayers')
-        // @ts-ignore
         .update({
           approval_status: 'denied',
-          approved_by: 'admin',
-          approved_at: new Date().toISOString(),
           denial_reason: reason
         })
         .eq('id', prayerId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error denying prayer:', error);
+        throw error;
+      }
 
+      console.log('Prayer denied successfully');
       // Refresh data after denial
       await fetchAdminData();
     } catch (error) {
-      handleSupabaseError(error);
+      console.error('Failed to deny prayer:', error);
+      alert('Failed to deny prayer. Please try again.');
     }
   }, [fetchAdminData]);
 
@@ -260,11 +266,8 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayer_updates')
-        // @ts-ignore
         .update({
-          approval_status: 'approved',
-          approved_by: 'admin',
-          approved_at: new Date().toISOString()
+          approval_status: 'approved'
         })
         .eq('id', updateId);
 
@@ -273,7 +276,8 @@ export const useAdminData = () => {
       // Refresh data after approval
       await fetchAdminData();
     } catch (error) {
-      handleSupabaseError(error);
+      console.error('Failed to approve update:', error);
+      alert('Failed to approve update. Please try again.');
     }
   }, [fetchAdminData]);
 
@@ -281,11 +285,8 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayer_updates')
-        // @ts-ignore
         .update({
           approval_status: 'denied',
-          approved_by: 'admin',
-          approved_at: new Date().toISOString(),
           denial_reason: reason
         })
         .eq('id', updateId);
@@ -295,7 +296,8 @@ export const useAdminData = () => {
       // Refresh data after denial
       await fetchAdminData();
     } catch (error) {
-      handleSupabaseError(error);
+      console.error('Failed to deny update:', error);
+      alert('Failed to deny update. Please try again.');
     }
   }, [fetchAdminData]);
 
@@ -331,11 +333,8 @@ export const useAdminData = () => {
       // Approve the deletion request
       const { error: approveError } = await supabase
         .from('deletion_requests')
-        // @ts-ignore
         .update({
-          approval_status: 'approved',
-          reviewed_by: 'admin',
-          reviewed_at: new Date().toISOString()
+          approval_status: 'approved'
         })
         .eq('id', requestId);
 
@@ -352,7 +351,8 @@ export const useAdminData = () => {
       // Refresh data after approval
       await fetchAdminData();
     } catch (error) {
-      handleSupabaseError(error);
+      console.error('Failed to approve deletion request:', error);
+      alert('Failed to approve deletion request. Please try again.');
     }
   }, [fetchAdminData]);
 
@@ -360,11 +360,8 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('deletion_requests')
-        // @ts-ignore
         .update({
           approval_status: 'denied',
-          reviewed_by: 'admin',
-          reviewed_at: new Date().toISOString(),
           denial_reason: reason
         })
         .eq('id', requestId);
@@ -374,7 +371,8 @@ export const useAdminData = () => {
       // Refresh data after denial
       await fetchAdminData();
     } catch (error) {
-      handleSupabaseError(error);
+      console.error('Failed to deny deletion request:', error);
+      alert('Failed to deny deletion request. Please try again.');
     }
   }, [fetchAdminData]);
 

@@ -13,6 +13,7 @@ import { usePrayerManager } from './hooks/usePrayerManager';
 import { useTheme } from './hooks/useTheme';
 import { supabase } from './lib/supabase';
 import type { PrayerFilters } from './types/prayer';
+import { sendAdminNotification } from './lib/emailNotifications';
 
 function AppContent() {
   // Initialize theme system
@@ -195,7 +196,12 @@ function AppContent() {
         <div className="space-y-4">
           {filteredPrayers.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
-              <Heart className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
+              <img
+                src="/cross-pointe-logo.png"
+                alt="Cross Pointe Church Logo"
+                style={{ width: 40, height: 40, objectFit: 'contain' }}
+                className="flex-shrink-0"
+              />
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
                 {prayers.length === 0 ? "No prayer requests yet" : "No prayers match your filters"}
               </h3>
@@ -224,6 +230,9 @@ function AppContent() {
                 onDelete={deletePrayer}
                 onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string) => {
                   try {
+                    // Find the prayer to get its title and current status
+                    const prayer = prayers.find(p => p.id === prayerId);
+                    
                     const { data, error } = await supabase
                       .from('status_change_requests')
                       .insert({
@@ -239,6 +248,18 @@ function AppContent() {
                       throw error;
                     }
                     
+                    // Send email notification to admins
+                    if (prayer) {
+                      sendAdminNotification({
+                        type: 'status-change',
+                        title: prayer.title,
+                        currentStatus: prayer.status,
+                        requestedStatus: newStatus,
+                        reason: reason,
+                        requestedBy: requesterName
+                      }).catch(err => console.error('Failed to send email notification:', err));
+                    }
+                    
                     alert('Status change request submitted successfully! An admin will review it shortly.');
                   } catch (error) {
                     console.error('Failed to submit status change request:', error);
@@ -247,6 +268,9 @@ function AppContent() {
                 }}
                 onRequestDelete={async (prayerId: string, reason: string, requesterName: string) => {
                   try {
+                    // Find the prayer to get its title
+                    const prayer = prayers.find(p => p.id === prayerId);
+                    
                     const { data, error } = await supabase
                       .from('deletion_requests')
                       .insert({
@@ -259,6 +283,16 @@ function AppContent() {
                     if (error) {
                       console.error('Supabase error:', error);
                       throw error;
+                    }
+                    
+                    // Send email notification to admins
+                    if (prayer) {
+                      sendAdminNotification({
+                        type: 'deletion',
+                        title: prayer.title,
+                        reason: reason,
+                        requestedBy: requesterName
+                      }).catch(err => console.error('Failed to send email notification:', err));
                     }
                     
                     alert('Deletion request submitted successfully! An admin will review it shortly.');
