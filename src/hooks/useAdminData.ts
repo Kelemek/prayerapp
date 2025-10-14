@@ -387,7 +387,7 @@ export const useAdminData = () => {
         .eq('id', requestId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError || !statusChangeRequest) throw fetchError || new Error('Status change request not found');
 
       // Approve the status change request
       const { error: approveError } = await supabase
@@ -396,7 +396,7 @@ export const useAdminData = () => {
           approval_status: 'approved',
           reviewed_by: 'admin',
           reviewed_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', requestId);
 
       if (approveError) throw approveError;
@@ -407,7 +407,7 @@ export const useAdminData = () => {
         .update({
           status: statusChangeRequest.requested_status,
           date_answered: statusChangeRequest.requested_status === 'answered' ? new Date().toISOString() : null
-        })
+        } as any)
         .eq('id', statusChangeRequest.prayer_id);
 
       if (updateError) throw updateError;
@@ -437,7 +437,7 @@ export const useAdminData = () => {
           reviewed_by: 'admin',
           reviewed_at: new Date().toISOString(),
           denial_reason: reason
-        })
+        } as any)
         .eq('id', requestId);
 
       if (error) throw error;
