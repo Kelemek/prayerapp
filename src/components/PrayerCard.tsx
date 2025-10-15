@@ -7,7 +7,7 @@ import type { PrayerRequest } from '../types/prayer';
 interface PrayerCardProps {
   prayer: PrayerRequest;
   onUpdateStatus: (id: string, status: PrayerStatus) => void;
-  onAddUpdate: (id: string, content: string, author: string, authorEmail: string) => void;
+  onAddUpdate: (id: string, content: string, author: string, authorEmail: string, isAnonymous: boolean) => void;
   onDelete: (id: string) => void;
   onRequestDelete: (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
   onRequestStatusChange: (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
@@ -32,6 +32,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   const [updateText, setUpdateText] = useState('');
   const [updateAuthor, setUpdateAuthor] = useState('');
   const [updateAuthorEmail, setUpdateAuthorEmail] = useState('');
+  const [updateIsAnonymous, setUpdateIsAnonymous] = useState(false);
   const [showDeleteRequest, setShowDeleteRequest] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteRequesterName, setDeleteRequesterName] = useState('');
@@ -56,11 +57,12 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     e.preventDefault();
     if (!updateText.trim() || !updateAuthor.trim() || !updateAuthorEmail.trim()) return;
     
-    // include author email when adding an update
-    onAddUpdate(prayer.id, updateText, updateAuthor, updateAuthorEmail);
+    // include author email and anonymous flag when adding an update
+    onAddUpdate(prayer.id, updateText, updateAuthor, updateAuthorEmail, updateIsAnonymous);
     setUpdateText('');
     setUpdateAuthor('');
     setUpdateAuthorEmail('');
+    setUpdateIsAnonymous(false);
     setShowAddUpdate(false);
     try { showToast('Update submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
   };
@@ -276,6 +278,15 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 h-20"
               required
             />
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={updateIsAnonymous}
+                onChange={(e) => setUpdateIsAnonymous(e.target.checked)}
+                className="rounded border-gray-900 dark:border-white bg-white dark:bg-gray-800 text-blue-600 focus:ring-2 focus:ring-blue-500"
+              />
+              <span>Post update anonymously</span>
+            </label>
             <div className="flex gap-2">
               <button
                 type="submit"
@@ -413,7 +424,9 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               <div key={update.id} className="bg-gray-100 dark:bg-gray-600 rounded-lg p-3">
                 <div className="relative mb-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{update.author}</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {update.is_anonymous ? 'Anonymous' : update.author}
+                    </span>
                     <button
                       onClick={async () => {
                         if (isAdmin) {

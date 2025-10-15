@@ -9,6 +9,7 @@ interface EmailSettingsProps {
 export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [emails, setEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
+  const [emailDistribution, setEmailDistribution] = useState<'admin_only' | 'all_users'>('admin_only');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +25,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('notification_emails')
+        .select('notification_emails, email_distribution')
         .eq('id', 1)
         .maybeSingle();
 
@@ -38,6 +39,10 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       } else {
         // No row exists yet, that's okay - we'll create it on save
         setEmails([]);
+      }
+
+      if (data?.email_distribution) {
+        setEmailDistribution(data.email_distribution as 'admin_only' | 'all_users');
       }
     } catch (err: any) {
       console.error('Error loading emails:', err);
@@ -57,6 +62,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         .upsert({
           id: 1, // Use a fixed ID for singleton settings
           notification_emails: emails,
+          email_distribution: emailDistribution,
           updated_at: new Date().toISOString()
         });
 
@@ -125,9 +131,54 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         </h3>
       </div>
 
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        Admins on this list will receive email notifications when new prayer requests or updates are submitted.
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        Configure who receives email notifications when prayers and updates are approved.
       </p>
+
+      {/* Email Distribution Setting */}
+      <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Send Approved Prayer Emails To:
+        </label>
+        <div className="space-y-2">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="emailDistribution"
+              value="admin_only"
+              checked={emailDistribution === 'admin_only'}
+              onChange={(e) => setEmailDistribution(e.target.value as 'admin_only')}
+              className="mt-1"
+            />
+            <div>
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                Admin Only
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                Only admin emails below will receive notifications
+              </div>
+            </div>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="radio"
+              name="emailDistribution"
+              value="all_users"
+              checked={emailDistribution === 'all_users'}
+              onChange={(e) => setEmailDistribution(e.target.value as 'all_users')}
+              className="mt-1"
+            />
+            <div>
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                All Users
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                Send to all email addresses in the database
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
 
       {/* Add Email Input */}
       <div className="mb-4">

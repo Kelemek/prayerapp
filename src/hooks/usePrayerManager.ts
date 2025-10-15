@@ -207,10 +207,13 @@ export const usePrayerManager = () => {
     }
   };
 
-  const addPrayerUpdate = async (prayerId: string, content: string, author: string, authorEmail?: string) => {
+  const addPrayerUpdate = async (prayerId: string, content: string, author: string, authorEmail?: string, isAnonymous?: boolean) => {
     try {
       // Get prayer title for notification
       const prayer = prayers.find(p => p.id === prayerId);
+      
+      // If anonymous, use "Anonymous" as the author name
+      const finalAuthor = isAnonymous ? 'Anonymous' : author;
       
       // Submit update for admin approval
       const { error } = await supabase
@@ -218,8 +221,9 @@ export const usePrayerManager = () => {
         .insert({
           prayer_id: prayerId,
           content,
-          author,
+          author: finalAuthor,
           author_email: authorEmail || null,
+          is_anonymous: isAnonymous || false,
           approval_status: 'pending' // Require admin approval
         } as any);
 
@@ -232,7 +236,7 @@ export const usePrayerManager = () => {
         sendAdminNotification({
           type: 'update',
           title: prayer.title,
-          author,
+          author: finalAuthor,
           content
         }).catch(err => console.error('Failed to send email notification:', err));
       }

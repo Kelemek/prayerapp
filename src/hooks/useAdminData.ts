@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
 import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest } from '../types/prayer';
+import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification } from '../lib/emailNotifications';
 
 interface AdminData {
   pendingUpdateDeletionRequests: any[];
@@ -275,13 +276,35 @@ export const useAdminData = () => {
 
   const approvePrayer = useCallback(async (prayerId: string) => {
     try {
+      // First get the prayer details before approving
+      const { data: prayer, error: fetchError } = await supabase
+        .from('prayers')
+        .select('*')
+        .eq('id', prayerId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!prayer) throw new Error('Prayer not found');
+
+      // Update the prayer status
       const { error } = await supabase
         .from('prayers')
         .update({
           approval_status: 'approved'
         })
         .eq('id', prayerId);
+      
       if (error) throw error;
+
+      // Send email notification
+      await sendApprovedPrayerNotification({
+        title: prayer.title,
+        description: prayer.description,
+        requester: prayer.is_anonymous ? 'Anonymous' : prayer.requester,
+        prayerFor: prayer.prayer_for,
+        status: prayer.status
+      });
+
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to approve prayer:', error);
@@ -291,6 +314,17 @@ export const useAdminData = () => {
 
   const denyPrayer = useCallback(async (prayerId: string, reason: string) => {
     try {
+      // First get the prayer details before denying
+      const { data: prayer, error: fetchError } = await supabase
+        .from('prayers')
+        .select('*')
+        .eq('id', prayerId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!prayer) throw new Error('Prayer not found');
+
+      // Update the prayer status
       const { error } = await supabase
         .from('prayers')
         .update({
@@ -298,7 +332,20 @@ export const useAdminData = () => {
           denial_reason: reason
         })
         .eq('id', prayerId);
+      
       if (error) throw error;
+
+      // Send email notification to the requester
+      if (prayer.email) {
+        await sendDeniedPrayerNotification({
+          title: prayer.title,
+          description: prayer.description,
+          requester: prayer.is_anonymous ? 'Anonymous' : prayer.requester,
+          requesterEmail: prayer.email,
+          denialReason: reason
+        });
+      }
+
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to deny prayer:', error);
@@ -308,11 +355,31 @@ export const useAdminData = () => {
 
   const approveUpdate = useCallback(async (updateId: string) => {
     try {
+      // First get the update details and prayer title before approving
+      const { data: update, error: fetchError } = await supabase
+        .from('prayer_updates')
+        .select('*, prayers(title)')
+        .eq('id', updateId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!update) throw new Error('Update not found');
+
+      // Update the status
       const { error } = await supabase
         .from('prayer_updates')
         .update({ approval_status: 'approved' })
         .eq('id', updateId);
+      
       if (error) throw error;
+
+      // Send email notification
+      await sendApprovedUpdateNotification({
+        prayerTitle: (update.prayers as any)?.title || 'Prayer',
+        content: update.content,
+        author: update.is_anonymous ? 'Anonymous' : (update.author || 'Anonymous')
+      });
+
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to approve update:', error);
@@ -322,11 +389,35 @@ export const useAdminData = () => {
 
   const denyUpdate = useCallback(async (updateId: string, reason: string) => {
     try {
+      // First get the update details and prayer title before denying
+      const { data: update, error: fetchError } = await supabase
+        .from('prayer_updates')
+        .select('*, prayers(title)')
+        .eq('id', updateId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!update) throw new Error('Update not found');
+
+      // Update the status
       const { error } = await supabase
         .from('prayer_updates')
         .update({ approval_status: 'denied', denial_reason: reason })
         .eq('id', updateId);
+      
       if (error) throw error;
+
+      // Send email notification to the author
+      if (update.author_email) {
+        await sendDeniedUpdateNotification({
+          prayerTitle: (update.prayers as any)?.title || 'Prayer',
+          content: update.content,
+          author: update.is_anonymous ? 'Anonymous' : (update.author || 'Anonymous'),
+          authorEmail: update.author_email,
+          denialReason: reason
+        });
+      }
+
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to deny update:', error);

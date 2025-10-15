@@ -72,6 +72,7 @@ export interface Database {
           content: string
           author: string
           author_email: string | null
+          is_anonymous: boolean
           approval_status: string
           approved_by: string | null
           approved_at: string | null
@@ -84,6 +85,7 @@ export interface Database {
           content: string
           author: string
           author_email?: string | null
+          is_anonymous?: boolean
           approval_status?: string
           approved_by?: string | null
           approved_at?: string | null
@@ -96,6 +98,7 @@ export interface Database {
           content?: string
           author?: string
           author_email?: string | null
+          is_anonymous?: boolean
           approval_status?: string
           approved_by?: string | null
           approved_at?: string | null
