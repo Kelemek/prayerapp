@@ -6,11 +6,13 @@
    - Added `reminder_interval_days` field to admin_settings table
    - Default value: 7 days
    - Configurable range: 1-90 days (or 0 to disable)
+   - **What it means:** "Send reminder if there have been NO updates for X days"
 
-### 2. **Prayer Tracking for Reminders**
-   - Added `last_reminder_sent` timestamp to prayers table
-   - Tracks when each prayer last received a reminder email
-   - Prevents duplicate reminders within the configured interval
+### 2. **Smart Activity Tracking**
+   - Checks the `prayer_updates` table for last activity
+   - Uses most recent update date (if updates exist)
+   - Falls back to prayer creation date (if no updates)
+   - **No additional column needed** - uses existing data!
 
 ### 3. **UI in Admin Portal Settings**
    - Input field to set reminder interval in days
@@ -20,10 +22,10 @@
 
 ### 4. **Supabase Edge Function**
    - `send-prayer-reminders` function
+   - Checks for prayers with no recent activity (no updates)
    - Sends personalized reminder emails to prayer requesters
    - Only targets "current" or "ongoing" approved prayers
-   - Respects reminder interval - won't spam users
-   - Updates `last_reminder_sent` after each reminder
+   - Smart logic - only reminds if inactive for X days
    - Returns count of emails sent
 
 ### 5. **Beautiful Email Template**
@@ -38,10 +40,11 @@
 ## Files Created/Modified
 
 ### Created Files:
-1. `/supabase/migrations/007_add_prayer_reminder_settings.sql` - Database migration
-2. `/supabase/functions/send-prayer-reminders/index.ts` - Edge function
+1. `/supabase/migrations/007_add_prayer_reminder_settings.sql` - Database migration (just reminder_interval_days column)
+2. `/supabase/functions/send-prayer-reminders/index.ts` - Edge function with activity-based logic
 3. `/REMINDER_EMAIL_GUIDE.md` - Complete documentation
 4. `/REMINDER_EMAIL_IMPLEMENTATION.md` - This summary
+5. `/REMINDER_LOGIC_EXPLAINED.md` - Detailed explanation of the activity-based approach
 
 ### Modified Files:
 1. `/src/components/EmailSettings.tsx`:
@@ -79,11 +82,15 @@ Cron Job / Manual Trigger
 Edge Function
   └─> Get reminder_interval_days setting
   └─> Calculate cutoff date (now - interval)
-  └─> Query prayers needing reminders:
-      • status IN ('current', 'ongoing')
-      • approval_status = 'approved'
-      • last_reminder_sent IS NULL OR < cutoff
+  └─> Query all current/ongoing approved prayers
   └─> For each prayer:
+      • Query most recent update (if any)
+      • Determine last activity date:
+        - If has updates: date of most recent update
+        - If no updates: prayer creation date
+      • If last activity < cutoff date:
+        - Add to reminder list
+  └─> For each prayer needing reminder:
       • Generate personalized email
       • Send via send-notification function
       • Update last_reminder_sent timestamp

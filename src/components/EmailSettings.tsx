@@ -14,6 +14,8 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [reminderIntervalDays, setReminderIntervalDays] = useState<number>(7);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [runningTransition, setRunningTransition] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -125,6 +127,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
 
   const runAutoTransition = async () => {
     try {
+      setRunningTransition(true);
       setError(null);
       const { data, error: functionError } = await supabase.functions.invoke('auto-transition-prayers');
 
@@ -141,27 +144,59 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
     } catch (err: any) {
       console.error('Error running auto-transition:', err);
       setError('Failed to run auto-transition');
+    } finally {
+      setRunningTransition(false);
     }
   };
 
   const runReminderCheck = async () => {
     try {
+      setSendingReminders(true);
       setError(null);
       const { data, error: functionError } = await supabase.functions.invoke('send-prayer-reminders');
 
       if (functionError) {
         console.error('Error sending reminders:', functionError);
-        setError('Failed to send reminders');
+        const errorMessage = functionError.message || JSON.stringify(functionError);
+        
+        // Check for common deployment issue
+        if (errorMessage.includes('Failed to send a request to the Edge Function') || 
+            errorMessage.includes('FunctionsRelayError') ||
+            errorMessage.includes('Not Found')) {
+          setError('Edge function not deployed. Please deploy the send-prayer-reminders function first.');
+          alert(
+            '⚠️ Edge Function Not Deployed\n\n' +
+            'The send-prayer-reminders function needs to be deployed to Supabase.\n\n' +
+            'To fix this:\n' +
+            '1. Install Supabase CLI: npm install -g supabase\n' +
+            '2. Login: supabase login\n' +
+            '3. Link project: supabase link --project-ref YOUR_PROJECT_REF\n' +
+            '4. Deploy: supabase functions deploy send-prayer-reminders\n\n' +
+            'See DEPLOY_REMINDERS_FUNCTION.md for detailed instructions.'
+          );
+        } else {
+          setError(`Failed to send reminders: ${errorMessage}`);
+          alert(`Failed to send reminders: ${errorMessage}`);
+        }
         return;
       }
 
       if (data) {
         console.log('Reminder result:', data);
-        alert(`Successfully sent ${data.sent || 0} reminder emails`);
+        if (data.error) {
+          setError(`Error: ${data.error}. ${data.details ? JSON.stringify(data.details) : ''}`);
+          alert(`Error: ${data.error}\n\nDetails: ${data.details ? JSON.stringify(data.details, null, 2) : 'None'}`);
+        } else {
+          alert(`Successfully sent ${data.sent || 0} reminder emails${data.total ? ` out of ${data.total} eligible prayers` : ''}`);
+        }
       }
     } catch (err: any) {
       console.error('Error sending reminders:', err);
-      setError('Failed to send reminders');
+      const errorMessage = err.message || JSON.stringify(err);
+      setError(`Failed to send reminders: ${errorMessage}`);
+      alert(`Failed to send reminders: ${errorMessage}`);
+    } finally {
+      setSendingReminders(false);
     }
   };
 
@@ -245,10 +280,10 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         <div className="flex items-center gap-3">
           <input
             type="number"
-            min="1"
+            min="0"
             max="365"
             value={daysBeforeOngoing}
-            onChange={(e) => setDaysBeforeOngoing(Math.max(1, Math.min(365, parseInt(e.target.value) || 1)))}
+            onChange={(e) => setDaysBeforeOngoing(Math.max(0, Math.min(365, parseInt(e.target.value) || 0)))}
             className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <span className="text-sm text-gray-700 dark:text-gray-300">days</span>
@@ -258,10 +293,11 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         </p>
         <button
           onClick={runAutoTransition}
-          className="mt-3 flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm"
+          disabled={runningTransition}
+          className="mt-3 flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <RefreshCw size={16} />
-          Run Transition Now
+          <RefreshCw size={16} className={runningTransition ? 'animate-spin' : ''} />
+          {runningTransition ? 'Running...' : 'Run Transition Now'}
         </button>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
           Manually trigger the auto-transition check. This will transition any prayers that meet the criteria.
@@ -274,31 +310,32 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           Prayer Update Reminders
         </label>
         <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-          Send email reminders to prayer requesters to update their prayer requests every specified number of days.
+          Send email reminders to prayer requesters when their prayers have had no updates for the specified number of days. This encourages engagement while respecting users who are actively updating.
         </p>
         <div className="flex items-center gap-3">
           <input
             type="number"
-            min="1"
+            min="0"
             max="90"
             value={reminderIntervalDays}
-            onChange={(e) => setReminderIntervalDays(Math.max(1, Math.min(90, parseInt(e.target.value) || 1)))}
+            onChange={(e) => setReminderIntervalDays(Math.max(0, Math.min(90, parseInt(e.target.value) || 0)))}
             className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300">days</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">days of inactivity</span>
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          Set to 0 to disable reminder emails. Reminders are sent for prayers with status "Current" or "Ongoing".
+          Set to 0 to disable reminder emails. Only prayers with no recent updates (no activity for X days) will receive reminders. Status must be "Current" or "Ongoing".
         </p>
         <button
           onClick={runReminderCheck}
-          className="mt-3 flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors text-sm"
+          disabled={sendingReminders}
+          className="mt-3 flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <RefreshCw size={16} />
-          Send Reminders Now
+          <RefreshCw size={16} className={sendingReminders ? 'animate-spin' : ''} />
+          {sendingReminders ? 'Sending...' : 'Send Reminders Now'}
         </button>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          Manually trigger reminder emails. This will send reminders to all eligible prayer requesters.
+          Manually trigger reminder emails. Only sends to prayers that haven't had updates in the specified number of days.
         </p>
       </div>
 

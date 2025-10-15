@@ -17,9 +17,10 @@ The system sends reminder emails to prayer requesters for prayers that meet ALL 
 - Status is "current" OR "ongoing"
 - Approval status is "approved"
 - Has a valid email address
-- Either:
-  - Has never received a reminder, OR
-  - Last reminder was sent more than X days ago (where X = reminder_interval_days)
+- Has NOT had any updates posted in the last X days (where X = reminder_interval_days)
+  - If the prayer has updates, checks the date of the most recent update
+  - If the prayer has no updates, checks the prayer creation date
+  - Only sends reminder if this date is older than the interval
 
 ### 3. Manual Trigger
 Admins can manually trigger reminder emails by clicking the "Send Reminders Now" button in the Settings tab. This is useful for:
@@ -28,28 +29,30 @@ Admins can manually trigger reminder emails by clicking the "Send Reminders Now"
 - Catching up on reminders
 
 ### 4. Tracking
-- The `last_reminder_sent` timestamp is updated for each prayer after a reminder is sent
-- This ensures requesters don't receive duplicate reminders too frequently
-- The system respects the configured interval
+- The system checks the `prayer_updates` table for each prayer
+- If updates exist, uses the most recent update date
+- If no updates exist, uses the prayer creation date
+- No additional tracking column needed - uses existing data
 
 ## Database Changes
 
 ### Migration File
 `supabase/migrations/007_add_prayer_reminder_settings.sql`
 
-**Adds two columns:**
+**Adds one column:**
 
-1. `reminder_interval_days` to `admin_settings` table:
+`reminder_interval_days` to `admin_settings` table:
 ```sql
 ALTER TABLE admin_settings
 ADD COLUMN IF NOT EXISTS reminder_interval_days INTEGER DEFAULT 7;
 ```
 
-2. `last_reminder_sent` to `prayers` table:
-```sql
-ALTER TABLE prayers
-ADD COLUMN IF NOT EXISTS last_reminder_sent TIMESTAMP WITH TIME ZONE;
-```
+This column stores the number of days of inactivity (no updates) before sending a reminder.
+
+**Note:** This implementation checks the date of the last update, not the last reminder sent. This means:
+- If a prayer has updates, it checks when the last update was posted
+- If a prayer has no updates, it checks when the prayer was created
+- Reminders are only sent if there's been no activity for X days
 
 ## Edge Function
 
@@ -60,14 +63,16 @@ ADD COLUMN IF NOT EXISTS last_reminder_sent TIMESTAMP WITH TIME ZONE;
 1. Fetches the `reminder_interval_days` setting from admin_settings
 2. If disabled (0 or null), returns early
 3. Calculates cutoff date (current date - reminder_interval_days)
-4. Finds all prayers that need reminders:
+4. Finds all prayers that are:
    - Status: "current" or "ongoing"
    - Approval status: "approved"
-   - Never reminded OR last reminder before cutoff date
 5. For each prayer:
-   - Sends personalized reminder email to requester
-   - Updates `last_reminder_sent` timestamp
-6. Returns count of emails sent and any errors
+   - Checks if it has any updates
+   - Gets the most recent update date (or creation date if no updates)
+   - If last activity was before cutoff date, adds to reminder list
+6. Sends personalized reminder email to each requester
+7. Updates `last_reminder_sent` timestamp
+8. Returns count of emails sent and any errors
 
 ### Email Content
 The reminder email includes:

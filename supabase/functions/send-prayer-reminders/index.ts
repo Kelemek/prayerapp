@@ -65,13 +65,14 @@ serve(async (req) => {
     // Find prayers that need reminders:
     // - Status is 'current' or 'ongoing'
     // - Approval status is 'approved'
-    // - Either never received a reminder, OR last reminder was before cutoff date
-    const { data: prayersNeedingReminders, error: fetchError } = await supabaseClient
+    // - Has NOT had any updates in the last X days (where X = reminderIntervalDays)
+    
+    // First, get all prayers that might need reminders
+    const { data: potentialPrayers, error: fetchError } = await supabaseClient
       .from('prayers')
       .select('id, title, description, prayer_for, requester, email, is_anonymous, created_at, last_reminder_sent')
       .in('status', ['current', 'ongoing'])
       .eq('approval_status', 'approved')
-      .or(`last_reminder_sent.is.null,last_reminder_sent.lt.${cutoffDate.toISOString()}`)
 
     if (fetchError) {
       console.error('Error fetching prayers:', fetchError)
@@ -84,11 +85,55 @@ serve(async (req) => {
       )
     }
 
-    if (!prayersNeedingReminders || prayersNeedingReminders.length === 0) {
+    if (!potentialPrayers || potentialPrayers.length === 0) {
       return new Response(
         JSON.stringify({ 
-          message: 'No prayers need reminders at this time',
+          message: 'No approved current/ongoing prayers found',
           sent: 0
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // For each prayer, check if it has had any updates in the last X days
+    const prayersNeedingReminders = []
+    
+    for (const prayer of potentialPrayers) {
+      // Get the most recent update for this prayer
+      const { data: updates, error: updateError } = await supabaseClient
+        .from('prayer_updates')
+        .select('created_at')
+        .eq('prayer_id', prayer.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (updateError) {
+        console.error(`Error fetching updates for prayer ${prayer.id}:`, updateError)
+        continue
+      }
+
+      // Determine the last activity date (either last update or prayer creation)
+      let lastActivityDate
+      if (updates && updates.length > 0) {
+        lastActivityDate = new Date(updates[0].created_at)
+      } else {
+        lastActivityDate = new Date(prayer.created_at)
+      }
+
+      // Check if the last activity was before the cutoff date
+      if (lastActivityDate < cutoffDate) {
+        prayersNeedingReminders.push(prayer)
+      }
+    }
+
+    if (prayersNeedingReminders.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          message: 'No prayers need reminders at this time - all have recent updates',
+          sent: 0,
+          total: potentialPrayers.length
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
