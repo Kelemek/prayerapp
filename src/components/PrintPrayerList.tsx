@@ -7,7 +7,7 @@ type TimeRange = 'week' | 'month' | 'year';
 export const PrintPrayerList: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [selectedRange, setSelectedRange] = useState<TimeRange>('month');
+  const [selectedRange, setSelectedRange] = useState<TimeRange>('week');
 
   const handlePrint = async (range: TimeRange) => {
     setIsPrinting(true);
