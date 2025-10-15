@@ -73,14 +73,19 @@ export async function downloadPrintablePrayerList(timeRange: TimeRange = 'month'
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (isMobile) {
-      // On mobile, open in new tab for better experience
+      // On mobile, download the HTML file to avoid popup blockers
       const blob = new Blob([html], { type: 'text/html' });
       const blobUrl = URL.createObjectURL(blob);
-      const newWindow = window.open(blobUrl, '_blank');
+      const link = document.createElement('a');
+      link.href = blobUrl;
       
-      if (!newWindow) {
-        alert('Please allow popups to view the prayer list.');
-      }
+      const today = new Date().toISOString().split('T')[0];
+      const rangeLabel = timeRange === 'week' ? 'week' : timeRange === 'month' ? 'month' : 'year';
+      link.download = `prayer-list-${rangeLabel}-${today}.html`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
       // Cleanup after a delay
       setTimeout(() => {
