@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
 import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest } from '../types/prayer';
-import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification } from '../lib/emailNotifications';
+import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification, sendApprovedStatusChangeNotification, sendDeniedStatusChangeNotification } from '../lib/emailNotifications';
 
 interface AdminData {
   pendingUpdateDeletionRequests: any[];
@@ -507,22 +507,47 @@ export const useAdminData = () => {
 
   const approveStatusChangeRequest = useCallback(async (requestId: string) => {
     try {
+      // Fetch full status change request details including prayer info
       const { data: statusChangeRequest, error: fetchError } = await supabase
         .from('status_change_requests')
-        .select('prayer_id, requested_status')
+        .select(`
+          *,
+          prayers!inner(title, status)
+        `)
         .eq('id', requestId)
         .single();
+      
       if (fetchError || !statusChangeRequest) throw fetchError || new Error('Status change request not found');
+      
+      const currentStatus = statusChangeRequest.prayers.status;
+      const newStatus = statusChangeRequest.requested_status;
+      
+      // Update status change request to approved
       const { error: approveError } = await supabase
         .from('status_change_requests')
         .update({ approval_status: 'approved', reviewed_by: 'admin', reviewed_at: new Date().toISOString() } as any)
         .eq('id', requestId);
       if (approveError) throw approveError;
+      
+      // Update prayer status
       const { error: updateError } = await supabase
         .from('prayers')
-        .update({ status: statusChangeRequest.requested_status, date_answered: statusChangeRequest.requested_status === 'answered' ? new Date().toISOString() : null } as any)
+        .update({ status: newStatus, date_answered: newStatus === 'answered' ? new Date().toISOString() : null } as any)
         .eq('id', statusChangeRequest.prayer_id);
       if (updateError) throw updateError;
+      
+      // Send approval email to requester
+      if (statusChangeRequest.requested_email) {
+        await sendApprovedStatusChangeNotification({
+          prayerTitle: statusChangeRequest.prayers.title,
+          requestedBy: statusChangeRequest.requested_by,
+          requestedEmail: statusChangeRequest.requested_email,
+          currentStatus: currentStatus,
+          newStatus: newStatus,
+          reason: statusChangeRequest.reason || undefined
+        });
+      }
+      
       setData(prev => ({ ...prev, pendingStatusChangeRequests: prev.pendingStatusChangeRequests.filter(req => req.id !== requestId) }));
       setTimeout(async () => { await fetchAdminData(); }, 1000);
     } catch (error) {
@@ -533,11 +558,38 @@ export const useAdminData = () => {
 
   const denyStatusChangeRequest = useCallback(async (requestId: string, reason: string) => {
     try {
+      // Fetch full status change request details including prayer info
+      const { data: statusChangeRequest, error: fetchError } = await supabase
+        .from('status_change_requests')
+        .select(`
+          *,
+          prayers!inner(title, status)
+        `)
+        .eq('id', requestId)
+        .single();
+      
+      if (fetchError || !statusChangeRequest) throw fetchError || new Error('Status change request not found');
+      
+      // Update status change request to denied
       const { error } = await supabase
         .from('status_change_requests')
         .update({ approval_status: 'denied', reviewed_by: 'admin', reviewed_at: new Date().toISOString(), denial_reason: reason } as any)
         .eq('id', requestId);
       if (error) throw error;
+      
+      // Send denial email to requester
+      if (statusChangeRequest.requested_email) {
+        await sendDeniedStatusChangeNotification({
+          prayerTitle: statusChangeRequest.prayers.title,
+          requestedBy: statusChangeRequest.requested_by,
+          requestedEmail: statusChangeRequest.requested_email,
+          requestedStatus: statusChangeRequest.requested_status,
+          currentStatus: statusChangeRequest.prayers.status,
+          reason: statusChangeRequest.reason || undefined,
+          denialReason: reason
+        });
+      }
+      
       setData(prev => ({ ...prev, pendingStatusChangeRequests: prev.pendingStatusChangeRequests.filter(req => req.id !== requestId) }));
       setTimeout(async () => { await fetchAdminData(); }, 1000);
     } catch (error) {

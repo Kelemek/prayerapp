@@ -744,3 +744,176 @@ function generateDeniedUpdateHTML(payload: DeniedUpdatePayload): string {
     </html>
   `;
 }
+
+// ============================================
+// Status Change Notification Functions
+// ============================================
+
+interface ApprovedStatusChangePayload {
+  prayerTitle: string;
+  requestedBy: string;
+  requestedEmail: string;
+  currentStatus: string;
+  newStatus: string;
+  reason?: string;
+}
+
+interface DeniedStatusChangePayload {
+  prayerTitle: string;
+  requestedBy: string;
+  requestedEmail: string;
+  requestedStatus: string;
+  currentStatus: string;
+  reason?: string;
+  denialReason: string;
+}
+
+/**
+ * Send approval notification for status change request
+ */
+export async function sendApprovedStatusChangeNotification(payload: ApprovedStatusChangePayload): Promise<void> {
+  try {
+    if (!payload.requestedEmail) {
+      console.warn('No email address for status change requester');
+      return;
+    }
+
+    const subject = `Status Change Approved: ${payload.prayerTitle}`;
+    const body = `Great news! Your status change request for "${payload.prayerTitle}" has been approved.\n\nPrevious Status: ${payload.currentStatus}\nNew Status: ${payload.newStatus}\n\nThank you for keeping the prayer community updated.`;
+
+    const html = generateApprovedStatusChangeHTML(payload);
+
+    // Send email via Supabase Edge Function
+    const { error: functionError } = await supabase.functions.invoke('send-notification', {
+      body: {
+        to: [payload.requestedEmail],
+        subject,
+        body,
+        html
+      }
+    });
+
+    if (functionError) {
+      console.error('Error sending approved status change notification:', functionError);
+    }
+  } catch (error) {
+    console.error('Error in sendApprovedStatusChangeNotification:', error);
+  }
+}
+
+/**
+ * Send denial notification for status change request
+ */
+export async function sendDeniedStatusChangeNotification(payload: DeniedStatusChangePayload): Promise<void> {
+  try {
+    if (!payload.requestedEmail) {
+      console.warn('No email address for status change requester');
+      return;
+    }
+
+    const subject = `Status Change Not Approved: ${payload.prayerTitle}`;
+    const body = `Unfortunately, your status change request for "${payload.prayerTitle}" could not be approved at this time.\n\nRequested Status: ${payload.requestedStatus}\nCurrent Status: ${payload.currentStatus}\n\nReason: ${payload.denialReason}\n\nIf you have questions, please contact the administrator.`;
+
+    const html = generateDeniedStatusChangeHTML(payload);
+
+    // Send email via Supabase Edge Function
+    const { error: functionError } = await supabase.functions.invoke('send-notification', {
+      body: {
+        to: [payload.requestedEmail],
+        subject,
+        body,
+        html
+      }
+    });
+
+    if (functionError) {
+      console.error('Error sending denied status change notification:', functionError);
+    }
+  } catch (error) {
+    console.error('Error in sendDeniedStatusChangeNotification:', error);
+  }
+}
+
+/**
+ * Generate HTML for approved status change email
+ */
+function generateApprovedStatusChangeHTML(payload: ApprovedStatusChangePayload): string {
+  const baseUrl = window.location.origin;
+  const appUrl = `${baseUrl}/`;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Status Change Approved</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">✅ Status Change Approved</h1>
+        </div>
+        <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #1f2937; margin-top: 0;">${payload.prayerTitle}</h2>
+          <p style="margin-bottom: 15px;">Great news! Your status change request has been approved.</p>
+          <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Previous Status:</strong> <span style="text-transform: capitalize;">${payload.currentStatus}</span></p>
+            <p style="margin: 5px 0;"><strong>New Status:</strong> <span style="text-transform: capitalize; color: #059669;">${payload.newStatus}</span></p>
+            ${payload.reason ? `<p style="margin: 10px 0 5px 0;"><strong>Your Note:</strong></p><p style="margin: 5px 0; color: #6b7280;">${payload.reason}</p>` : ''}
+          </div>
+          <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">Thank you for keeping the prayer community updated on this prayer request. Your engagement helps others know how to pray effectively.</p>
+          <div style="margin-top: 30px; text-align: center;">
+            <a href="${appUrl}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a>
+          </div>
+        </div>
+        <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
+          <p>This is an automated notification from your prayer app.</p>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+/**
+ * Generate HTML for denied status change email
+ */
+function generateDeniedStatusChangeHTML(payload: DeniedStatusChangePayload): string {
+  const baseUrl = window.location.origin;
+  const appUrl = `${baseUrl}/`;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Status Change Not Approved</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(to right, #ef4444, #dc2626); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">📋 Status Change Request</h1>
+        </div>
+        <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #1f2937; margin-top: 0;">${payload.prayerTitle}</h2>
+          <p style="margin-bottom: 15px;">Thank you for your status change request. After careful review, we are unable to approve this change at this time.</p>
+          <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb; margin: 15px 0;">
+            <p style="margin: 5px 0;"><strong>Requested Status:</strong> <span style="text-transform: capitalize;">${payload.requestedStatus}</span></p>
+            <p style="margin: 5px 0;"><strong>Current Status:</strong> <span style="text-transform: capitalize;">${payload.currentStatus}</span></p>
+            ${payload.reason ? `<p style="margin: 10px 0 5px 0;"><strong>Your Note:</strong></p><p style="margin: 5px 0; color: #6b7280;">${payload.reason}</p>` : ''}
+          </div>
+          <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 0; color: #991b1b;"><strong>Reason:</strong></p>
+            <p style="margin: 10px 0 0 0; color: #991b1b;">${payload.denialReason}</p>
+          </div>
+          <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">If you have questions or would like to discuss this decision, please feel free to contact the administrator.</p>
+          <div style="margin-top: 30px; text-align: center;">
+            <a href="${appUrl}" style="background: #6b7280; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Visit Prayer App</a>
+          </div>
+        </div>
+        <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
+          <p>This is an automated notification from your prayer app.</p>
+        </div>
+      </body>
+    </html>
+  `;
+}
