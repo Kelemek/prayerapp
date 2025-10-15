@@ -36,7 +36,7 @@ function AppContent() {
   } = usePrayerManager();
 
   const [showForm, setShowForm] = useState(false);
-  const [filters, setFilters] = useState<PrayerFilters>({status: 'active'});
+  const [filters, setFilters] = useState<PrayerFilters>({status: 'current'});
 
   const filteredPrayers = useMemo(() => {
     return getFilteredPrayers(filters.status, filters.searchTerm);
@@ -150,15 +150,15 @@ function AppContent() {
         {/* Stats - Clickable Filters */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <button
-            onClick={() => setFilters({...filters, status: 'active'})}
+            onClick={() => setFilters({...filters, status: 'current'})}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              filters.status === 'active' ? 'ring-2 ring-orange-500 border-orange-500' : 'hover:border-orange-300 dark:hover:border-orange-600'
+              filters.status === 'current' ? 'ring-2 ring-orange-500 border-orange-500' : 'hover:border-orange-300 dark:hover:border-orange-600'
             }`}
           >
             <div className="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">
-              {prayers.filter(p => p.status === 'active').length}
+              {prayers.filter(p => p.status === 'current').length}
             </div>
-            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Active</div>
+            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Current</div>
           </button>
           <button
             onClick={() => setFilters({...filters, status: 'ongoing'})}

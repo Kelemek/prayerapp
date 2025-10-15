@@ -484,6 +484,101 @@ function generateApprovedUpdateHTML(payload: ApprovedUpdatePayload): string {
   `;
 }
 
+interface RequesterApprovalPayload {
+  title: string;
+  description: string;
+  requester: string;
+  requesterEmail: string;
+  prayerFor: string;
+}
+
+/**
+ * Send email notification to the requester when their prayer is approved
+ * This is a personal confirmation email sent only to the person who submitted the prayer
+ */
+export async function sendRequesterApprovalNotification(payload: RequesterApprovalPayload): Promise<void> {
+  try {
+    if (!payload.requesterEmail) {
+      console.warn('No email address for prayer requester');
+      return;
+    }
+
+    const subject = `Your Prayer Request Has Been Approved: ${payload.title}`;
+    const body = `Great news! Your prayer request has been approved and is now live on the prayer app.\n\nTitle: ${payload.title}\nFor: ${payload.prayerFor}\n\nYour prayer is now being lifted up by our community. You will receive updates via email when the prayer status changes or when updates are posted.`;
+
+    const html = generateRequesterApprovalHTML(payload);
+
+    // Send email via Supabase Edge Function
+    const { error: functionError } = await supabase.functions.invoke('send-notification', {
+      body: {
+        to: [payload.requesterEmail],
+        subject,
+        body,
+        html
+      }
+    });
+
+    if (functionError) {
+      console.error('Error sending requester approval notification:', functionError);
+    }
+  } catch (error) {
+    console.error('Error in sendRequesterApprovalNotification:', error);
+  }
+}
+
+/**
+ * Generate HTML for requester approval email
+ */
+function generateRequesterApprovalHTML(payload: RequesterApprovalPayload): string {
+  const baseUrl = window.location.origin;
+  const appUrl = `${baseUrl}/`;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Prayer Request Approved</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">✅ Prayer Request Approved!</h1>
+        </div>
+        <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+          <h2 style="color: #1f2937; margin-top: 0;">Great news, ${payload.requester}!</h2>
+          <p style="margin-bottom: 20px;">Your prayer request has been approved and is now active in our prayer community.</p>
+          
+          <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 0 0 10px 0; color: #065f46; font-size: 14px;"><strong>Your Prayer Request:</strong></p>
+            <p style="margin: 0 0 10px 0; color: #065f46; font-weight: 600; font-size: 18px;">${payload.title}</p>
+            <p style="margin: 0; color: #047857;">${payload.description}</p>
+          </div>
+          
+          <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #0c4a6e; font-size: 14px;">
+              <strong>What happens next?</strong><br>
+              • Your prayer is now visible to our community<br>
+              • People can pray for this request and post updates<br>
+              • You'll receive email notifications when updates are posted<br>
+              • You can visit the app anytime to see the latest
+            </p>
+          </div>
+
+          <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">Thank you for sharing this prayer need with our community. We are honored to pray alongside you!</p>
+          
+          <div style="margin-top: 30px; text-align: center;">
+            <a href="${appUrl}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Your Prayer</a>
+          </div>
+        </div>
+        <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
+          <p>You're receiving this because you submitted a prayer request to our prayer app.</p>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
 interface DeniedPrayerPayload {
   title: string;
   description: string;

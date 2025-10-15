@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS status_change_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     prayer_id UUID NOT NULL REFERENCES prayers(id) ON DELETE CASCADE,
-    requested_status VARCHAR(20) NOT NULL CHECK (requested_status IN ('active', 'answered', 'ongoing', 'closed')),
+    requested_status VARCHAR(20) NOT NULL CHECK (requested_status IN ('current', 'answered', 'ongoing', 'closed')),
     reason TEXT,
     requested_by VARCHAR(255) NOT NULL,
     approval_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'denied')),

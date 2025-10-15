@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
 import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest } from '../types/prayer';
-import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification } from '../lib/emailNotifications';
+import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification } from '../lib/emailNotifications';
 
 interface AdminData {
   pendingUpdateDeletionRequests: any[];
@@ -296,13 +296,22 @@ export const useAdminData = () => {
       
       if (error) throw error;
 
-      // Send email notification
+      // Send broadcast email notification to distribution list (all users or admins)
       await sendApprovedPrayerNotification({
         title: prayer.title,
         description: prayer.description,
         requester: prayer.is_anonymous ? 'Anonymous' : prayer.requester,
         prayerFor: prayer.prayer_for,
         status: prayer.status
+      });
+
+      // Send personal confirmation email to the requester
+      await sendRequesterApprovalNotification({
+        title: prayer.title,
+        description: prayer.description,
+        requester: prayer.is_anonymous ? 'Anonymous' : prayer.requester,
+        requesterEmail: prayer.email,
+        prayerFor: prayer.prayer_for
       });
 
       await fetchAdminData();

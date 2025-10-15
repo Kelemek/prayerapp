@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS prayers (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT,
-  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'ongoing', 'answered', 'closed')),
+  status TEXT NOT NULL DEFAULT 'current' CHECK (status IN ('current', 'ongoing', 'answered', 'closed')),
   requester TEXT NOT NULL,
   email VARCHAR(255),
   is_anonymous BOOLEAN DEFAULT false,

@@ -41,7 +41,7 @@ export const PendingStatusChangeCard: React.FC<PendingStatusChangeCardProps> = (
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
+      case 'current':
         return 'text-blue-600 dark:text-blue-400';
       case 'ongoing':
         return 'text-yellow-600 dark:text-yellow-400';

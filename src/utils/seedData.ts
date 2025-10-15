@@ -6,7 +6,7 @@ export const seedTestPrayers = async () => {
     {
       title: "Healing for Sarah",
       description: "Please pray for Sarah's quick recovery from surgery",
-      status: "active",
+      status: "current",
       requester: "John Smith",
       date_requested: new Date().toISOString()
     },

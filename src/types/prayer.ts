@@ -74,7 +74,7 @@ export interface StatusChangeRequest {
 
 
 export const PrayerStatus = {
-  ACTIVE: 'active',
+  CURRENT: 'current',
   ANSWERED: 'answered',
   ONGOING: 'ongoing',
   CLOSED: 'closed'
