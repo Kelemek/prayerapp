@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
@@ -21,6 +21,20 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Auto-close form 6 seconds after successful submission
+  useEffect(() => {
+    if (isSubmitted) {
+      const timer = setTimeout(() => {
+        onCancel();
+        setIsSubmitted(false);
+        setShowSuccessMessage(false);
+      }, 6000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isSubmitted, onCancel]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,8 +48,9 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
         status: PrayerStatus.ACTIVE
       });
 
-      // Show success message and clear form immediately
+      // Show success message and mark as submitted
       setShowSuccessMessage(true);
+      setIsSubmitted(true);
       setFormData({
         title: '',
         description: '',
@@ -44,8 +59,6 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
         email: '',
         is_anonymous: false
       });
-      
-      // Keep success message visible until user closes form
       
     } catch (error) {
       console.error('Failed to add prayer:', error);
@@ -132,7 +145,7 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
               id="anonymous"
               checked={formData.is_anonymous}
               onChange={(e) => setFormData({ ...formData, is_anonymous: e.target.checked })}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-900 dark:border-white bg-white dark:bg-gray-800 rounded"
             />
             <label htmlFor="anonymous" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
               Make this prayer anonymous (your name will not be shown publicly)
@@ -155,17 +168,18 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isSubmitted}
               className="flex-1 bg-blue-600 dark:bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isSubmitting ? 'Submitting...' : (showSuccessMessage ? 'Submit Another Prayer' : 'Submit Prayer Request')}
+              {isSubmitting ? 'Submitting...' : (isSubmitted ? 'Submitted' : 'Submit Prayer Request')}
             </button>
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+              disabled={isSubmitted}
+              className="flex-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Done
+              {isSubmitted ? 'Closing...' : 'Done'}
             </button>
           </div>
         </form>
