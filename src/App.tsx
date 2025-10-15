@@ -4,6 +4,7 @@ import { PrayerForm } from './components/PrayerForm';
 import { PrayerCard } from './components/PrayerCard';
 import { PrayerFiltersComponent } from './components/PrayerFilters';
 import { ThemeToggle } from './components/ThemeToggle';
+import { PrintPrayerList } from './components/PrintPrayerList';
 import { ToastProvider } from './components/Toast';
 import { AdminPortal } from './components/AdminPortal';
 import { AdminLogin } from './components/AdminLogin';
@@ -89,6 +90,7 @@ function AppContent() {
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
               <ThemeToggle />
+              <PrintPrayerList />
               {isAdmin && (
                 <>
                   <button
