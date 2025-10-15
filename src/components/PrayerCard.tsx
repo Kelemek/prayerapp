@@ -223,8 +223,11 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             </button>
               {/* Add Update for admins (same behavior as non-admin add update) */}
               <button
-                onClick={() => setShowAddUpdate(!showAddUpdate)}
-                className="px-3 py-1 text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+                onClick={() => {
+                  setShowAddUpdate(!showAddUpdate);
+                  setShowStatusChangeRequest(false);
+                }}
+                className="px-3 py-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
               >
                 Add Update
               </button>
@@ -235,14 +238,20 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               Status: <span className="font-medium capitalize">{prayer.status}</span>
             </span>
             <button
-              onClick={() => setShowStatusChangeRequest(!showStatusChangeRequest)}
+              onClick={() => {
+                setShowStatusChangeRequest(!showStatusChangeRequest);
+                setShowAddUpdate(false);
+              }}
               className="px-3 py-1 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
             >
               Request Status Change
             </button>
             <button
-              onClick={() => setShowAddUpdate(!showAddUpdate)}
-              className="px-3 py-1 text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+              onClick={() => {
+                setShowAddUpdate(!showAddUpdate);
+                setShowStatusChangeRequest(false);
+              }}
+              className="px-3 py-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
             >
               Add Update
             </button>
@@ -253,14 +262,15 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
 
       {/* Add Update Form */}
       {showAddUpdate && (
-        <form onSubmit={handleAddUpdate} className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <form onSubmit={handleAddUpdate} className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+          <h4 className="text-sm font-medium text-green-800 dark:text-green-200 mb-3">Add Prayer Update</h4>
           <div className="space-y-2">
             <input
               type="text"
               placeholder="Your name"
               value={updateAuthor}
               onChange={(e) => setUpdateAuthor(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-green-300 dark:border-green-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
               required
             />
             <input
@@ -268,14 +278,14 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               placeholder="Your email"
               value={updateAuthorEmail}
               onChange={(e) => setUpdateAuthorEmail(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm border border-green-300 dark:border-green-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
               required
             />
             <textarea
               placeholder="Prayer update..."
               value={updateText}
               onChange={(e) => setUpdateText(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 h-20"
+              className="w-full px-3 py-2 text-sm border border-green-300 dark:border-green-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 h-20"
               required
             />
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
