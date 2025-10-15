@@ -207,7 +207,7 @@ export const usePrayerManager = () => {
     }
   };
 
-  const addPrayerUpdate = async (prayerId: string, content: string, author: string) => {
+  const addPrayerUpdate = async (prayerId: string, content: string, author: string, authorEmail?: string) => {
     try {
       // Get prayer title for notification
       const prayer = prayers.find(p => p.id === prayerId);
@@ -219,6 +219,7 @@ export const usePrayerManager = () => {
           prayer_id: prayerId,
           content,
           author,
+          author_email: authorEmail || null,
           approval_status: 'pending' // Require admin approval
         } as any);
 
@@ -293,7 +294,7 @@ export const usePrayerManager = () => {
   };
 
   // Request deletion of a prayer update (user)
-  const requestUpdateDeletion = async (updateId: string, reason: string, requester: string) => {
+  const requestUpdateDeletion = async (updateId: string, reason: string, requester: string, requesterEmail?: string) => {
     try {
       const { data, error } = await supabase
         .from('update_deletion_requests')
@@ -301,6 +302,7 @@ export const usePrayerManager = () => {
           update_id: updateId,
           reason,
           requested_by: requester,
+          requested_email: requesterEmail || null,
           approval_status: 'pending'
         })
         .select()

@@ -38,6 +38,8 @@ export const PrayerFiltersComponent: React.FC<PrayerFiltersProps> = ({
             />
           </div>
         </div>
+
+        {/* Email filter removed for main page (admin-only) */}
       </div>
 
       {/* Clear Filters */}

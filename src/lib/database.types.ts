@@ -71,6 +71,7 @@ export interface Database {
           prayer_id: string
           content: string
           author: string
+          author_email: string | null
           approval_status: string
           approved_by: string | null
           approved_at: string | null
@@ -82,6 +83,7 @@ export interface Database {
           prayer_id: string
           content: string
           author: string
+          author_email?: string | null
           approval_status?: string
           approved_by?: string | null
           approved_at?: string | null
@@ -93,6 +95,7 @@ export interface Database {
           prayer_id?: string
           content?: string
           author?: string
+          author_email?: string | null
           approval_status?: string
           approved_by?: string | null
           approved_at?: string | null
@@ -106,6 +109,7 @@ export interface Database {
           prayer_id: string
           reason: string | null
           requested_by: string
+          requested_email: string | null
           approval_status: string
           reviewed_by: string | null
           reviewed_at: string | null
@@ -118,6 +122,7 @@ export interface Database {
           prayer_id: string
           reason?: string | null
           requested_by: string
+          requested_email?: string | null
           approval_status?: string
           reviewed_by?: string | null
           reviewed_at?: string | null
@@ -130,6 +135,7 @@ export interface Database {
           prayer_id?: string
           reason?: string | null
           requested_by?: string
+          requested_email?: string | null
           approval_status?: string
           reviewed_by?: string | null
           reviewed_at?: string | null
@@ -144,6 +150,7 @@ export interface Database {
           update_id: string
           reason: string | null
           requested_by: string
+          requested_email: string | null
           approval_status: string
           reviewed_by: string | null
           reviewed_at: string | null
@@ -156,6 +163,7 @@ export interface Database {
           update_id: string
           reason?: string | null
           requested_by: string
+          requested_email?: string | null
           approval_status?: string
           reviewed_by?: string | null
           reviewed_at?: string | null
@@ -168,6 +176,7 @@ export interface Database {
           update_id?: string
           reason?: string | null
           requested_by?: string
+          requested_email?: string | null
           approval_status?: string
           reviewed_by?: string | null
           reviewed_at?: string | null
@@ -183,6 +192,7 @@ export interface Database {
           requested_status: string
           reason: string | null
           requested_by: string
+          requested_email: string | null
           approval_status: string
           reviewed_by: string | null
           reviewed_at: string | null
@@ -196,6 +206,7 @@ export interface Database {
           requested_status: string
           reason?: string | null
           requested_by: string
+          requested_email?: string | null
           approval_status?: string
           reviewed_by?: string | null
           reviewed_at?: string | null
@@ -209,6 +220,7 @@ export interface Database {
           requested_status?: string
           reason?: string | null
           requested_by?: string
+          requested_email?: string | null
           approval_status?: string
           reviewed_by?: string | null
           reviewed_at?: string | null

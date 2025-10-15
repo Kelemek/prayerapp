@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings } from 'lucide-react';
+import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings, User, Calendar, X } from 'lucide-react';
+import { DeletionStyleCard } from './DeletionStyleCard';
 import { PendingPrayerCard } from './PendingPrayerCard';
 import { PendingUpdateCard } from './PendingUpdateCard';
 import { PendingDeletionCard } from './PendingDeletionCard';
@@ -341,46 +342,61 @@ export const AdminPortal: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {pendingUpdateDeletionRequests.map((request) => (
-                      <div key={request.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                              <MessageSquare size={14} />
-                              <span>Update for: {request.prayer_updates?.prayers?.title ?? 'Unknown Prayer'}</span>
-                            </div>
-                            <p className="text-gray-700 dark:text-gray-300 mb-2">
-                              {request.prayer_updates?.content}
-                            </p>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              <p>By: {request.prayer_updates?.author}</p>
-                              <p>Requested by: {request.requested_by}</p>
-                              <p>Reason: {request.reason}</p>
-                            </div>
+                    {pendingUpdateDeletionRequests.map((request) => {
+                      const metaLeft = (
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <User size={14} />
+                            <span>Requested by: {request.requested_by}</span>
                           </div>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400">
-                            Pending
-                          </span>
+                          {request.requested_email && (
+                            <div className="flex items-center gap-1 mt-2">
+                              <MessageSquare size={14} />
+                              <span className="break-words">Email: {request.requested_email}</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => approveUpdateDeletionRequest(request.id)}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => {
-                              const reason = prompt('Reason for denial (required):');
-                              if (reason && reason.trim()) denyUpdateDeletionRequest(request.id, reason);
-                            }}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                          >
-                            Deny
-                          </button>
+                      );
+
+                      const metaRight = (
+                        <div className="flex items-center gap-1">
+                          <Calendar size={14} />
+                          <span>{new Date(request.created_at).toLocaleString()}</span>
                         </div>
-                      </div>
-                    ))}
+                      );
+
+                      const contentNode = (
+                        <>
+                          <p className="font-medium">{request.prayer_updates?.prayers?.title ?? 'Unknown Prayer'}</p>
+                          <p className="mt-3">{request.prayer_updates?.content}</p>
+                          {request.prayer_updates?.author && (
+                            <p className="text-sm mt-2">By: {request.prayer_updates?.author}{request.prayer_updates?.author_email ? ` — ${request.prayer_updates?.author_email}` : ''}</p>
+                          )}
+                        </>
+                      );
+
+                      const actions = (
+                        <div className="flex flex-col items-end">
+                          <div className="flex gap-2">
+                            <button onClick={() => approveUpdateDeletionRequest(request.id)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"><CheckCircle size={16} />Approve & Delete</button>
+                            <button onClick={() => { const reason = prompt('Reason for denial (required):'); if (reason && reason.trim()) denyUpdateDeletionRequest(request.id, reason); }} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"><X size={16} />Deny</button>
+                          </div>
+                        </div>
+                      );
+
+                      return (
+                        <DeletionStyleCard
+                          key={request.id}
+                          title="Update Deletion Request"
+                          subtitle="Update for:"
+                          content={contentNode}
+                          metaLeft={metaLeft}
+                          metaRight={metaRight}
+                          reason={request.reason}
+                          actions={actions}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -455,7 +471,10 @@ export const AdminPortal: React.FC = () => {
                                 {prayer.description}
                               </p>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
-                                <p>Requested by: {prayer.requester}</p>
+                                <p>Requested by: {prayer.requester} {prayer.is_anonymous && <span className="text-orange-600 dark:text-orange-400 font-medium">(Anonymous)</span>}</p>
+                                {prayer.email && !prayer.is_anonymous && (
+                                  <p className="break-words">Email: {prayer.email}</p>
+                                )}
                                 <p>Status: {prayer.status}</p>
                               </div>
                             </div>
@@ -541,7 +560,10 @@ export const AdminPortal: React.FC = () => {
                                 {prayer.description}
                               </p>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
-                                <p>Requested by: {prayer.requester}</p>
+                                <p>Requested by: {prayer.requester} {prayer.is_anonymous && <span className="text-orange-600 dark:text-orange-400 font-medium">(Anonymous)</span>}</p>
+                                {prayer.email && !prayer.is_anonymous && (
+                                  <p className="break-words">Email: {prayer.email}</p>
+                                )}
                                 {prayer.denial_reason && (
                                   <p className="text-red-600 dark:text-red-400 mt-2">
                                     Denial reason: {prayer.denial_reason}

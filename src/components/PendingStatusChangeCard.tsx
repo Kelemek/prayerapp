@@ -113,6 +113,12 @@ export const PendingStatusChangeCard: React.FC<PendingStatusChangeCardProps> = (
             <User className="h-3 w-3" />
             <span>Requested by: {statusChangeRequest.requested_by}</span>
           </div>
+          {statusChangeRequest.requested_email && (
+            <div className="flex items-center space-x-1">
+              <MessageSquare className="h-3 w-3" />
+              <span className="break-words">Email: {statusChangeRequest.requested_email}</span>
+            </div>
+          )}
           <div className="flex items-center space-x-1">
             <Calendar className="h-3 w-3" />
             <span>{formatDate(statusChangeRequest.created_at)}</span>

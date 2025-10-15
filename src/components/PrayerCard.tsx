@@ -7,12 +7,12 @@ import type { PrayerRequest } from '../types/prayer';
 interface PrayerCardProps {
   prayer: PrayerRequest;
   onUpdateStatus: (id: string, status: PrayerStatus) => void;
-  onAddUpdate: (id: string, content: string, author: string) => void;
+  onAddUpdate: (id: string, content: string, author: string, authorEmail: string) => void;
   onDelete: (id: string) => void;
-  onRequestDelete: (prayerId: string, reason: string, requesterName: string) => Promise<void>;
-  onRequestStatusChange: (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string) => Promise<void>;
+  onRequestDelete: (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
+  onRequestStatusChange: (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
   onDeleteUpdate: (updateId: string) => Promise<void>;
-  onRequestUpdateDelete: (updateId: string, reason: string, requesterName: string) => Promise<any>;
+  onRequestUpdateDelete: (updateId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<any>;
   isAdmin: boolean;
 }
 
@@ -31,12 +31,15 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   const [showAddUpdate, setShowAddUpdate] = useState(false);
   const [updateText, setUpdateText] = useState('');
   const [updateAuthor, setUpdateAuthor] = useState('');
+  const [updateAuthorEmail, setUpdateAuthorEmail] = useState('');
   const [showDeleteRequest, setShowDeleteRequest] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteRequesterName, setDeleteRequesterName] = useState('');
+  const [deleteRequesterEmail, setDeleteRequesterEmail] = useState('');
   const [showStatusChangeRequest, setShowStatusChangeRequest] = useState(false);
   const [statusChangeReason, setStatusChangeReason] = useState('');
   const [statusChangeRequesterName, setStatusChangeRequesterName] = useState('');
+  const [statusChangeRequesterEmail, setStatusChangeRequesterEmail] = useState('');
   const [requestedStatus, setRequestedStatus] = useState<PrayerStatus>(prayer.status);
   // State for update deletion request UI
   const [isSubmittingUpdateDelete, setIsSubmittingUpdateDelete] = useState(false);
@@ -44,29 +47,33 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   const [showUpdateDeleteRequest, setShowUpdateDeleteRequest] = useState<string | null>(null);
   const [updateDeleteReason, setUpdateDeleteReason] = useState('');
   const [updateDeleteRequesterName, setUpdateDeleteRequesterName] = useState('');
+  const [updateDeleteRequesterEmail, setUpdateDeleteRequesterEmail] = useState('');
   const { showToast } = useToast();
 
 
 
   const handleAddUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!updateText.trim() || !updateAuthor.trim()) return;
+    if (!updateText.trim() || !updateAuthor.trim() || !updateAuthorEmail.trim()) return;
     
-    onAddUpdate(prayer.id, updateText, updateAuthor);
+    // include author email when adding an update
+    onAddUpdate(prayer.id, updateText, updateAuthor, updateAuthorEmail);
     setUpdateText('');
     setUpdateAuthor('');
+    setUpdateAuthorEmail('');
     setShowAddUpdate(false);
     try { showToast('Update submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
   };
 
   const handleDeleteRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!deleteReason.trim() || !deleteRequesterName.trim()) return;
+    if (!deleteReason.trim() || !deleteRequesterName.trim() || !deleteRequesterEmail.trim()) return;
     
     try {
-      await onRequestDelete(prayer.id, deleteReason, deleteRequesterName);
+      await onRequestDelete(prayer.id, deleteReason, deleteRequesterName, deleteRequesterEmail);
       setDeleteReason('');
       setDeleteRequesterName('');
+      setDeleteRequesterEmail('');
       setShowDeleteRequest(false);
       try { showToast('Deletion request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
     } catch (error) {
@@ -83,12 +90,13 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
 
   const handleStatusChangeRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!statusChangeReason.trim() || !statusChangeRequesterName.trim()) return;
+    if (!statusChangeReason.trim() || !statusChangeRequesterName.trim() || !statusChangeRequesterEmail.trim()) return;
     
     try {
-      await onRequestStatusChange(prayer.id, requestedStatus, statusChangeReason, statusChangeRequesterName);
+      await onRequestStatusChange(prayer.id, requestedStatus, statusChangeReason, statusChangeRequesterName, statusChangeRequesterEmail);
       setStatusChangeReason('');
       setStatusChangeRequesterName('');
+      setStatusChangeRequesterEmail('');
       setShowStatusChangeRequest(false);
       try { showToast('Status change request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
     } catch (error) {
@@ -109,11 +117,11 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
 
   const handleUpdateDeletionRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!updateDeleteReason.trim() || !updateDeleteRequesterName.trim() || !showUpdateDeleteRequest) return;
+    if (!updateDeleteReason.trim() || !updateDeleteRequesterName.trim() || !updateDeleteRequesterEmail.trim() || !showUpdateDeleteRequest) return;
     try {
       setIsSubmittingUpdateDelete(true);
       setUpdateDeleteError(null);
-      const res: any = await onRequestUpdateDelete(showUpdateDeleteRequest, updateDeleteReason, updateDeleteRequesterName);
+      const res: any = await onRequestUpdateDelete(showUpdateDeleteRequest, updateDeleteReason, updateDeleteRequesterName, updateDeleteRequesterEmail);
       if (!res || res.ok === false) {
         // Handle common Supabase errors more gracefully
         let errMsg = (res && res.error) ? res.error : 'Failed to submit update deletion request';
@@ -129,6 +137,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       }
       setUpdateDeleteReason('');
       setUpdateDeleteRequesterName('');
+      setUpdateDeleteRequesterEmail('');
       setShowUpdateDeleteRequest(null);
       // show a toast to match other successful actions
       try { showToast('Update deletion request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
@@ -252,6 +261,14 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
+            <input
+              type="email"
+              placeholder="Your email"
+              value={updateAuthorEmail}
+              onChange={(e) => setUpdateAuthorEmail(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
             <textarea
               placeholder="Prayer update..."
               value={updateText}
@@ -291,6 +308,14 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
               required
             />
+            <input
+              type="email"
+              placeholder="Your email"
+              value={deleteRequesterEmail}
+              onChange={(e) => setDeleteRequesterEmail(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+              required
+            />
             <textarea
               placeholder="Reason for deletion request..."
               value={deleteReason}
@@ -327,6 +352,14 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               placeholder="Your name"
               value={statusChangeRequesterName}
               onChange={(e) => setStatusChangeRequesterName(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            />
+            <input
+              type="email"
+              placeholder="Your email"
+              value={statusChangeRequesterEmail}
+              onChange={(e) => setStatusChangeRequesterEmail(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
@@ -426,6 +459,14 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                   className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
                   required
                 />
+                  <input
+                    type="email"
+                    placeholder="Your email"
+                    value={updateDeleteRequesterEmail}
+                    onChange={(e) => setUpdateDeleteRequesterEmail(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                  />
                 <textarea
                   placeholder="Reason for update deletion request..."
                   value={updateDeleteReason}

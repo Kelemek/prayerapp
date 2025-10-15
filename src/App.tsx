@@ -223,15 +223,53 @@ function AppContent() {
                 onUpdateStatus={updatePrayerStatus}
                 onAddUpdate={addPrayerUpdate}
                 onDelete={deletePrayer}
-                onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string) => {
-                  // ...existing code...
+                onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => {
+                  try {
+                    const { data, error } = await supabase
+                      .from('status_change_requests')
+                      .insert({ prayer_id: prayerId, requested_status: newStatus, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' })
+                      .select()
+                      .single();
+                    if (error) throw error;
+
+                    // send admin notification
+                    try {
+                      const { data: prayerRow } = await supabase.from('prayers').select('title, status').eq('id', prayerId).single();
+                      await sendAdminNotification({ type: 'status-change', title: prayerRow?.title || 'Unknown Prayer', reason, requestedBy: requesterName, currentStatus: prayerRow?.status, requestedStatus: newStatus });
+                    } catch (notifyErr) {
+                      console.warn('Failed to send status change notification', notifyErr);
+                    }
+                  } catch (err) {
+                    console.error('Failed to submit status change request', err);
+                    alert('Failed to submit status change request. Please try again.');
+                  }
                 }}
-                onRequestDelete={async (prayerId: string, reason: string, requesterName: string) => {
-                  // ...existing code...
+                onRequestDelete={async (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => {
+                  try {
+                    const { data, error } = await supabase
+                      .from('deletion_requests')
+                      .insert({ prayer_id: prayerId, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' })
+                      .select()
+                      .single();
+                    if (error) throw error;
+
+                    // send admin notification
+                    try {
+                      const { data: prayerRow } = await supabase.from('prayers').select('title').eq('id', prayerId).single();
+                      await sendAdminNotification({ type: 'deletion', title: prayerRow?.title || 'Unknown Prayer', reason, requestedBy: requesterName });
+                    } catch (notifyErr) {
+                      console.warn('Failed to send deletion notification', notifyErr);
+                    }
+                  } catch (err) {
+                    console.error('Failed to submit deletion request', err);
+                    alert('Failed to submit deletion request. Please try again.');
+                  }
                 }}
                 onDeleteUpdate={deletePrayerUpdate}
                 onRequestUpdateDelete={async (updateId: string, reason: string, requesterName: string) => {
-                  return await requestUpdateDeletion(updateId, reason, requesterName);
+                  // The PrayerCard now supplies requester email as the 4th arg; forward it to the hook
+                  // @ts-ignore - forward all args
+                  return await requestUpdateDeletion(updateId, reason, requesterName, arguments[3]);
                 }}
                 isAdmin={isAdmin}
               />

@@ -71,40 +71,38 @@ export const PendingUpdateCard: React.FC<PendingUpdateCardProps> = ({
       {!isEditing && (
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            {update.prayer_title && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                <MessageCircle size={14} />
-                <span>Update for: </span>
-                <ArrowRight size={14} />
-                <span className="font-medium text-gray-800 dark:text-gray-200">{update.prayer_title}</span>
-              </div>
-            )}
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">
               Prayer Update
             </h3>
-          </div>
-        </div>
-      )}
 
-      {/* Update Content - hide while editing */}
-      {!isEditing && (
-        <div className="mb-4">
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border-l-4 border-blue-500">
-            <p className="text-gray-700 dark:text-gray-300">{update.content}</p>
-          </div>
-        </div>
-      )}
+            {/* Update Content */}
+            <div className="mb-4">
+              <p className="text-gray-600 dark:text-gray-300">{update.content}</p>
+            </div>
 
-      {/* Meta Information - hide while editing */}
-      {!isEditing && (
-        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
-          <div className="flex items-center gap-1">
-            <User size={14} />
-            <span>By {update.author}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Calendar size={14} />
-            <span>Submitted {formatDate(update.created_at)}</span>
+            {/* Meta Information */}
+            <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {update.prayer_title && (
+                <div className="flex items-center gap-1">
+                  <MessageCircle size={14} />
+                  <span>Update for: {update.prayer_title}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1">
+                <User size={14} />
+                <span>By {update.author}</span>
+              </div>
+              {update.author_email && (
+                <div className="flex items-center gap-1">
+                  <MessageCircle size={14} />
+                  <span className="break-words">Email: {update.author_email}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1">
+                <Calendar size={14} />
+                <span>Submitted {formatDate(update.created_at)}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

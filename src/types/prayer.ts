@@ -21,6 +21,7 @@ export interface PrayerUpdate {
   prayer_id: string;
   content: string;
   author: string;
+  author_email?: string | null;
   created_at: string;
   approval_status?: 'pending' | 'approved' | 'denied';
   denial_reason?: string | null;
@@ -31,6 +32,7 @@ export interface DeletionRequest {
   prayer_id: string;
   reason?: string | null;
   requested_by: string;
+  requested_email?: string | null;
   approval_status: 'pending' | 'approved' | 'denied';
   reviewed_by?: string | null;
   reviewed_at?: string | null;
@@ -44,6 +46,7 @@ export interface UpdateDeletionRequest {
   update_id: string;
   reason?: string | null;
   requested_by: string;
+  requested_email?: string | null;
   approval_status: 'pending' | 'approved' | 'denied';
   reviewed_by?: string | null;
   reviewed_at?: string | null;
@@ -58,6 +61,7 @@ export interface StatusChangeRequest {
   requested_status: PrayerStatus;
   reason?: string | null;
   requested_by: string;
+  requested_email?: string | null;
   approval_status: 'pending' | 'approved' | 'denied';
   reviewed_by?: string | null;
   reviewed_at?: string | null;
@@ -80,4 +84,5 @@ export type PrayerStatus = typeof PrayerStatus[keyof typeof PrayerStatus];
 export interface PrayerFilters {
   status?: PrayerStatus;
   searchTerm?: string;
+  email?: string;
 }
