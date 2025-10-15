@@ -69,13 +69,15 @@ export async function downloadPrintablePrayerList(timeRange: TimeRange = 'month'
     // Generate HTML content
     const html = generatePrintableHTML(prayers, timeRange);
 
-    // Detect if mobile device
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-    if (isMobile) {
-      // On mobile, download the HTML file to avoid popup blockers
-      const blob = new Blob([html], { type: 'text/html' });
-      const blobUrl = URL.createObjectURL(blob);
+    // Create a blob URL for the HTML content
+    const blob = new Blob([html], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Open in new tab for all devices (no automatic print dialog)
+    const newWindow = window.open(blobUrl, '_blank');
+    
+    if (!newWindow) {
+      // Fallback: if popup blocked, offer download
       const link = document.createElement('a');
       link.href = blobUrl;
       
@@ -87,50 +89,13 @@ export async function downloadPrintablePrayerList(timeRange: TimeRange = 'month'
       link.click();
       document.body.removeChild(link);
       
-      // Cleanup after a delay
-      setTimeout(() => {
-        URL.revokeObjectURL(blobUrl);
-      }, 1000);
-    } else {
-      // Desktop: Create a hidden iframe for printing
-      const blob = new Blob([html], { type: 'text/html' });
-      const blobUrl = URL.createObjectURL(blob);
-
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = 'none';
-      iframe.src = blobUrl;
-      
-      document.body.appendChild(iframe);
-      
-      // Wait for iframe to load, then trigger print
-      iframe.onload = () => {
-        try {
-          // Small delay to ensure content is fully rendered
-          setTimeout(() => {
-            if (iframe.contentWindow) {
-              iframe.contentWindow.focus();
-              iframe.contentWindow.print();
-            }
-            
-            // Cleanup after print dialog
-            setTimeout(() => {
-              document.body.removeChild(iframe);
-              URL.revokeObjectURL(blobUrl);
-            }, 100);
-          }, 250);
-        } catch (e) {
-          console.error('Print error:', e);
-          document.body.removeChild(iframe);
-          URL.revokeObjectURL(blobUrl);
-          alert('Unable to print. Please try again.');
-        }
-      };
+      alert('Prayer list downloaded. Please open the file to view and print.');
     }
+    
+    // Cleanup after a delay
+    setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+    }, 1000);
   } catch (error) {
     console.error('Error generating prayer list:', error);
     alert('Failed to generate prayer list. Please try again.');
