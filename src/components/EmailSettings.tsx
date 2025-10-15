@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, X, Save, Trash2 } from 'lucide-react';
+import { Mail, Plus, X, Save, Trash2, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface EmailSettingsProps {
@@ -10,6 +10,8 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [emails, setEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [emailDistribution, setEmailDistribution] = useState<'admin_only' | 'all_users'>('admin_only');
+  const [daysBeforeOngoing, setDaysBeforeOngoing] = useState<number>(30);
+  const [reminderIntervalDays, setReminderIntervalDays] = useState<number>(7);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('notification_emails, email_distribution')
+        .select('notification_emails, email_distribution, days_before_ongoing, reminder_interval_days')
         .eq('id', 1)
         .maybeSingle();
 
@@ -43,6 +45,14 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
 
       if (data?.email_distribution) {
         setEmailDistribution(data.email_distribution as 'admin_only' | 'all_users');
+      }
+
+      if (data?.days_before_ongoing !== null && data?.days_before_ongoing !== undefined) {
+        setDaysBeforeOngoing(data.days_before_ongoing);
+      }
+
+      if (data?.reminder_interval_days !== null && data?.reminder_interval_days !== undefined) {
+        setReminderIntervalDays(data.reminder_interval_days);
       }
     } catch (err: any) {
       console.error('Error loading emails:', err);
@@ -63,6 +73,8 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           id: 1, // Use a fixed ID for singleton settings
           notification_emails: emails,
           email_distribution: emailDistribution,
+          days_before_ongoing: daysBeforeOngoing,
+          reminder_interval_days: reminderIntervalDays,
           updated_at: new Date().toISOString()
         });
 
@@ -108,6 +120,48 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       addEmail();
+    }
+  };
+
+  const runAutoTransition = async () => {
+    try {
+      setError(null);
+      const { data, error: functionError } = await supabase.functions.invoke('auto-transition-prayers');
+
+      if (functionError) {
+        console.error('Error running auto-transition:', functionError);
+        setError('Failed to run auto-transition');
+        return;
+      }
+
+      if (data) {
+        console.log('Auto-transition result:', data);
+        alert(`Successfully transitioned ${data.transitioned} prayers from Current to Ongoing`);
+      }
+    } catch (err: any) {
+      console.error('Error running auto-transition:', err);
+      setError('Failed to run auto-transition');
+    }
+  };
+
+  const runReminderCheck = async () => {
+    try {
+      setError(null);
+      const { data, error: functionError } = await supabase.functions.invoke('send-prayer-reminders');
+
+      if (functionError) {
+        console.error('Error sending reminders:', functionError);
+        setError('Failed to send reminders');
+        return;
+      }
+
+      if (data) {
+        console.log('Reminder result:', data);
+        alert(`Successfully sent ${data.sent || 0} reminder emails`);
+      }
+    } catch (err: any) {
+      console.error('Error sending reminders:', err);
+      setError('Failed to send reminders');
     }
   };
 
@@ -178,6 +232,74 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
             </div>
           </label>
         </div>
+      </div>
+
+      {/* Auto-Transition Setting */}
+      <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Auto-Transition to Ongoing
+        </label>
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+          Automatically move prayers from "Current" to "Ongoing" after the specified number of days.
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="number"
+            min="1"
+            max="365"
+            value={daysBeforeOngoing}
+            onChange={(e) => setDaysBeforeOngoing(Math.max(1, Math.min(365, parseInt(e.target.value) || 1)))}
+            className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-700 dark:text-gray-300">days</span>
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          Set to 0 to disable auto-transition.
+        </p>
+        <button
+          onClick={runAutoTransition}
+          className="mt-3 flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm"
+        >
+          <RefreshCw size={16} />
+          Run Transition Now
+        </button>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          Manually trigger the auto-transition check. This will transition any prayers that meet the criteria.
+        </p>
+      </div>
+
+      {/* Prayer Update Reminder Setting */}
+      <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Prayer Update Reminders
+        </label>
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+          Send email reminders to prayer requesters to update their prayer requests every specified number of days.
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="number"
+            min="1"
+            max="90"
+            value={reminderIntervalDays}
+            onChange={(e) => setReminderIntervalDays(Math.max(1, Math.min(90, parseInt(e.target.value) || 1)))}
+            className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-700 dark:text-gray-300">days</span>
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          Set to 0 to disable reminder emails. Reminders are sent for prayers with status "Current" or "Ongoing".
+        </p>
+        <button
+          onClick={runReminderCheck}
+          className="mt-3 flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors text-sm"
+        >
+          <RefreshCw size={16} />
+          Send Reminders Now
+        </button>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          Manually trigger reminder emails. This will send reminders to all eligible prayer requesters.
+        </p>
       </div>
 
       {/* Add Email Input */}
