@@ -14,10 +14,14 @@ export const PrintPrayerList: React.FC = () => {
     setIsOpen(false);
     setSelectedRange(range);
     
+    // Open window immediately (Safari requires this to be synchronous with user click)
+    const newWindow = window.open('', '_blank');
+    
     try {
-      await downloadPrintablePrayerList(range);
+      await downloadPrintablePrayerList(range, newWindow);
     } catch (error) {
       console.error('Error printing prayer list:', error);
+      if (newWindow) newWindow.close();
     } finally {
       setIsPrinting(false);
     }

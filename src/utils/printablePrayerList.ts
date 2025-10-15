@@ -22,62 +22,59 @@ export type TimeRange = 'week' | 'month' | 'year';
 /**
  * Generate and download a printable prayer list for the specified time range
  */
-export async function downloadPrintablePrayerList(timeRange: TimeRange = 'month'): Promise<void> {
+export const downloadPrintablePrayerList = async (timeRange: TimeRange = 'month', newWindow: Window | null = null) => {
   try {
-    // Calculate date based on time range
+    // Calculate date range
+    const endDate = new Date();
     const startDate = new Date();
+    
     switch (timeRange) {
       case 'week':
-        startDate.setDate(startDate.getDate() - 7);
+        startDate.setDate(endDate.getDate() - 7);
         break;
       case 'month':
-        startDate.setMonth(startDate.getMonth() - 1);
+        startDate.setMonth(endDate.getMonth() - 1);
         break;
       case 'year':
-        startDate.setFullYear(startDate.getFullYear() - 1);
+        startDate.setFullYear(endDate.getFullYear() - 1);
         break;
     }
-    const startDateISO = startDate.toISOString();
 
-    // Fetch prayers from the specified time range (approved only)
+    // Fetch prayers with their updates (LEFT JOIN to include prayers without updates)
     const { data: prayers, error } = await supabase
       .from('prayers')
       .select(`
         *,
-        prayer_updates(
-          id,
-          content,
-          author,
-          created_at
-        )
+        prayer_updates(*)
       `)
       .eq('approval_status', 'approved')
-      .gte('created_at', startDateISO)
+      .neq('status', 'closed')
+      .gte('created_at', startDate.toISOString())
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching prayers:', error);
-      throw new Error('Failed to fetch prayers');
-    }
-
-    if (!prayers || prayers.length === 0) {
-      const rangeLabel = timeRange === 'week' ? 'week' : timeRange === 'month' ? 'month' : 'year';
-      alert(`No prayers found from the last ${rangeLabel}.`);
+      alert('Failed to fetch prayers. Please try again.');
+      if (newWindow) newWindow.close();
       return;
     }
 
-    // Generate HTML content
+    if (!prayers || prayers.length === 0) {
+      const rangeText = timeRange === 'week' ? 'week' : timeRange === 'month' ? 'month' : 'year';
+      alert(`No prayers found in the last ${rangeText}.`);
+      if (newWindow) newWindow.close();
+      return;
+    }
+
     const html = generatePrintableHTML(prayers, timeRange);
 
-    // Create a blob URL for the HTML content
-    const blob = new Blob([html], { type: 'text/html' });
-    const blobUrl = URL.createObjectURL(blob);
+    // Use the pre-opened window if provided (Safari compatible)
+    const targetWindow = newWindow || window.open('', '_blank');
     
-    // Open in new tab for all devices (no automatic print dialog)
-    const newWindow = window.open(blobUrl, '_blank');
-    
-    if (!newWindow) {
+    if (!targetWindow) {
       // Fallback: if popup blocked, offer download
+      const blob = new Blob([html], { type: 'text/html' });
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
       
@@ -89,13 +86,16 @@ export async function downloadPrintablePrayerList(timeRange: TimeRange = 'month'
       link.click();
       document.body.removeChild(link);
       
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
       alert('Prayer list downloaded. Please open the file to view and print.');
+    } else {
+      // Write the HTML content to the window
+      targetWindow.document.open();
+      targetWindow.document.write(html);
+      targetWindow.document.close();
+      // Switch focus to the new tab
+      targetWindow.focus();
     }
-    
-    // Cleanup after a delay
-    setTimeout(() => {
-      URL.revokeObjectURL(blobUrl);
-    }, 1000);
   } catch (error) {
     console.error('Error generating prayer list:', error);
     alert('Failed to generate prayer list. Please try again.');
