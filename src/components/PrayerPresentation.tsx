@@ -27,23 +27,55 @@ export const PrayerPresentation: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showControls, setShowControls] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [timeFilter, setTimeFilter] = useState<string>('all');
 
   // Fetch prayers
   useEffect(() => {
     fetchPrayers();
-  }, []);
+  }, [statusFilter, timeFilter]);
 
   const fetchPrayers = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('prayers')
       .select(`
         *,
         prayer_updates(*)
       `)
       .eq('approval_status', 'approved')
-      .neq('status', 'closed')
-      .order('created_at', { ascending: false });
+      .neq('status', 'closed');
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
+    }
+
+    // Apply time filter
+    if (timeFilter !== 'all') {
+      const now = new Date();
+      let dateThreshold: Date;
+      
+      switch (timeFilter) {
+        case 'week':
+          dateThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          dateThreshold = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case 'year':
+          dateThreshold = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          dateThreshold = new Date(0);
+      }
+      
+      query = query.gte('created_at', dateThreshold.toISOString());
+    }
+
+    query = query.order('created_at', { ascending: false });
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching prayers:', error);
@@ -244,6 +276,11 @@ export const PrayerPresentation: React.FC = () => {
                 : `Auto-advancing every ${displayDuration}s`
               : 'Paused'
             }
+            {(statusFilter !== 'all' || timeFilter !== 'all') && (
+              <span className="ml-2 text-sm opacity-75">
+                • Filtered ({statusFilter !== 'all' ? statusFilter : ''}{statusFilter !== 'all' && timeFilter !== 'all' ? ', ' : ''}{timeFilter !== 'all' ? timeFilter : ''})
+              </span>
+            )}
           </div>
 
           {/* Settings and Close */}
@@ -339,6 +376,50 @@ export const PrayerPresentation: React.FC = () => {
                   </p>
                 </div>
               )}
+
+              {/* Status Filter */}
+              <div>
+                <label className="block text-xl mb-3">Prayer Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg text-lg cursor-pointer hover:bg-gray-700 transition-colors border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                    backgroundPosition: 'right 0.5rem center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '1.5em 1.5em',
+                    paddingRight: '2.5rem'
+                  }}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="current">Current</option>
+                  <option value="ongoing">Ongoing</option>
+                  <option value="answered">Answered</option>
+                </select>
+              </div>
+
+              {/* Time Filter */}
+              <div>
+                <label className="block text-xl mb-3">Time Period</label>
+                <select
+                  value={timeFilter}
+                  onChange={(e) => setTimeFilter(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg text-lg cursor-pointer hover:bg-gray-700 transition-colors border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                    backgroundPosition: 'right 0.5rem center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '1.5em 1.5em',
+                    paddingRight: '2.5rem'
+                  }}
+                >
+                  <option value="all">All Time</option>
+                  <option value="week">Last Week</option>
+                  <option value="month">Last Month</option>
+                  <option value="year">Last Year</option>
+                </select>
+              </div>
 
               <button
                 onClick={fetchPrayers}
