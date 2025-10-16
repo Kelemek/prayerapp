@@ -23,14 +23,14 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Auto-close form 6 seconds after successful submission
+  // Auto-close form 5 seconds after successful submission
   useEffect(() => {
     if (isSubmitted) {
       const timer = setTimeout(() => {
         onCancel();
         setIsSubmitted(false);
         setShowSuccessMessage(false);
-      }, 6000);
+      }, 5000);
       
       return () => clearTimeout(timer);
     }
@@ -92,7 +92,7 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
                 </div>
                 <div>
                   <p className="font-medium">Prayer request submitted successfully!</p>
-                  <p className="text-sm text-green-600 dark:text-green-300">Your request is pending admin approval and will appear in the list once reviewed. You can submit another prayer request below.</p>
+                  <p className="text-sm text-green-600 dark:text-green-300">Your request is pending admin approval and will appear in the list once reviewed.</p>
                 </div>
               </div>
             </div>
