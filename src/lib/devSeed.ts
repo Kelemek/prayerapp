@@ -1,7 +1,5 @@
 import { supabase } from './supabase';
 
-const SEED_IDS_KEY = 'prayerapp_seed_ids';
-
 export async function seedDummyPrayers(): Promise<{ prayersCount: number; updatesCount: number }> {
   const titles = [
     'Please pray for my mom',
@@ -60,6 +58,7 @@ export async function seedDummyPrayers(): Promise<{ prayersCount: number; update
       requester: people[Math.floor(Math.random() * people.length)],
       status: statuses[Math.floor(Math.random() * statuses.length)],
       approval_status: 'approved',
+      is_seed_data: true,
       created_at: randomTimestamp.toISOString()
     });
   }
@@ -72,14 +71,6 @@ export async function seedDummyPrayers(): Promise<{ prayersCount: number; update
   if (prayerError) {
     console.error('Error inserting prayers:', prayerError);
     throw new Error(`Failed to insert prayers: ${prayerError.message}`);
-  }
-
-  // Store prayer IDs in localStorage for cleanup later
-  const seededIds = insertedPrayers?.map(p => p.id) ?? [];
-  try {
-    localStorage.setItem(SEED_IDS_KEY, JSON.stringify(seededIds));
-  } catch (e) {
-    console.warn('Could not store seeded IDs in localStorage:', e);
   }
 
   // Insert some updates for a subset of prayers
@@ -116,6 +107,7 @@ export async function seedDummyPrayers(): Promise<{ prayersCount: number; update
             content: updateContents[Math.floor(Math.random() * updateContents.length)],
             author: people[Math.floor(Math.random() * people.length)],
             approval_status: 'approved',
+            is_seed_data: true,
             created_at: updateDate.toISOString()
           });
         }
@@ -145,56 +137,49 @@ export async function seedDummyPrayers(): Promise<{ prayersCount: number; update
 }
 
 export async function cleanupDummyPrayers(): Promise<{ prayersCount: number; updatesCount: number }> {
-  // Retrieve seeded prayer IDs from localStorage
-  let seededIds: string[] = [];
-  try {
-    const stored = localStorage.getItem(SEED_IDS_KEY);
-    seededIds = stored ? JSON.parse(stored) : [];
-  } catch (e) {
-    console.warn('Could not retrieve seeded IDs from localStorage:', e);
+  // Query database for seed data using the is_seed_data flag
+  const { data: seedPrayers, error: queryError } = await supabase
+    .from('prayers')
+    .select('id')
+    .eq('is_seed_data', true);
+
+  if (queryError) {
+    console.error('Error querying seed prayers:', queryError);
+    throw new Error(`Failed to query seed prayers: ${queryError.message}`);
   }
 
-  if (seededIds.length === 0) {
-    throw new Error('No seeded prayers found. Have you run the seed function?');
+  if (!seedPrayers || seedPrayers.length === 0) {
+    throw new Error('No seed data found in database. Have you run the seed function?');
   }
 
-  // Delete updates for seeded prayers first
-  let deletedUpdatesCount = 0;
-  for (const prayerId of seededIds) {
-    const { data: deletedUpdates, error: updateError } = await supabase
-      .from('prayer_updates')
-      .delete()
-      .eq('prayer_id', prayerId)
-      .select();
+  const seededIds = seedPrayers.map(p => p.id);
 
-    if (updateError) {
-      console.error('Error deleting updates for prayer', prayerId, ':', updateError);
-    } else {
-      deletedUpdatesCount += deletedUpdates?.length ?? 0;
-    }
+  // Delete updates marked as seed data
+  const { data: deletedUpdates, error: updateError } = await supabase
+    .from('prayer_updates')
+    .delete()
+    .eq('is_seed_data', true)
+    .select();
+
+  if (updateError) {
+    console.error('Error deleting seed updates:', updateError);
+    throw new Error(`Failed to delete seed updates: ${updateError.message}`);
   }
 
-  // Delete the seeded prayers
+  // Delete prayers marked as seed data
   const { data: deletedPrayers, error: prayerError } = await supabase
     .from('prayers')
     .delete()
-    .in('id', seededIds)
+    .eq('is_seed_data', true)
     .select();
 
   if (prayerError) {
-    console.error('Error deleting prayers:', prayerError);
-    throw new Error(`Failed to delete prayers: ${prayerError.message}`);
-  }
-
-  // Clear localStorage
-  try {
-    localStorage.removeItem(SEED_IDS_KEY);
-  } catch (e) {
-    console.warn('Could not clear localStorage:', e);
+    console.error('Error deleting seed prayers:', prayerError);
+    throw new Error(`Failed to delete seed prayers: ${prayerError.message}`);
   }
 
   return {
     prayersCount: deletedPrayers?.length ?? 0,
-    updatesCount: deletedUpdatesCount
+    updatesCount: deletedUpdates?.length ?? 0
   };
 }

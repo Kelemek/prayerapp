@@ -12,28 +12,53 @@ export const useTheme = () => {
     return 'system';
   });
 
+  // Apply theme immediately on component mount and whenever theme changes
   useEffect(() => {
-    // Apply theme to document
-    const root = document.documentElement;
+    const applyTheme = () => {
+      const root = document.documentElement;
+      
+      // Get the saved theme from localStorage (in case it was changed elsewhere)
+      const currentSavedTheme = localStorage.getItem('theme') as Theme | null;
+      const activeTheme = currentSavedTheme || theme;
+      
+      // Determine the actual theme to apply
+      let effectiveTheme: 'light' | 'dark';
+      
+      if (activeTheme === 'system') {
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        effectiveTheme = systemPrefersDark ? 'dark' : 'light';
+      } else {
+        effectiveTheme = activeTheme as 'light' | 'dark';
+      }
+      
+      // Apply the theme class
+      if (effectiveTheme === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+      
+      // Save preference to localStorage if it changed
+      if (currentSavedTheme !== theme) {
+        localStorage.setItem('theme', theme);
+      }
+    };
+
+    // Apply immediately
+    applyTheme();
     
-    // Determine the actual theme to apply
-    let effectiveTheme: 'light' | 'dark';
+    // Also reapply on visibility change (when user comes back to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        applyTheme();
+      }
+    };
     
-    if (theme === 'system') {
-      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      effectiveTheme = systemPrefersDark ? 'dark' : 'light';
-    } else {
-      effectiveTheme = theme;
-    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    if (effectiveTheme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    
-    // Save preference to localStorage
-    localStorage.setItem('theme', theme);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [theme]);
 
   useEffect(() => {

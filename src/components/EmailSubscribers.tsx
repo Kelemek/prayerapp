@@ -259,15 +259,15 @@ export const EmailSubscribers: React.FC = () => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <Mail className="text-blue-600 dark:text-blue-400" size={24} />
           <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
             Email Notification Subscribers
           </h3>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={() => {
               setShowCSVUpload(!showCSVUpload);
@@ -276,7 +276,7 @@ export const EmailSubscribers: React.FC = () => {
               setCSVSuccess(null);
               setCSVData([]);
             }}
-            className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm whitespace-nowrap"
           >
             <Upload size={18} />
             Upload CSV
@@ -287,7 +287,7 @@ export const EmailSubscribers: React.FC = () => {
               setShowCSVUpload(false);
               setError(null);
             }}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm whitespace-nowrap"
           >
             <Plus size={18} />
             Add Subscriber
