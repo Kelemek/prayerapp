@@ -28,6 +28,7 @@ export const MobilePresentation: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [showControls, setShowControls] = useState(true);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
@@ -98,6 +99,17 @@ export const MobilePresentation: React.FC = () => {
     return () => clearInterval(timer);
   }, [isPlaying, displayDuration, smartMode, prayers.length, currentIndex]);
 
+  // Auto-hide controls after 3 seconds
+  useEffect(() => {
+    if (!showControls) return;
+
+    const hideTimer = setTimeout(() => {
+      setShowControls(false);
+    }, 3000);
+
+    return () => clearTimeout(hideTimer);
+  }, [showControls]);
+
   const goToPrevious = () => {
     setCurrentIndex((currentIndex - 1 + prayers.length) % prayers.length);
   };
@@ -129,6 +141,27 @@ export const MobilePresentation: React.FC = () => {
     }
   };
 
+  // Handle vertical swipes for showing controls
+  const onVerticalTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientY);
+  };
+
+  const onVerticalTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientY);
+  };
+
+  const onVerticalTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isUpSwipe = distance < -minSwipeDistance;
+    
+    // Only detect upward swipes from bottom 30% of screen
+    if (isUpSwipe && touchStart > window.innerHeight * 0.7) {
+      setShowControls(true);
+    }
+  };
+
   const currentPrayer = prayers[currentIndex];
 
   if (loading) {
@@ -157,7 +190,12 @@ export const MobilePresentation: React.FC = () => {
     : [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white flex flex-col">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white flex flex-col"
+      onTouchStart={onVerticalTouchStart}
+      onTouchMove={onVerticalTouchMove}
+      onTouchEnd={onVerticalTouchEnd}
+    >
       {/* Prayer Content - scrollable and centered with swipe support */}
       <div 
         className="flex-1 overflow-y-auto px-4 py-6 pb-24 flex items-center"
