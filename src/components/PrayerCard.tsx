@@ -49,6 +49,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   const [updateDeleteReason, setUpdateDeleteReason] = useState('');
   const [updateDeleteRequesterName, setUpdateDeleteRequesterName] = useState('');
   const [updateDeleteRequesterEmail, setUpdateDeleteRequesterEmail] = useState('');
+  const [showAllUpdates, setShowAllUpdates] = useState(false);
   const { showToast } = useToast();
 
 
@@ -164,6 +165,9 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               handleDirectDelete();
             } else {
               setShowDeleteRequest(!showDeleteRequest);
+              setShowAddUpdate(false);
+              setShowStatusChangeRequest(false);
+              setShowUpdateDeleteRequest(null);
             }
           }}
           className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
@@ -226,6 +230,8 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                 onClick={() => {
                   setShowAddUpdate(!showAddUpdate);
                   setShowStatusChangeRequest(false);
+                  setShowDeleteRequest(false);
+                  setShowUpdateDeleteRequest(null);
                 }}
                 className="px-3 py-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
               >
@@ -241,6 +247,8 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               onClick={() => {
                 setShowStatusChangeRequest(!showStatusChangeRequest);
                 setShowAddUpdate(false);
+                setShowDeleteRequest(false);
+                setShowUpdateDeleteRequest(null);
               }}
               className="px-3 py-1 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
             >
@@ -250,6 +258,8 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               onClick={() => {
                 setShowAddUpdate(!showAddUpdate);
                 setShowStatusChangeRequest(false);
+                setShowDeleteRequest(false);
+                setShowUpdateDeleteRequest(null);
               }}
               className="px-3 py-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
             >
@@ -424,13 +434,26 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         </form>
       )}
 
-      {/* Recent Updates - Always show last 2 */}
+      {/* Recent Updates */}
       {prayer.updates && prayer.updates.length > 0 && (
         <div className="pt-4">
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Recent Updates</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Recent Updates {prayer.updates.length > 2 && `(${showAllUpdates ? prayer.updates.length : 2} of ${prayer.updates.length})`}
+            </h4>
+            {prayer.updates.length > 2 && (
+              <button
+                onClick={() => setShowAllUpdates(!showAllUpdates)}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1"
+              >
+                {showAllUpdates ? 'Show less' : 'Show all'}
+                <ChevronDown size={14} className={`transform transition-transform ${showAllUpdates ? 'rotate-180' : ''}`} />
+              </button>
+            )}
+          </div>
           <div className="space-y-3">
-            {/* Show last 2 updates */}
-            {prayer.updates.slice(-2).map((update) => (
+            {/* Show last 2 updates by default, or all if showAllUpdates is true */}
+            {(showAllUpdates ? prayer.updates : prayer.updates.slice(-2)).map((update) => (
               <div key={update.id} className="bg-gray-100 dark:bg-gray-600 rounded-lg p-3">
                 <div className="relative mb-2">
                   <div className="flex items-center justify-between">
@@ -451,7 +474,15 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                             }
                           }
                         } else {
-                          setShowUpdateDeleteRequest(update.id);
+                          // Toggle the form - close if already open, open if closed
+                          if (showUpdateDeleteRequest === update.id) {
+                            setShowUpdateDeleteRequest(null);
+                          } else {
+                            setShowUpdateDeleteRequest(update.id);
+                            setShowAddUpdate(false);
+                            setShowStatusChangeRequest(false);
+                            setShowDeleteRequest(false);
+                          }
                         }
                       }}
                       className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 ml-2"
@@ -463,14 +494,66 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                   <span className="absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400">{formatDate(update.created_at)}</span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">{update.content}</p>
-                {/* (moved) Update Deletion Request handled at top-level form below */}
+                
+                {/* Inline Update Deletion Request Form */}
+                {showUpdateDeleteRequest === update.id && !isAdmin && (
+                  <form onSubmit={handleUpdateDeletionRequest} className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">Request Update Deletion</h4>
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Your name"
+                        value={updateDeleteRequesterName}
+                        onChange={(e) => setUpdateDeleteRequesterName(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        required
+                      />
+                      <input
+                        type="email"
+                        placeholder="Your email"
+                        value={updateDeleteRequesterEmail}
+                        onChange={(e) => setUpdateDeleteRequesterEmail(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        required
+                      />
+                      <textarea
+                        placeholder="Reason for update deletion request..."
+                        value={updateDeleteReason}
+                        onChange={(e) => setUpdateDeleteReason(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 h-20"
+                        required
+                      />
+                      {updateDeleteError && (
+                        <div className="text-sm text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 p-2 rounded">
+                          {updateDeleteError}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <button 
+                          type="submit" 
+                          disabled={isSubmittingUpdateDelete} 
+                          className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {isSubmittingUpdateDelete ? 'Submitting...' : 'Submit Request'}
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setShowUpdateDeleteRequest(null)} 
+                          className="px-3 py-1 text-sm bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
               </div>
             ))}
           </div>
           
           {/* (removed 'Show more' button) */}
-          { /* Top-level Update Deletion Request Form (moved from inline) */ }
-          {showUpdateDeleteRequest && !isAdmin && (
+          { /* Removed top-level form - now inline under each update */ }
+          {false && showUpdateDeleteRequest && !isAdmin && (
             <form onSubmit={handleUpdateDeletionRequest} className="mt-4 mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-3">Request Update Deletion</h4>
               <div className="space-y-2">
