@@ -162,12 +162,23 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
   (['current', 'ongoing', 'answered'] as const).forEach(status => {
     const statusPrayers = prayersByStatus[status];
     if (statusPrayers.length > 0) {
+      // Split into two columns (column-major ordering)
+      const mid = Math.ceil(statusPrayers.length / 2);
+      const col1 = statusPrayers.slice(0, mid);
+      const col2 = statusPrayers.slice(mid);
+
+      const col1HTML = col1.map((prayer, idx) => generatePrayerHTML(prayer, idx + 1)).join('');
+      const col2HTML = col2.map((prayer, idx) => generatePrayerHTML(prayer, mid + idx + 1)).join('');
+
       prayerSectionsHTML += `
         <div class="status-section">
-          <h2 style="color: ${statusColors[status]}; border-bottom: 2px solid ${statusColors[status]}; padding-bottom: 6px; margin-bottom: 12px; font-size: 20px;">
+          <h2 style="color: ${statusColors[status]}; border-bottom: 2px solid ${statusColors[status]}; padding-bottom: 4px; margin-bottom: 6px; font-size: 16px;">
             ${statusLabels[status]} (${statusPrayers.length})
           </h2>
-          ${statusPrayers.map((prayer, index) => generatePrayerHTML(prayer, index + 1)).join('')}
+          <div class="columns">
+            <div class="col">${col1HTML}</div>
+            <div class="col">${col2HTML}</div>
+          </div>
         </div>
       `;
     }
@@ -188,25 +199,27 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
           }
 
           body {
-            font-family: 'Georgia', 'Times New Roman', serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
             line-height: 1.4;
-            color: #333;
+            color: #222;
             background: white;
-            padding: 25px;
-            max-width: 900px;
+            padding: 12px;
+            max-width: 1000px;
             margin: 0 auto;
+            font-size: 13px;
           }
 
           .header {
-            text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
           }
 
           .header h1 {
-            font-size: 28px;
+            font-size: 18px;
             color: #1f2937;
-            margin-bottom: 5px;
+            margin-bottom: 0;
+            display: inline-block;
           }
 
           .header .subtitle {
@@ -218,19 +231,21 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
           .date-range {
             font-size: 13px;
             color: #4b5563;
-            margin-top: 5px;
+            display: inline-block;
+            margin-left: 12px;
           }
 
           .status-section {
-            margin-bottom: 30px;
+            margin-bottom: 12px;
           }
 
           .prayer-item {
-            background: #f9fafb;
-            border-left: 4px solid #3b82f6;
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            border-radius: 3px;
+            /* keep card look but reduce ink and spacing */
+            background: transparent;
+            border: 1px solid #e6e6e6;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            border-radius: 2px;
             page-break-inside: avoid;
             break-inside: avoid;
           }
@@ -251,78 +266,91 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
             display: inline-block;
             background: #3b82f6;
             color: white;
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             text-align: center;
-            line-height: 24px;
-            font-weight: bold;
-            font-size: 12px;
-            margin-right: 8px;
+            line-height: 20px;
+            font-weight: 700;
+            font-size: 11px;
+            margin-right: 6px;
           }
 
           .prayer-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 4px;
             display: inline;
           }
 
           .prayer-for {
-            font-size: 14px;
+            font-size: 15px;
             color: #4b5563;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
+            font-weight: 600;
           }
 
           .prayer-meta {
-            font-size: 12px;
+            font-size: 13px;
             color: #6b7280;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             font-style: italic;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: center;
           }
 
           .prayer-description {
             font-size: 14px;
             color: #374151;
             line-height: 1.5;
-            margin-bottom: 10px;
-            white-space: pre-wrap;
+            margin-bottom: 5px;
+            /* Clamp to 2 lines for dense layout */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
 
+          /* Condensed updates section */
           .updates-section {
-            margin-top: 12px;
-            padding-top: 10px;
+            margin-top: 5px;
+            padding-top: 5px;
             border-top: 1px dotted #d1d5db;
           }
 
-          .updates-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: #4b5563;
-            margin-bottom: 8px;
+          .updates-header {
+            font-size: 12px;
+            font-weight: 700;
+            color: #6b7280;
+            margin-bottom: 3px;
           }
 
           .update-item {
-            background: white;
-            padding: 8px 10px;
-            margin-bottom: 8px;
-            border-radius: 3px;
-            border: 1px solid #e5e7eb;
+            font-size: 12px;
+            color: #374151;
+            line-height: 1.4;
+            margin-bottom: 2px;
           }
 
           .update-meta {
-            font-size: 11px;
+            font-weight: 600;
             color: #6b7280;
-            margin-bottom: 4px;
+          }
+          .columns {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
           }
 
-          .update-content {
-            font-size: 13px;
-            color: #374151;
-            line-height: 1.4;
-            white-space: pre-wrap;
+          .col {
+            flex: 1 1 0;
+            min-width: 0;
           }
+
 
           .footer {
             margin-top: 30px;
@@ -383,7 +411,7 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
       <body>
         <div class="header">
           <h1>🙏 Church Prayer List</h1>
-          <p class="date-range">${dateRange}</p>
+          <span class="date-range">${dateRange}</span>
         </div>
         ${prayerSectionsHTML}
         <div class="footer">
@@ -419,36 +447,33 @@ function generatePrayerHTML(prayer: any, number: number): string {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       )
     : [];
-
+  
+  // Show updates in condensed format with minimal spacing
   const updatesHTML = updates.length > 0 ? `
     <div class="updates-section">
-      <div class="updates-title">📝 Updates (${updates.length})</div>
+      <div class="updates-header">Updates (${updates.length}):</div>
       ${updates.map(update => {
         const updateDate = new Date(update.created_at).toLocaleDateString('en-US', {
           month: 'short',
-          day: 'numeric',
-          year: 'numeric'
+          day: 'numeric'
         });
-        return `
-          <div class="update-item">
-            <div class="update-meta">
-              <strong>${update.author || 'Anonymous'}</strong> • ${updateDate}
-            </div>
-            <div class="update-content">${update.content}</div>
-          </div>
-        `;
+        return `<div class="update-item"><span class="update-meta">${update.author || 'Anonymous'} • ${updateDate}:</span> ${update.content}</div>`;
       }).join('')}
     </div>
   ` : '';
 
+  // Place requester and date on a single line; right-side show answered date if present
+  const requesterText = `Requested by ${prayer.requester || 'Anonymous'}`;
+  const rightMeta = answeredDate ? `Answered on ${answeredDate}` : '';
+
   return `
     <div class="prayer-item ${prayer.status}">
-      <div class="prayer-for">
-        <strong>Prayer For:</strong> ${prayer.prayer_for}
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+        <div class="prayer-for"><strong>Prayer For:</strong> ${prayer.prayer_for}</div>
       </div>
       <div class="prayer-meta">
-        Requested by ${prayer.requester || 'Anonymous'} on ${createdDate}
-        ${answeredDate ? ` • Answered on ${answeredDate}` : ''}
+        <span>${requesterText} • ${createdDate}</span>
+        <span>${rightMeta}</span>
       </div>
       <div class="prayer-description">${prayer.description}</div>
       ${updatesHTML}

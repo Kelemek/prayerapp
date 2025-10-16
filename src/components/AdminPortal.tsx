@@ -9,6 +9,7 @@ import { PasswordChange } from './PasswordChange';
 import { EmailSettings } from './EmailSettings';
 import { useAdminData } from '../hooks/useAdminData';
 import { useAdminAuth } from '../hooks/useAdminAuth';
+import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
 
 type AdminTab = 'prayers' | 'updates' | 'deletions' | 'status-changes' | 'approved' | 'denied' | 'settings';
 
@@ -45,6 +46,10 @@ export const AdminPortal: React.FC = () => {
   } = useAdminData();
 
   const { changePassword } = useAdminAuth();
+
+  // Dev seed loading states
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
 
   // Automatically select the first tab with pending items on initial load only
   const initialAutoSelectRef = useRef(false);
@@ -665,6 +670,67 @@ export const AdminPortal: React.FC = () => {
             <div className="max-w-2xl space-y-6">
               <EmailSettings />
               <PasswordChange onPasswordChange={changePassword} />
+
+              {/* Dev seed controls */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-2">
+                  Development Seed Data
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                  Insert or remove a set of 50 dummy prayers spanning 2 months for testing the printable prayer list feature. Use with caution.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Insert 50 dummy prayers with dates spanning 2 months? This will add test data to your database.')) {
+                        return;
+                      }
+                      try {
+                        setSeedLoading(true);
+                        const result = await seedDummyPrayers();
+                        alert(`Successfully inserted:\n• Prayers: ${result.prayersCount}\n• Updates: ${result.updatesCount}`);
+                        // Reload to show new data
+                        window.location.reload();
+                      } catch (err: any) {
+                        console.error('Seed error:', err);
+                        alert(`Error seeding data: ${err?.message || err}`);
+                      } finally {
+                        setSeedLoading(false);
+                      }
+                    }}
+                    disabled={seedLoading || cleanupLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {seedLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                    {seedLoading ? 'Inserting...' : 'Add Dummy Test Data'}
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Delete all dummy prayers? This will remove all seeded test data.')) {
+                        return;
+                      }
+                      try {
+                        setCleanupLoading(true);
+                        const result = await cleanupDummyPrayers();
+                        alert(`Successfully deleted:\n• Prayers: ${result.prayersCount}\n• Updates: ${result.updatesCount}`);
+                        // Reload to show changes
+                        window.location.reload();
+                      } catch (err: any) {
+                        console.error('Cleanup error:', err);
+                        alert(`Error cleaning up data: ${err?.message || err}`);
+                      } finally {
+                        setCleanupLoading(false);
+                      }
+                    }}
+                    disabled={seedLoading || cleanupLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {cleanupLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                    {cleanupLoading ? 'Cleaning up...' : 'Clean Up Dummy Data'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
