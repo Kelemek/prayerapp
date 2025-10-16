@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Play, Pause, Settings, X } from 'lucide-react';
+import { ArrowLeft, Settings, Play, Pause, Timer, Bell, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Prayer {
@@ -29,6 +29,12 @@ export const PrayerPresentation: React.FC = () => {
   const [showControls, setShowControls] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
+  
+  // Prayer Timer states
+  const [prayerTimerMinutes, setPrayerTimerMinutes] = useState(10);
+  const [prayerTimerActive, setPrayerTimerActive] = useState(false);
+  const [prayerTimerRemaining, setPrayerTimerRemaining] = useState(0);
+  const [showTimerNotification, setShowTimerNotification] = useState(false);
 
   // Fetch prayers
   useEffect(() => {
@@ -145,6 +151,86 @@ export const PrayerPresentation: React.FC = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (prayers.length === 0) return;
+      
+      switch(e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          setCurrentIndex((prev) => (prev - 1 + prayers.length) % prayers.length);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          setCurrentIndex((prev) => (prev + 1) % prayers.length);
+          break;
+        case ' ':
+          e.preventDefault();
+          setIsPlaying(prev => !prev);
+          break;
+        case 'Escape':
+          e.preventDefault();
+          setShowSettings(false);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [prayers.length]);
+
+  // Prayer Timer
+  useEffect(() => {
+    if (!prayerTimerActive) return;
+
+    if (prayerTimerRemaining <= 0) {
+      // Timer finished
+      setPrayerTimerActive(false);
+      setShowTimerNotification(true);
+      
+      // Play notification sound (browser notification)
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Prayer Timer Complete! 🙏', {
+          body: `Your ${prayerTimerMinutes} minute prayer time is up.`,
+          icon: '/favicon.ico'
+        });
+      }
+      
+      // Auto-hide notification after 10 seconds
+      setTimeout(() => setShowTimerNotification(false), 10000);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setPrayerTimerRemaining(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [prayerTimerActive, prayerTimerRemaining, prayerTimerMinutes]);
+
+  const startPrayerTimer = () => {
+    setPrayerTimerRemaining(prayerTimerMinutes * 60);
+    setPrayerTimerActive(true);
+    setShowTimerNotification(false);
+    
+    // Request notification permission if needed
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  };
+
+  const stopPrayerTimer = () => {
+    setPrayerTimerActive(false);
+    setPrayerTimerRemaining(0);
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const goToPrevious = () => {
     setCurrentIndex((currentIndex - 1 + prayers.length) % prayers.length);
   };
@@ -258,6 +344,17 @@ export const PrayerPresentation: React.FC = () => {
         </div>
       </div>
 
+      {/* Timer Complete Notification */}
+      {showTimerNotification && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-3xl p-12 shadow-2xl border-4 border-green-400 text-center max-w-2xl mx-4 animate-pulse">
+            <Bell size={80} className="mx-auto mb-6 text-white" />
+            <h2 className="text-6xl font-bold mb-4">Prayer Timer Complete! 🙏</h2>
+            <p className="text-2xl opacity-90">Your prayer time has ended</p>
+          </div>
+        </div>
+      )}
+
       {/* Controls Overlay */}
       <div 
         className={`fixed bottom-0 left-0 right-0 bg-black/50 backdrop-blur-md p-6 transition-transform duration-300 ${
@@ -327,9 +424,9 @@ export const PrayerPresentation: React.FC = () => {
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-8 pb-4">
               <h2 className="text-3xl font-bold">Settings</h2>
               <button
                 onClick={() => setShowSettings(false)}
@@ -339,7 +436,7 @@ export const PrayerPresentation: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-6 px-8 pb-8 overflow-y-auto">
               <div>
                 <label className="flex items-center gap-3 mb-6">
                   <input
@@ -441,6 +538,62 @@ export const PrayerPresentation: React.FC = () => {
                   <option value="month">Last Month</option>
                   <option value="year">Last Year</option>
                 </select>
+              </div>
+
+              {/* Prayer Timer */}
+              <div className="border-t border-gray-600 pt-6 mt-6">
+                <h3 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                  <Timer size={24} />
+                  Prayer Timer
+                </h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xl mb-3">Timer Duration (minutes)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="120"
+                      value={prayerTimerMinutes}
+                      onChange={(e) => setPrayerTimerMinutes(Math.max(1, parseInt(e.target.value) || 1))}
+                      disabled={prayerTimerActive}
+                      className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg text-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  {prayerTimerActive && (
+                    <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-4 text-center">
+                      <div className="text-4xl font-bold mb-2">{formatTime(prayerTimerRemaining)}</div>
+                      <div className="text-lg opacity-90">Time Remaining</div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    {!prayerTimerActive ? (
+                      <button
+                        onClick={startPrayerTimer}
+                        className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Timer size={20} />
+                        Start Timer
+                      </button>
+                    ) : (
+                      <button
+                        onClick={stopPrayerTimer}
+                        className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg text-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <X size={20} />
+                        Stop Timer
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                    <p className="text-base opacity-90">
+                      Set a timer for your prayer time. You'll receive a notification when the time is up.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <button

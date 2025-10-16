@@ -6,7 +6,7 @@ interface AdminAuthContextType {
   isAdmin: boolean;
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<boolean>;
   loading: boolean;
 }
@@ -124,10 +124,22 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
 
   const logout = async () => {
     try {
+      // Clear local state first
+      setUser(null);
+      setIsAdmin(false);
+      
+      // Try to sign out from Supabase
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (error) {
-      console.error('Logout error:', error);
+      
+      // Ignore session missing errors as we're already logged out
+      if (error && error.message !== 'Auth session missing!') {
+        console.error('Logout error:', error);
+      }
+    } catch (error: any) {
+      // Ignore session missing errors
+      if (error?.message !== 'Auth session missing!') {
+        console.error('Logout error:', error);
+      }
     }
   };
 
