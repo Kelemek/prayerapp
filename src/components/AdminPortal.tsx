@@ -335,7 +335,7 @@ export const AdminPortal: React.FC = () => {
       {/* Content */}
       <main className="max-w-6xl mx-auto px-4 py-6">
         {/* Stats Grid - Clickable Filter Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-8">
           <button
             onClick={() => setActiveTab('prayers')}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
