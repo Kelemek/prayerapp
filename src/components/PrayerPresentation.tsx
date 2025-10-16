@@ -194,13 +194,27 @@ export const PrayerPresentation: React.FC = () => {
       </div>
 
       {/* Meta Info */}
-      <div className="flex justify-between items-center mb-6 text-xl opacity-90 flex-wrap gap-4">
+      <div className="flex justify-between items-center mb-1 text-xl opacity-90 flex-wrap gap-4">
         <div>
           <span className="font-semibold">Requested by:</span> {prayer.requester || 'Anonymous'}
         </div>
         <div className="px-5 py-2 bg-white/20 rounded-full">
           {prayer.status.charAt(0).toUpperCase() + prayer.status.slice(1)}
         </div>
+      </div>
+
+      {/* Date and Time */}
+      <div className="mb-6 text-lg opacity-75">
+        <span className="font-semibold">Date:</span> {new Date(prayer.created_at).toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })} at {new Date(prayer.created_at).toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true 
+        })}
       </div>
 
       {/* Updates */}
@@ -211,7 +225,15 @@ export const PrayerPresentation: React.FC = () => {
             {updates.slice(0, 3).map((update) => (
               <div key={update.id} className="bg-white/10 rounded-xl p-5">
                 <div className="text-lg opacity-80 mb-2">
-                  {update.author} • {new Date(update.created_at).toLocaleDateString()}
+                  {update.author} • {new Date(update.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })} at {new Date(update.created_at).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
                 </div>
                 <div className="text-xl">{update.content}</div>
               </div>

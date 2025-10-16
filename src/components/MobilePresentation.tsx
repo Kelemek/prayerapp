@@ -212,13 +212,27 @@ export const MobilePresentation: React.FC = () => {
             </div>
 
             {/* Meta Info */}
-            <div className="flex justify-between items-center mb-4 text-base opacity-90 flex-wrap gap-2">
+            <div className="flex justify-between items-center mb-1 text-base opacity-90 flex-wrap gap-2">
               <div>
                 <span className="font-semibold">Requested by:</span> {currentPrayer.requester || 'Anonymous'}
               </div>
               <div className="px-4 py-1 bg-white/20 rounded-full text-sm">
                 {currentPrayer.status.charAt(0).toUpperCase() + currentPrayer.status.slice(1)}
               </div>
+            </div>
+
+            {/* Date and Time */}
+            <div className="mb-4 text-sm opacity-75">
+              <span className="font-semibold">Date:</span> {new Date(currentPrayer.created_at).toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })} at {new Date(currentPrayer.created_at).toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+              })}
             </div>
 
             {/* Updates */}
@@ -229,7 +243,15 @@ export const MobilePresentation: React.FC = () => {
                   {sortedUpdates.slice(0, 3).map((update) => (
                     <div key={update.id} className="bg-white/10 rounded-lg p-4">
                       <div className="text-sm opacity-80 mb-1">
-                        {update.author} • {new Date(update.created_at).toLocaleDateString()}
+                        {update.author} • {new Date(update.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })} at {new Date(update.created_at).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
                       </div>
                       <div className="text-base">{update.content}</div>
                     </div>
