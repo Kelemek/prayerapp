@@ -159,6 +159,63 @@ export const AdminPortal: React.FC = () => {
     fetchPendingPreferenceChanges();
   }, []);
 
+  // Auto-switch to next tab with pending items when current tab becomes empty
+  useEffect(() => {
+    // Only auto-switch for approval tabs (not settings, approved, or denied)
+    const approvalTabs: AdminTab[] = ['prayers', 'updates', 'deletions', 'status-changes', 'preferences'];
+    
+    if (!approvalTabs.includes(activeTab)) return;
+
+    // Check if current tab is empty
+    let isCurrentTabEmpty = false;
+    
+    switch (activeTab) {
+      case 'prayers':
+        isCurrentTabEmpty = pendingPrayers.length === 0;
+        break;
+      case 'updates':
+        isCurrentTabEmpty = pendingUpdates.length === 0;
+        break;
+      case 'deletions':
+        isCurrentTabEmpty = pendingDeletionRequests.length === 0 && pendingUpdateDeletionRequests.length === 0;
+        break;
+      case 'status-changes':
+        isCurrentTabEmpty = pendingStatusChangeRequests.length === 0;
+        break;
+      case 'preferences':
+        isCurrentTabEmpty = pendingPreferenceChanges.length === 0;
+        break;
+    }
+
+    // If current tab is empty, find next tab with pending items
+    if (isCurrentTabEmpty && !loading && !loadingPreferenceChanges) {
+      const tabsWithCounts = [
+        { tab: 'prayers' as AdminTab, count: pendingPrayers.length },
+        { tab: 'updates' as AdminTab, count: pendingUpdates.length },
+        { tab: 'deletions' as AdminTab, count: pendingDeletionRequests.length + pendingUpdateDeletionRequests.length },
+        { tab: 'status-changes' as AdminTab, count: pendingStatusChangeRequests.length },
+        { tab: 'preferences' as AdminTab, count: pendingPreferenceChanges.length }
+      ];
+
+      // Find the first tab with pending items
+      const nextTab = tabsWithCounts.find(t => t.count > 0);
+      
+      if (nextTab) {
+        setActiveTab(nextTab.tab);
+      }
+    }
+  }, [
+    activeTab,
+    pendingPrayers.length,
+    pendingUpdates.length,
+    pendingDeletionRequests.length,
+    pendingUpdateDeletionRequests.length,
+    pendingStatusChangeRequests.length,
+    pendingPreferenceChanges.length,
+    loading,
+    loadingPreferenceChanges
+  ]);
+
   const approvePreferenceChange = async (id: string) => {
     try {
       // Get the preference change

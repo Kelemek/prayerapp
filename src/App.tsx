@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Heart, Shield, LogOut, Settings } from 'lucide-react';
 import { PrayerForm } from './components/PrayerForm';
 import { PrayerCard } from './components/PrayerCard';
@@ -40,6 +40,20 @@ function AppContent() {
   const [showForm, setShowForm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [filters, setFilters] = useState<PrayerFilters>({status: 'current'});
+  
+  // Track which form is open across all cards
+  const closeAllFormsCallbacks = useRef<Set<() => void>>(new Set());
+
+  const registerCloseCallback = (callback: () => void) => {
+    closeAllFormsCallbacks.current.add(callback);
+    return () => {
+      closeAllFormsCallbacks.current.delete(callback);
+    };
+  };
+
+  const closeAllForms = () => {
+    closeAllFormsCallbacks.current.forEach(callback => callback());
+  };
 
   // Track page view on initial load
   useEffect(() => {
@@ -319,6 +333,8 @@ function AppContent() {
                 onUpdateStatus={updatePrayerStatus}
                 onAddUpdate={addPrayerUpdate}
                 onDelete={deletePrayer}
+                registerCloseCallback={registerCloseCallback}
+                onFormOpen={closeAllForms}
                 onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => {
                   try {
                     const { data, error } = await supabase

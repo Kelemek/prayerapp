@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, User, CheckCircle, Trash2, ChevronDown } from 'lucide-react';
 import { useToast } from './Toast';
 import { PrayerStatus } from '../types/prayer';
@@ -13,6 +13,8 @@ interface PrayerCardProps {
   onRequestStatusChange: (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
   onDeleteUpdate: (updateId: string) => Promise<void>;
   onRequestUpdateDelete: (updateId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<any>;
+  registerCloseCallback: (callback: () => void) => () => void;
+  onFormOpen: () => void;
   isAdmin: boolean;
 }
 
@@ -25,6 +27,8 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   onRequestStatusChange,
   onDeleteUpdate,
   onRequestUpdateDelete,
+  registerCloseCallback,
+  onFormOpen,
   isAdmin 
 }) => {
   const displayedRequester = prayer.is_anonymous ? 'Anonymous' : prayer.requester;
@@ -52,7 +56,23 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   const [showAllUpdates, setShowAllUpdates] = useState(false);
   const { showToast } = useToast();
 
+  // Register callback to close all forms in this card
+  useEffect(() => {
+    const closeAllForms = () => {
+      setShowAddUpdate(false);
+      setShowDeleteRequest(false);
+      setShowStatusChangeRequest(false);
+      setShowUpdateDeleteRequest(null);
+    };
+    
+    return registerCloseCallback(closeAllForms);
+  }, [registerCloseCallback]);
 
+  // Helper to open a form (closes all other forms first)
+  const openForm = (formSetter: () => void) => {
+    onFormOpen(); // Close all forms in all cards
+    formSetter(); // Then open the desired form
+  };
 
   const handleAddUpdate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,10 +184,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             if (isAdmin) {
               handleDirectDelete();
             } else {
-              setShowDeleteRequest(!showDeleteRequest);
-              setShowAddUpdate(false);
-              setShowStatusChangeRequest(false);
-              setShowUpdateDeleteRequest(null);
+              openForm(() => setShowDeleteRequest(!showDeleteRequest));
             }
           }}
           className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
@@ -228,10 +245,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               {/* Add Update for admins (same behavior as non-admin add update) */}
               <button
                 onClick={() => {
-                  setShowAddUpdate(!showAddUpdate);
-                  setShowStatusChangeRequest(false);
-                  setShowDeleteRequest(false);
-                  setShowUpdateDeleteRequest(null);
+                  openForm(() => setShowAddUpdate(!showAddUpdate));
                 }}
                 className="px-3 py-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
               >
@@ -245,10 +259,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             </span>
             <button
               onClick={() => {
-                setShowStatusChangeRequest(!showStatusChangeRequest);
-                setShowAddUpdate(false);
-                setShowDeleteRequest(false);
-                setShowUpdateDeleteRequest(null);
+                openForm(() => setShowStatusChangeRequest(!showStatusChangeRequest));
               }}
               className="px-3 py-1 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
             >
@@ -256,10 +267,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             </button>
             <button
               onClick={() => {
-                setShowAddUpdate(!showAddUpdate);
-                setShowStatusChangeRequest(false);
-                setShowDeleteRequest(false);
-                setShowUpdateDeleteRequest(null);
+                openForm(() => setShowAddUpdate(!showAddUpdate));
               }}
               className="px-3 py-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
             >
@@ -478,10 +486,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                           if (showUpdateDeleteRequest === update.id) {
                             setShowUpdateDeleteRequest(null);
                           } else {
-                            setShowUpdateDeleteRequest(update.id);
-                            setShowAddUpdate(false);
-                            setShowStatusChangeRequest(false);
-                            setShowDeleteRequest(false);
+                            openForm(() => setShowUpdateDeleteRequest(update.id));
                           }
                         }
                       }}
