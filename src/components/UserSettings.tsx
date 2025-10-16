@@ -166,10 +166,10 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md sm:max-w-lg lg:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <Settings className="text-purple-600 dark:text-purple-400" size={24} />
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
@@ -185,61 +185,61 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           {/* Print Button */}
           <button
             onClick={() => handlePrint('week')}
             disabled={isPrinting}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
           >
             <Printer size={18} className={isPrinting ? 'animate-spin' : ''} />
             <span className="font-medium">{isPrinting ? 'Generating...' : 'Print Prayer List'}</span>
           </button>
 
           {/* Theme Selection */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div className="flex items-start gap-3">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
+            <div className="flex items-start gap-2 sm:gap-3">
               <Sun className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" size={20} />
               <div className="flex-1">
-                <div className="font-medium text-gray-800 dark:text-gray-100 mb-3">
+                <div className="font-medium text-gray-800 dark:text-gray-100 mb-3 text-sm sm:text-base">
                   Theme Preference
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                   <button
                     onClick={() => handleThemeChange('light')}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                    className={`flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all ${
                       theme === 'light'
                         ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600'
                     }`}
                   >
-                    <Sun size={20} className="text-amber-600" />
-                    <span className="text-sm font-medium text-gray-800 dark:text-gray-100">Light</span>
+                    <Sun size={18} className="text-amber-600 sm:w-5 sm:h-5" />
+                    <span className="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100">Light</span>
                   </button>
                   <button
                     onClick={() => handleThemeChange('dark')}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                    className={`flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all ${
                       theme === 'dark'
                         ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600'
                     }`}
                   >
-                    <Moon size={20} className="text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-medium text-gray-800 dark:text-gray-100">Dark</span>
+                    <Moon size={18} className="text-blue-600 dark:text-blue-400 sm:w-5 sm:h-5" />
+                    <span className="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100">Dark</span>
                   </button>
                   <button
                     onClick={() => handleThemeChange('system')}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                    className={`flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all ${
                       theme === 'system'
                         ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600'
                     }`}
                   >
-                    <Monitor size={20} className="text-gray-600 dark:text-gray-400" />
-                    <span className="text-sm font-medium text-gray-800 dark:text-gray-100">System</span>
+                    <Monitor size={18} className="text-gray-600 dark:text-gray-400 sm:w-5 sm:h-5" />
+                    <span className="text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-100">System</span>
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
                   Choose your preferred color theme or use your system settings
                 </p>
               </div>
@@ -250,14 +250,14 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
           <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
           {/* Email Subscription Section Header */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <Mail className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" size={20} />
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 sm:p-4">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <Mail className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" size={18} />
               <div>
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1 text-sm sm:text-base">
                   Email Notification Preferences
                 </h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
+                <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                   Manage your email subscription to receive notifications when new prayer requests are added. 
                   Enter your email below to opt-in or opt-out of notifications.
                 </p>
@@ -323,11 +323,11 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
           )}
 
           {/* Notification Preferences */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <Mail className="text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" size={20} />
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <Mail className="text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" size={18} />
               <div className="flex-1">
-                <label className="flex items-start gap-3 cursor-pointer">
+                <label className="flex items-start gap-2 sm:gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={receiveNotifications}
@@ -335,10 +335,10 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
                     className="mt-1 rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500"
                   />
                   <div>
-                    <div className="font-medium text-gray-800 dark:text-gray-100">
+                    <div className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base">
                       Receive new prayer notifications
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
                       Get email notifications when new prayers are submitted to the prayer list
                     </p>
                   </div>
@@ -348,10 +348,10 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
           </div>
 
           {/* Info Box */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 sm:p-4">
             <div className="flex items-start gap-2">
-              <Mail size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-800 dark:text-blue-200">
+              <Mail size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5 sm:w-[18px] sm:h-[18px]" />
+              <div className="text-xs sm:text-sm text-blue-800 dark:text-blue-200">
                 <p className="font-medium mb-2">How it works:</p>
                 <ul className="list-disc list-inside space-y-1 ml-2 mb-3">
                   <li>Enter your email to automatically load your current preferences</li>
@@ -375,17 +375,17 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={savePreferences}
             disabled={saving || !email.trim() || !name.trim()}
-            className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 px-4 py-2 sm:py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors text-sm sm:text-base font-medium"
           >
             {saving ? 'Submitting...' : 'Submit for Approval'}
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            className="px-4 py-2 sm:py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm sm:text-base font-medium sm:min-w-[100px]"
           >
             Close
           </button>
