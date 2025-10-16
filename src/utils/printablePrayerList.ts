@@ -106,10 +106,17 @@ export const downloadPrintablePrayerList = async (timeRange: TimeRange = 'month'
  * Generate printable HTML for prayer list
  */
 function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): string {
-  const today = new Date().toLocaleDateString('en-US', { 
+  const now = new Date();
+  const today = now.toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
+  });
+  
+  const currentTime = now.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
   });
 
   // Calculate start date based on time range
@@ -172,7 +179,7 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
 
       prayerSectionsHTML += `
         <div class="status-section">
-          <h2 style="color: ${statusColors[status]}; border-bottom: 2px solid ${statusColors[status]}; padding-bottom: 4px; margin-bottom: 6px; font-size: 16px;">
+          <h2 style="color: ${statusColors[status]}; border-bottom: 2px solid ${statusColors[status]}; padding-bottom: 3px; margin-bottom: 4px; margin-top: 8px; font-size: 16px;">
             ${statusLabels[status]} (${statusPrayers.length})
           </h2>
           <div class="columns">
@@ -210,16 +217,33 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
           }
 
           .header {
-            margin-bottom: 12px;
-            padding-bottom: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
             border-bottom: 2px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+          }
+
+          .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+          }
+
+          .header-right {
+            font-size: 12px;
+            color: #6b7280;
+            white-space: nowrap;
           }
 
           .header h1 {
             font-size: 18px;
             color: #1f2937;
-            margin-bottom: 0;
-            display: inline-block;
+            margin: 0;
           }
 
           .header .subtitle {
@@ -231,35 +255,37 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
           .date-range {
             font-size: 13px;
             color: #4b5563;
-            display: inline-block;
-            margin-left: 12px;
           }
 
           .status-section {
-            margin-bottom: 12px;
+            margin-bottom: 6px;
           }
 
           .prayer-item {
             /* keep card look but reduce ink and spacing */
             background: transparent;
             border: 1px solid #e6e6e6;
-            padding: 8px 10px;
-            margin-bottom: 8px;
+            padding: 6px 8px;
+            margin-bottom: 6px;
             border-radius: 2px;
             page-break-inside: avoid;
             break-inside: avoid;
           }
 
+          .prayer-item.current {
+            border-left: 3px solid #3b82f6;
+          }
+
           .prayer-item.ongoing {
-            border-left-color: #f59e0b;
+            border-left: 3px solid #f59e0b;
           }
 
           .prayer-item.answered {
-            border-left-color: #10b981;
+            border-left: 3px solid #10b981;
           }
 
           .prayer-item.closed {
-            border-left-color: #6b7280;
+            border-left: 3px solid #6b7280;
           }
 
           .prayer-number {
@@ -307,12 +333,8 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
             color: #374151;
             line-height: 1.5;
             margin-bottom: 5px;
-            /* Clamp to 2 lines for dense layout */
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
           }
 
           /* Condensed updates section */
@@ -349,16 +371,6 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
           .col {
             flex: 1 1 0;
             min-width: 0;
-          }
-
-
-          .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 2px solid #e5e7eb;
-            text-align: center;
-            color: #6b7280;
-            font-size: 12px;
           }
 
           @media screen and (max-width: 768px) {
@@ -410,14 +422,15 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
       </head>
       <body>
         <div class="header">
-          <h1>🙏 Church Prayer List</h1>
-          <span class="date-range">${dateRange}</span>
+          <div class="header-left">
+            <h1>🙏 Church Prayer List</h1>
+            <span class="date-range">${dateRange}</span>
+          </div>
+          <div class="header-right">
+            Generated: ${today} at ${currentTime}
+          </div>
         </div>
         ${prayerSectionsHTML}
-        <div class="footer">
-          <p>Generated on ${today}</p>
-          <p style="margin-top: 10px;">May God bless all those who are lifted up in prayer.</p>
-        </div>
       </body>
     </html>
   `;
