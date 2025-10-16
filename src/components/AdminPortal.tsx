@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings, User, Calendar, X, TrendingUp, Eye, Mail } from 'lucide-react';
+import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings, User, Calendar, X, TrendingUp, Eye, Mail, Heart, UserCheck } from 'lucide-react';
 import { DeletionStyleCard } from './DeletionStyleCard';
 import { PendingPrayerCard } from './PendingPrayerCard';
 import { PendingUpdateCard } from './PendingUpdateCard';
@@ -63,6 +63,8 @@ export const AdminPortal: React.FC = () => {
     todayPageViews: 0,
     weekPageViews: 0,
     monthPageViews: 0,
+    totalPrayers: 0,
+    totalSubscribers: 0,
     loading: true
   });
 
@@ -106,11 +108,23 @@ export const AdminPortal: React.FC = () => {
           .eq('event_type', 'page_view')
           .gte('created_at', monthStart.toISOString());
 
+        // Total prayers
+        const { count: prayers } = await supabase
+          .from('prayers')
+          .select('*', { count: 'exact', head: true });
+
+        // Total email subscribers
+        const { count: subscribers } = await supabase
+          .from('email_subscribers')
+          .select('*', { count: 'exact', head: true });
+
         setStats({
           totalPageViews: total || 0,
           todayPageViews: today || 0,
           weekPageViews: week || 0,
           monthPageViews: month || 0,
+          totalPrayers: prayers || 0,
+          totalSubscribers: subscribers || 0,
           loading: false
         });
       } catch (error) {
@@ -955,7 +969,7 @@ export const AdminPortal: React.FC = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
                       <div className="flex items-center gap-2 mb-2">
                         <Eye className="text-blue-600 dark:text-blue-400" size={20} />
@@ -998,6 +1012,28 @@ export const AdminPortal: React.FC = () => {
                         {stats.totalPageViews.toLocaleString()}
                       </div>
                       <div className="text-xs text-orange-600/70 dark:text-orange-400/70 mt-1">total page views</div>
+                    </div>
+
+                    <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-4 border border-rose-200 dark:border-rose-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Heart className="text-rose-600 dark:text-rose-400" size={20} />
+                        <div className="text-sm font-medium text-rose-900 dark:text-rose-100">Total Prayers</div>
+                      </div>
+                      <div className="text-3xl font-bold text-rose-600 dark:text-rose-400">
+                        {stats.totalPrayers.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-rose-600/70 dark:text-rose-400/70 mt-1">in database</div>
+                    </div>
+
+                    <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4 border border-cyan-200 dark:border-cyan-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <UserCheck className="text-cyan-600 dark:text-cyan-400" size={20} />
+                        <div className="text-sm font-medium text-cyan-900 dark:text-cyan-100">Subscribers</div>
+                      </div>
+                      <div className="text-3xl font-bold text-cyan-600 dark:text-cyan-400">
+                        {stats.totalSubscribers.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-cyan-600/70 dark:text-cyan-400/70 mt-1">email subscribers</div>
                     </div>
                   </div>
                 )}
