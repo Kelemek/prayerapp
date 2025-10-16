@@ -1,5 +1,18 @@
 import { supabase } from './supabase';
 
+/**
+ * Helper function to invoke the send-notification Edge Function with proper auth
+ */
+async function invokeSendNotification(payload: { to: string[]; subject: string; body: string; html?: string }) {
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  return await supabase.functions.invoke('send-notification', {
+    body: payload,
+    headers: {
+      Authorization: `Bearer ${anonKey}`
+    }
+  });
+}
+
 interface EmailNotificationPayload {
   type: 'prayer' | 'update' | 'deletion' | 'status-change';
   title: string;
@@ -74,13 +87,11 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
     }
 
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: emails,
-        subject,
-        body,
-        html: generateEmailHTML(payload)
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: emails,
+      subject,
+      body,
+      html: generateEmailHTML(payload)
     });
 
     if (functionError) {
@@ -285,7 +296,7 @@ interface ApprovedUpdatePayload {
 export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayload): Promise<void> {
   try {
     // Get admin settings including distribution preference
-    const { data: settings, error: settingsError } = await supabase
+    const { data: settings, error: settingsError} = await supabase
       .from('admin_settings')
       .select('notification_emails, email_distribution')
       .single();
@@ -299,16 +310,14 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
 
     // Determine recipient list based on distribution setting
     if (settings?.email_distribution === 'all_users') {
-      // Get all unique email addresses from prayers table
-      const { data: prayerEmails, error: prayerError } = await supabase
-        .from('prayers')
+      // Get all active subscribers from email_subscribers table (respects opt-in/opt-out)
+      const { data: subscribers, error: subscribersError } = await supabase
+        .from('email_subscribers')
         .select('email')
-        .not('email', 'is', null)
-        .neq('email', '');
+        .eq('is_active', true);
 
-      if (!prayerError && prayerEmails) {
-        const uniqueEmails = [...new Set(prayerEmails.map(p => p.email).filter(Boolean))];
-        recipients = uniqueEmails as string[];
+      if (!subscribersError && subscribers) {
+        recipients = subscribers.map(s => s.email);
       }
     } else {
       // Default to admin_only
@@ -326,13 +335,11 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
     const html = generateApprovedPrayerHTML(payload);
 
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: recipients,
-        subject,
-        body,
-        html
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: recipients,
+      subject,
+      body,
+      html
     });
 
     if (functionError) {
@@ -364,16 +371,14 @@ export async function sendApprovedUpdateNotification(payload: ApprovedUpdatePayl
 
     // Determine recipient list based on distribution setting
     if (settings?.email_distribution === 'all_users') {
-      // Get all unique email addresses from prayers table
-      const { data: prayerEmails, error: prayerError } = await supabase
-        .from('prayers')
+      // Get all active subscribers from email_subscribers table (respects opt-in/opt-out)
+      const { data: subscribers, error: subscribersError } = await supabase
+        .from('email_subscribers')
         .select('email')
-        .not('email', 'is', null)
-        .neq('email', '');
+        .eq('is_active', true);
 
-      if (!prayerError && prayerEmails) {
-        const uniqueEmails = [...new Set(prayerEmails.map(p => p.email).filter(Boolean))];
-        recipients = uniqueEmails as string[];
+      if (!subscribersError && subscribers) {
+        recipients = subscribers.map(s => s.email);
       }
     } else {
       // Default to admin_only
@@ -391,13 +396,11 @@ export async function sendApprovedUpdateNotification(payload: ApprovedUpdatePayl
     const html = generateApprovedUpdateHTML(payload);
 
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: recipients,
-        subject,
-        body,
-        html
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: recipients,
+      subject,
+      body,
+      html
     });
 
     if (functionError) {
@@ -509,13 +512,11 @@ export async function sendRequesterApprovalNotification(payload: RequesterApprov
     const html = generateRequesterApprovalHTML(payload);
 
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: [payload.requesterEmail],
-        subject,
-        body,
-        html
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: [payload.requesterEmail],
+      subject,
+      body,
+      html
     });
 
     if (functionError) {
@@ -612,13 +613,11 @@ export async function sendDeniedPrayerNotification(payload: DeniedPrayerPayload)
     const html = generateDeniedPrayerHTML(payload);
 
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: [payload.requesterEmail],
-        subject,
-        body,
-        html
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: [payload.requesterEmail],
+      subject,
+      body,
+      html
     });
 
     if (functionError) {
@@ -646,13 +645,11 @@ export async function sendDeniedUpdateNotification(payload: DeniedUpdatePayload)
     const html = generateDeniedUpdateHTML(payload);
 
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: [payload.authorEmail],
-        subject,
-        body,
-        html
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: [payload.authorEmail],
+      subject,
+      body,
+      html
     });
 
     if (functionError) {
@@ -784,13 +781,11 @@ export async function sendApprovedStatusChangeNotification(payload: ApprovedStat
     const html = generateApprovedStatusChangeHTML(payload);
 
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: [payload.requestedEmail],
-        subject,
-        body,
-        html
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: [payload.requestedEmail],
+      subject,
+      body,
+      html
     });
 
     if (functionError) {
@@ -817,13 +812,11 @@ export async function sendDeniedStatusChangeNotification(payload: DeniedStatusCh
     const html = generateDeniedStatusChangeHTML(payload);
 
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: [payload.requestedEmail],
-        subject,
-        body,
-        html
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: [payload.requestedEmail],
+      subject,
+      body,
+      html
     });
 
     if (functionError) {
@@ -952,12 +945,12 @@ export async function sendPreferenceChangeNotification(payload: PreferenceChange
       .eq('is_active', true);
 
     if (subscribersError) {
-      console.error('Error fetching admin emails:', subscribersError);
+      console.error('❌ Error fetching admin emails:', subscribersError);
       return;
     }
 
     if (!subscribers || subscribers.length === 0) {
-      console.warn('No active admin email subscribers found.');
+      console.warn('⚠️ No active admin email subscribers found. Please add email subscribers in Admin Portal → Email Settings tab.');
       return;
     }
 
@@ -975,23 +968,21 @@ Preference: ${notificationStatus} of new prayer notifications
 Please review and approve/deny this request in the admin portal.`;
 
     const html = generatePreferenceChangeNotificationHTML(payload);
-
+    
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: adminEmails,
-        subject,
-        body,
-        html
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: adminEmails,
+      subject,
+      body,
+      html
     });
 
     if (functionError) {
-      console.error('Error sending preference change notification:', functionError);
+      console.error('❌ Error sending preference change notification:', functionError);
       throw functionError;
     }
   } catch (error) {
-    console.error('Error in sendPreferenceChangeNotification:', error);
+    console.error('❌ Error in sendPreferenceChangeNotification:', error);
   }
 }
 
@@ -1018,13 +1009,11 @@ Thank you for being part of our prayer community!`;
     const html = generateApprovedPreferenceChangeHTML(payload);
 
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: [payload.email],
-        subject,
-        body,
-        html
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: [payload.email],
+      subject,
+      body,
+      html
     });
 
     if (functionError) {
@@ -1057,13 +1046,11 @@ If you have questions or would like to discuss this decision, please feel free t
     const html = generateDeniedPreferenceChangeHTML(payload);
 
     // Send email via Supabase Edge Function
-    const { error: functionError } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to: [payload.email],
-        subject,
-        body,
-        html
-      }
+    const { error: functionError } = await invokeSendNotification({
+      to: [payload.email],
+      subject,
+      body,
+      html
     });
 
     if (functionError) {

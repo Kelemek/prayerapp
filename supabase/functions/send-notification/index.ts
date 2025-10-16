@@ -15,6 +15,24 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authorization header is present
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      console.error('Missing Authorization header')
+      return new Response(
+        JSON.stringify({ error: 'Missing Authorization header' }),
+        {
+          status: 401,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      )
+    }
+
+    console.log('Authorization header present:', authHeader.substring(0, 20) + '...')
+
     const { to, subject, body, html } = await req.json()
 
     // Validate required fields
@@ -23,7 +41,10 @@ serve(async (req) => {
         JSON.stringify({ error: 'Missing required fields: to, subject' }),
         {
           status: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
         }
       )
     }
@@ -35,7 +56,10 @@ serve(async (req) => {
         JSON.stringify({ error: 'Email service not configured' }),
         {
           status: 500,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
         }
       )
     }
@@ -64,7 +88,10 @@ serve(async (req) => {
         JSON.stringify({ error: 'Failed to send email', details: data }),
         {
           status: response.status,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
         }
       )
     }
@@ -82,10 +109,13 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in send-notification function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
       }
     )
   }

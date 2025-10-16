@@ -14,7 +14,6 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
   const [email, setEmail] = useState('');
   const [receiveNotifications, setReceiveNotifications] = useState(true);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -53,6 +52,50 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
     }
   }, [isOpen]);
 
+  // Auto-load preferences when email changes (with debounce)
+  useEffect(() => {
+    if (!email.trim()) return;
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return;
+
+    const timer = setTimeout(() => {
+      loadPreferencesAutomatically();
+    }, 800); // Wait 800ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [email]);
+
+  const loadPreferencesAutomatically = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_subscribers')
+        .select('*')
+        .eq('email', email.toLowerCase().trim())
+        .eq('is_admin', false) // Only load regular user preferences, not admin subscribers
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading preferences:', error);
+        return;
+      }
+
+      if (data) {
+        setName(data.name || '');
+        setReceiveNotifications(data.is_active);
+        setHasPreferences(true);
+      } else {
+        // No preferences found, reset to defaults
+        setName('');
+        setReceiveNotifications(true);
+        setHasPreferences(false);
+      }
+    } catch (err: any) {
+      console.error('Error loading preferences:', err);
+    }
+  };
+
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
@@ -69,52 +112,6 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
-    }
-  };
-
-  const loadPreferences = async () => {
-    if (!email.trim()) {
-      setError('Please enter your email address');
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      setSuccess(null);
-
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('email', email.toLowerCase().trim())
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setName(data.name || '');
-        setReceiveNotifications(data.receive_new_prayer_notifications);
-        setHasPreferences(true);
-        setSuccess('Preferences loaded successfully!');
-      } else {
-        // No preferences found, use defaults
-        setName('');
-        setReceiveNotifications(true);
-        setHasPreferences(false);
-        setSuccess('No preferences found. Please enter your name and submit for approval.');
-      }
-    } catch (err: any) {
-      console.error('Error loading preferences:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -155,8 +152,8 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
       });
 
       setSuccess(
-        'Your notification preference request has been submitted for approval. ' +
-        'You will receive an email once it has been reviewed by an administrator.'
+        '✅ Your preference change has been submitted for approval! ' +
+        'You will receive an email once approved. After approval, your preferences will be automatically updated the next time you open this settings panel.'
       );
     } catch (err: any) {
       console.error('Error saving preferences:', err);
@@ -252,18 +249,20 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
           {/* Divider */}
           <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
-          {/* Name Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Your Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="John Doe"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
+          {/* Email Subscription Section Header */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Mail className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" size={20} />
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                  Email Notification Preferences
+                </h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Manage your email subscription to receive notifications when new prayer requests are added. 
+                  Enter your email below to opt-in or opt-out of notifications.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Email Input */}
@@ -271,30 +270,37 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Your Email Address
             </label>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setHasPreferences(false);
-                  setSuccess(null);
-                }}
-                placeholder="your.email@example.com"
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <button
-                onClick={loadPreferences}
-                disabled={loading}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 transition-colors text-sm whitespace-nowrap"
-              >
-                {loading ? 'Loading...' : 'Load'}
-              </button>
-            </div>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setHasPreferences(false);
+                setSuccess(null);
+              }}
+              placeholder="your.email@example.com"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Enter your email to load or update your preferences
+              Your preferences will load automatically
             </p>
           </div>
+
+          {/* Name Input - Only show after email is entered */}
+          {email.trim() && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Your Name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+          )}
 
           {/* Success Message */}
           {success && (
@@ -346,15 +352,18 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
             <div className="flex items-start gap-2">
               <Mail size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-blue-800 dark:text-blue-200">
-                <p className="font-medium mb-2">Important Information:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2 mb-2">
-                  <li>Notification changes require admin approval</li>
-                  <li>You'll receive an email once your request is reviewed</li>
+                <p className="font-medium mb-2">How it works:</p>
+                <ul className="list-disc list-inside space-y-1 ml-2 mb-3">
+                  <li>Enter your email to automatically load your current preferences</li>
+                  <li>Toggle notifications on/off and click "Submit for Approval"</li>
+                  <li>Admin will review and approve/deny your request</li>
+                  <li>You'll receive an email confirmation once reviewed</li>
+                  <li>After approval, your new settings take effect immediately</li>
+                  <li>Reopen this settings panel to see your updated preferences</li>
                 </ul>
                 <p className="font-medium mb-1">You will always receive:</p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Approval notifications for prayers you submit</li>
-                  <li>Denial notifications for prayers you submit</li>
+                  <li>Approval/denial notifications for prayers you submit</li>
                   <li>Status update notifications for your prayers</li>
                 </ul>
                 <p className="mt-2">

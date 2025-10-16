@@ -154,37 +154,53 @@ export const AdminPortal: React.FC = () => {
         .eq('id', id)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('❌ Error fetching preference change:', fetchError);
+        throw fetchError;
+      }
 
-      // Check if user_preferences already exists
-      const { data: existing } = await supabase
-        .from('user_preferences')
+      // Check if email_subscribers record already exists
+      const { data: existing, error: existingError } = await supabase
+        .from('email_subscribers')
         .select('*')
         .eq('email', change.email)
         .maybeSingle();
 
+      if (existingError) {
+        console.error('❌ Error checking existing subscriber:', existingError);
+        throw existingError;
+      }
+
       if (existing) {
-        // Update existing preferences
+        // Update existing subscriber
         const { error: updateError } = await supabase
-          .from('user_preferences')
+          .from('email_subscribers')
           .update({
             name: change.name,
-            receive_new_prayer_notifications: change.receive_new_prayer_notifications
+            is_active: change.receive_new_prayer_notifications,
+            is_admin: false // Ensure marked as regular user, not admin
           })
           .eq('email', change.email);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('❌ Error updating subscriber:', updateError);
+          throw updateError;
+        }
       } else {
-        // Insert new preferences
+        // Insert new subscriber
         const { error: insertError } = await supabase
-          .from('user_preferences')
+          .from('email_subscribers')
           .insert({
             email: change.email,
             name: change.name,
-            receive_new_prayer_notifications: change.receive_new_prayer_notifications
+            is_active: change.receive_new_prayer_notifications,
+            is_admin: false // Regular user, not admin
           });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('❌ Error inserting subscriber:', insertError);
+          throw insertError;
+        }
       }
 
       // Mark as approved
@@ -204,12 +220,14 @@ export const AdminPortal: React.FC = () => {
         email: change.email,
         receiveNotifications: change.receive_new_prayer_notifications
       });
-
+      
       // Remove from pending list
       setPendingPreferenceChanges(prev => prev.filter(p => p.id !== id));
+      
+      alert(`✅ Preference approved for ${change.email}. Check the Email Settings tab to see the subscriber.`);
     } catch (error) {
-      console.error('Error approving preference change:', error);
-      alert('Failed to approve preference change');
+      console.error('❌ Error approving preference change:', error);
+      alert('Failed to approve preference change: ' + (error as Error).message);
     }
   };
 
@@ -317,7 +335,7 @@ export const AdminPortal: React.FC = () => {
       {/* Content */}
       <main className="max-w-6xl mx-auto px-4 py-6">
         {/* Stats Grid - Clickable Filter Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-8">
           <button
             onClick={() => setActiveTab('prayers')}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
@@ -922,7 +940,7 @@ export const AdminPortal: React.FC = () => {
               Admin Settings
             </h2>
             
-            <div className="max-w-2xl space-y-6">
+            <div className="space-y-6">
               {/* Site Analytics Stats */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-2 mb-4">
@@ -985,10 +1003,10 @@ export const AdminPortal: React.FC = () => {
                 )}
               </div>
 
-              <PrayerSearch />
               <EmailSubscribers />
               <EmailSettings />
               <PasswordChange onPasswordChange={changePassword} />
+              <PrayerSearch />
 
               {/* Dev seed controls */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">

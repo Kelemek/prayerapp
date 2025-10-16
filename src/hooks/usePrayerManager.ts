@@ -156,6 +156,33 @@ export const usePrayerManager = () => {
 
       if (error) throw error;
       
+      // Auto-subscribe user to email notifications (opt-in by default)
+      if (prayer.email) {
+        try {
+          // Check if email already exists
+          const { data: existing } = await supabase
+            .from('email_subscribers')
+            .select('id')
+            .eq('email', prayer.email.toLowerCase().trim())
+            .maybeSingle();
+
+          // Only add if doesn't exist
+          if (!existing) {
+            await supabase
+              .from('email_subscribers')
+              .insert({
+                name: prayer.requester,
+                email: prayer.email.toLowerCase().trim(),
+                is_active: true,  // Opt-in by default
+                is_admin: false   // Regular user, not admin
+              });
+          }
+        } catch (subscribeError) {
+          // Don't fail prayer submission if subscription fails
+          console.error('Failed to auto-subscribe user:', subscribeError);
+        }
+      }
+      
       // Send email notification to admins
       sendAdminNotification({
         type: 'prayer',

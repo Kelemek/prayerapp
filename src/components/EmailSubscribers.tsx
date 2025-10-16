@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Mail, Plus, Trash2, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Mail, Plus, Trash2, CheckCircle, XCircle, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface EmailSubscriber {
@@ -12,32 +12,44 @@ interface EmailSubscriber {
 
 export const EmailSubscribers: React.FC = () => {
   const [subscribers, setSubscribers] = useState<EmailSubscriber[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchSubscribers();
-  }, []);
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (!searchQuery.trim()) {
+      setError('Please enter a search term (name or email)');
+      return;
+    }
 
-  const fetchSubscribers = async () => {
     try {
-      setLoading(true);
+      setSearching(true);
+      setError(null);
+      setHasSearched(true);
+
+      const query = searchQuery.trim().toLowerCase();
+      
       const { data, error } = await supabase
         .from('email_subscribers')
         .select('*')
-        .order('created_at', { ascending: false });
+        .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) throw error;
       setSubscribers(data || []);
     } catch (err: any) {
-      console.error('Error fetching subscribers:', err);
+      console.error('Error searching subscribers:', err);
       setError(err.message);
     } finally {
-      setLoading(false);
+      setSearching(false);
     }
   };
 
@@ -75,8 +87,10 @@ export const EmailSubscribers: React.FC = () => {
       setNewEmail('');
       setShowAddForm(false);
       
-      // Refresh list
-      await fetchSubscribers();
+      // Refresh search results if we have a query
+      if (searchQuery.trim()) {
+        await handleSearch();
+      }
     } catch (err: any) {
       console.error('Error adding subscriber:', err);
       if (err.code === '23505') {
@@ -97,7 +111,11 @@ export const EmailSubscribers: React.FC = () => {
         .eq('id', id);
 
       if (error) throw error;
-      await fetchSubscribers();
+      
+      // Refresh search results
+      if (searchQuery.trim()) {
+        await handleSearch();
+      }
     } catch (err: any) {
       console.error('Error toggling subscriber status:', err);
       setError(err.message);
@@ -116,7 +134,11 @@ export const EmailSubscribers: React.FC = () => {
         .eq('id', id);
 
       if (error) throw error;
-      await fetchSubscribers();
+      
+      // Refresh search results
+      if (searchQuery.trim()) {
+        await handleSearch();
+      }
     } catch (err: any) {
       console.error('Error deleting subscriber:', err);
       setError(err.message);
@@ -132,30 +154,20 @@ export const EmailSubscribers: React.FC = () => {
             Email Notification Subscribers
           </h3>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={fetchSubscribers}
-            disabled={loading}
-            className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-          </button>
-          <button
-            onClick={() => {
-              setShowAddForm(!showAddForm);
-              setError(null);
-            }}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-          >
-            <Plus size={18} />
-            Add Subscriber
-          </button>
-        </div>
+        <button
+          onClick={() => {
+            setShowAddForm(!showAddForm);
+            setError(null);
+          }}
+          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+        >
+          <Plus size={18} />
+          Add Subscriber
+        </button>
       </div>
 
       <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-        Manage who receives email notifications for new prayer requests and updates.
+        Search for subscribers by name or email address.
       </p>
 
       {error && (
@@ -163,6 +175,29 @@ export const EmailSubscribers: React.FC = () => {
           <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
         </div>
       )}
+
+      {/* Search Form */}
+      <form onSubmit={handleSearch} className="mb-4">
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name or email..."
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={searching}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
+          >
+            {searching ? 'Searching...' : 'Search'}
+          </button>
+        </div>
+      </form>
 
       {/* Add Subscriber Form */}
       {showAddForm && (
@@ -220,82 +255,91 @@ export const EmailSubscribers: React.FC = () => {
       )}
 
       {/* Subscribers List */}
-      {loading ? (
+      {searching ? (
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Searching...</p>
+        </div>
+      ) : !hasSearched ? (
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <Search size={48} className="mx-auto mb-2 opacity-50" />
+          <p>Enter a name or email to search</p>
+          <p className="text-sm mt-1">Search results will appear here</p>
         </div>
       ) : subscribers.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <Mail size={48} className="mx-auto mb-2 opacity-50" />
-          <p>No email subscribers yet</p>
-          <p className="text-sm mt-1">Add your first subscriber to receive notifications</p>
+          <p>No subscribers found</p>
+          <p className="text-sm mt-1">Try a different search term</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {subscribers.map((subscriber) => (
-            <div
-              key={subscriber.id}
-              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                    {subscriber.name}
-                  </h4>
-                  {subscriber.is_active ? (
-                    <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs rounded-full">
-                      Active
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
-                      Inactive
-                    </span>
-                  )}
+        <>
+          <div className="space-y-2">
+            {subscribers.map((subscriber) => (
+              <div
+                key={subscriber.id}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                      {subscriber.name}
+                    </h4>
+                    {subscriber.is_active ? (
+                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs rounded-full">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                    {subscriber.email}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                    Added {new Date(subscriber.created_at).toLocaleDateString()}
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                  {subscriber.email}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                  Added {new Date(subscriber.created_at).toLocaleDateString()}
-                </p>
+                <div className="flex items-center gap-2 ml-4">
+                  <button
+                    onClick={() => handleToggleActive(subscriber.id, subscriber.is_active)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      subscriber.is_active
+                        ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'
+                        : 'text-gray-400 dark:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                    title={subscriber.is_active ? 'Deactivate' : 'Activate'}
+                  >
+                    {subscriber.is_active ? <CheckCircle size={20} /> : <XCircle size={20} />}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(subscriber.id, subscriber.email)}
+                    className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 ml-4">
-                <button
-                  onClick={() => handleToggleActive(subscriber.id, subscriber.is_active)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    subscriber.is_active
-                      ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'
-                      : 'text-gray-400 dark:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                  title={subscriber.is_active ? 'Deactivate' : 'Activate'}
-                >
-                  {subscriber.is_active ? <CheckCircle size={20} /> : <XCircle size={20} />}
-                </button>
-                <button
-                  onClick={() => handleDelete(subscriber.id, subscriber.email)}
-                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 size={20} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600 dark:text-gray-400">
-            Total subscribers: <span className="font-semibold">{subscribers.length}</span>
-          </span>
-          <span className="text-gray-600 dark:text-gray-400">
-            Active: <span className="font-semibold text-green-600 dark:text-green-400">
-              {subscribers.filter(s => s.is_active).length}
-            </span>
-          </span>
-        </div>
-      </div>
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">
+                Found: <span className="font-semibold">{subscribers.length}</span> subscriber(s)
+              </span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Active: <span className="font-semibold text-green-600 dark:text-green-400">
+                  {subscribers.filter(s => s.is_active).length}
+                </span>
+              </span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
