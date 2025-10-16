@@ -44,10 +44,10 @@ export const PrintPrayerList: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         disabled={isPrinting}
         className="flex items-center gap-1 sm:gap-2 bg-green-600 dark:bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-        title="Print prayer list"
+        title="Print"
       >
         <Printer size={16} className={`sm:w-5 sm:h-5 ${isPrinting ? 'animate-spin' : ''}`} />
-        <span className="hidden lg:inline">{isPrinting ? 'Generating...' : 'Print List'}</span>
+        <span className="hidden lg:inline">{isPrinting ? 'Generating...' : 'Print'}</span>
         <span className="lg:hidden">{isPrinting ? '...' : 'Print'}</span>
         {!isPrinting && <ChevronDown size={14} className="sm:w-4 sm:h-4" />}
       </button>

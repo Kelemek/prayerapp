@@ -88,54 +88,102 @@ function AppContent() {
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hidden sm:block mt-1">Keeping our community connected in prayer</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
-              <ThemeToggle />
-              <PrintPrayerList />
-              {isAdmin && (
-                <>
-                  <button
-                    onClick={() => {
-                      if (window.location.hash === '#admin') {
-                        window.location.hash = '';
-                      } else {
-                        window.location.hash = '#admin';
-                      }
-                    }}
-                    className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors text-sm sm:text-base ${
-                      window.location.hash === '#admin'
+            <div className="flex flex-col gap-2">
+              {/* Mobile: all buttons in one row */}
+              <div className="flex sm:hidden items-center gap-2 flex-wrap">
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (window.location.hash === '#admin') {
+                          window.location.hash = '';
+                        } else {
+                          window.location.hash = '#admin';
+                        }
+                      }}
+                      className={`flex items-center gap-1 px-2 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors text-sm ${
+                        window.location.hash === '#admin'
                         ? 'bg-red-600 text-white hover:bg-red-700' 
                         : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50'
-                    }`}
-                  >
-                    <Shield size={16} className="sm:w-5 sm:h-5" />
-                    <span className="hidden sm:inline">
-                      {window.location.hash === '#admin' ? 'Exit Admin' : 'Admin Portal'}
-                    </span>
-                    <span className="sm:hidden">
-                      {window.location.hash === '#admin' ? 'Exit' : 'Admin'}
-                    </span>
-                  </button>
+                      }`}
+                    >
+                      <Shield size={16} />
+                      <span>Admin</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        logout();
+                        window.location.hash = '';
+                      }}
+                      className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                      title="Logout"
+                    >
+                      <LogOut size={14} />
+                      <span className="text-sm">Logout</span>
+                    </button>
+                  </>
+                )}
+                <ThemeToggle />
+                <PrintPrayerList />
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="flex items-center gap-1 bg-blue-600 dark:bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm"
+                >
+                  <Plus size={16} />
+                  <span>Prayer</span>
+                </button>
+              </div>
+
+              {/* Tablet/Desktop: two rows */}
+              <div className="hidden sm:flex flex-col gap-2">
+                {/* First row: theme, print, new prayer */}
+                <div className="flex items-center gap-3 justify-end">
+                  <ThemeToggle />
+                  <PrintPrayerList />
                   <button
-                    onClick={() => {
-                      logout();
-                      window.location.hash = '';
-                    }}
-                    className="flex items-center gap-1 sm:gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-                    title="Logout"
+                    onClick={() => setShowForm(true)}
+                    className="flex items-center gap-2 bg-blue-600 dark:bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-base"
                   >
-                    <LogOut size={14} className="sm:w-4 sm:h-4" />
-                    <span className="hidden sm:inline text-sm">Logout</span>
+                    <Plus size={18} className="w-5 h-5" />
+                    <span className="hidden lg:inline">Prayer Request</span>
+                    <span className="lg:hidden">Prayer</span>
                   </button>
-                </>
-              )}
-              <button
-                onClick={() => setShowForm(true)}
-                className="flex items-center gap-1 sm:gap-2 bg-blue-600 dark:bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm sm:text-base"
-              >
-                <Plus size={16} className="sm:w-5 sm:h-5" />
-                <span className="hidden lg:inline">New Prayer Request</span>
-                <span className="lg:hidden">New Prayer</span>
-              </button>
+                </div>
+                
+                {/* Second row: admin and logout (right-aligned) */}
+                {isAdmin && (
+                  <div className="flex items-center gap-2 justify-end">
+                    <button
+                      onClick={() => {
+                        if (window.location.hash === '#admin') {
+                          window.location.hash = '';
+                        } else {
+                          window.location.hash = '#admin';
+                        }
+                      }}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors text-base ${
+                        window.location.hash === '#admin'
+                          ? 'bg-red-600 text-white hover:bg-red-700' 
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50'
+                      }`}
+                    >
+                      <Shield size={18} className="w-5 h-5" />
+                      <span>Admin</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        logout();
+                        window.location.hash = '';
+                      }}
+                      className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                      title="Logout"
+                    >
+                      <LogOut size={16} className="w-4 h-4" />
+                      <span className="text-base">Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
