@@ -1,15 +1,14 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Heart, Shield, LogOut } from 'lucide-react';
+import { Plus, Heart, Shield, LogOut, Settings } from 'lucide-react';
 import { PrayerForm } from './components/PrayerForm';
 import { PrayerCard } from './components/PrayerCard';
 import { PrayerFiltersComponent } from './components/PrayerFilters';
-import { ThemeToggle } from './components/ThemeToggle';
-import { PrintPrayerList } from './components/PrintPrayerList';
 import { PrayerPresentation } from './components/PrayerPresentation';
 import { MobilePresentation } from './components/MobilePresentation';
 import { ToastProvider } from './components/Toast';
 import { AdminPortal } from './components/AdminPortal';
 import { AdminLogin } from './components/AdminLogin';
+import { UserSettings } from './components/UserSettings';
 import { AdminAuthProvider, useAdminAuth } from './hooks/useAdminAuth';
 import type { PrayerStatus } from './types/prayer';
 import { usePrayerManager } from './hooks/usePrayerManager';
@@ -39,7 +38,29 @@ function AppContent() {
   } = usePrayerManager();
 
   const [showForm, setShowForm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [filters, setFilters] = useState<PrayerFilters>({status: 'current'});
+
+  // Track page view on initial load
+  useEffect(() => {
+    const trackPageView = async () => {
+      try {
+        await supabase.from('analytics').insert({
+          event_type: 'page_view',
+          event_data: {
+            timestamp: new Date().toISOString(),
+            path: window.location.pathname,
+            hash: window.location.hash
+          }
+        });
+      } catch (error) {
+        // Silently fail - don't disrupt user experience if tracking fails
+        console.debug('Analytics tracking failed:', error);
+      }
+    };
+    
+    trackPageView();
+  }, []);
 
   const filteredPrayers = useMemo(() => {
     return getFilteredPrayers(filters.status, filters.searchTerm);
@@ -125,47 +146,53 @@ function AppContent() {
                     </button>
                   </>
                 )}
-                <ThemeToggle />
-                <PrintPrayerList />
-                {/* Mobile: Mobile Mode button */}
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                  title="Settings"
+                >
+                  <Settings size={16} />
+                </button>
+                {/* Mobile: Prayer Mode button */}
                 <button
                   onClick={() => window.location.hash = '#mobile-presentation'}
-                  className="flex items-center gap-1 bg-purple-600 text-white px-2 py-2 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm"
-                  title="Mobile Display"
+                  className="flex items-center gap-1 bg-green-600 text-white px-2 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-sm"
+                  title="Prayer Mode"
                 >
-                  <span>Mobile</span>
+                  <span>Pray</span>
                 </button>
                 <button
                   onClick={() => setShowForm(true)}
                   className="flex items-center gap-1 bg-blue-600 dark:bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm"
                 >
-                  <Plus size={16} />
-                  <span>Prayer</span>
+                  <span>Add Request</span>
                 </button>
               </div>
 
               {/* Tablet/Desktop: two rows */}
               <div className="hidden sm:flex flex-col gap-2">
-                {/* First row: theme, print, presentation, new prayer */}
+                {/* First row: settings, print, presentation, new prayer */}
                 <div className="flex items-center gap-3 justify-end">
-                  <ThemeToggle />
-                  <PrintPrayerList />
-                  {/* Desktop: TV Display button */}
+                  <button
+                    onClick={() => setShowSettings(true)}
+                    className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                    title="Settings"
+                  >
+                    <Settings size={18} />
+                  </button>
+                  {/* Desktop: Prayer Mode button */}
                   <button
                     onClick={() => window.location.hash = '#presentation'}
-                    className="flex items-center gap-2 bg-purple-600 dark:bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-base"
-                    title="TV Presentation Mode"
+                    className="flex items-center gap-2 bg-green-600 dark:bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-base"
+                    title="Prayer Mode"
                   >
-                    <span className="hidden lg:inline">TV Display</span>
-                    <span className="lg:hidden">TV</span>
+                    <span>Pray</span>
                   </button>
                   <button
                     onClick={() => setShowForm(true)}
                     className="flex items-center gap-2 bg-blue-600 dark:bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-base"
                   >
-                    <Plus size={18} className="w-5 h-5" />
-                    <span className="hidden lg:inline">Prayer Request</span>
-                    <span className="lg:hidden">Prayer</span>
+                    <span>Add Request</span>
                   </button>
                 </div>
                 
@@ -221,10 +248,10 @@ function AppContent() {
           <button
             onClick={() => setFilters({...filters, status: 'current'})}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              filters.status === 'current' ? 'ring-2 ring-orange-500 border-orange-500' : 'hover:border-orange-300 dark:hover:border-orange-600'
+              filters.status === 'current' ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-600'
             }`}
           >
-            <div className="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">
+            <div className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
               {prayers.filter(p => p.status === 'current').length}
             </div>
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Current</div>
@@ -232,10 +259,10 @@ function AppContent() {
           <button
             onClick={() => setFilters({...filters, status: 'ongoing'})}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              filters.status === 'ongoing' ? 'ring-2 ring-purple-500 border-purple-500' : 'hover:border-purple-300 dark:hover:border-purple-600'
+              filters.status === 'ongoing' ? 'ring-2 ring-orange-500 border-orange-500' : 'hover:border-orange-300 dark:hover:border-orange-600'
             }`}
           >
-            <div className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">
+            <div className="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">
               {prayers.filter(p => p.status === 'ongoing').length}
             </div>
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Ongoing</div>
@@ -254,10 +281,10 @@ function AppContent() {
           <button
             onClick={() => setFilters({})}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              !filters.status ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-600'
+              !filters.status ? 'ring-2 ring-purple-500 border-purple-500' : 'hover:border-purple-300 dark:hover:border-purple-600'
             }`}
           >
-            <div className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{prayers.length || 0}</div>
+            <div className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{prayers.length || 0}</div>
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Total Prayers</div>
           </button>
         </div>
@@ -352,6 +379,12 @@ function AppContent() {
         isOpen={showForm}
         onSubmit={addPrayer}
         onCancel={() => setShowForm(false)}
+      />
+
+      {/* User Settings Modal */}
+      <UserSettings
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
       />
       
       {/* Admin Access Link */}

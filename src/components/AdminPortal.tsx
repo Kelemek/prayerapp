@@ -1,17 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings, User, Calendar, X } from 'lucide-react';
+import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings, User, Calendar, X, TrendingUp, Eye, Mail } from 'lucide-react';
 import { DeletionStyleCard } from './DeletionStyleCard';
 import { PendingPrayerCard } from './PendingPrayerCard';
 import { PendingUpdateCard } from './PendingUpdateCard';
 import { PendingDeletionCard } from './PendingDeletionCard';
 import { PendingStatusChangeCard } from './PendingStatusChangeCard';
+import { PendingPreferenceChangeCard } from './PendingPreferenceChangeCard';
 import { PasswordChange } from './PasswordChange';
 import { EmailSettings } from './EmailSettings';
+import { EmailSubscribers } from './EmailSubscribers';
+import { PrayerSearch } from './PrayerSearch';
+import { BackupRestore } from './BackupRestore';
 import { useAdminData } from '../hooks/useAdminData';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
+import { supabase } from '../lib/supabase';
+import { sendApprovedPreferenceChangeNotification, sendDeniedPreferenceChangeNotification } from '../lib/emailNotifications';
 
-type AdminTab = 'prayers' | 'updates' | 'deletions' | 'status-changes' | 'approved' | 'denied' | 'settings';
+type AdminTab = 'prayers' | 'updates' | 'deletions' | 'status-changes' | 'preferences' | 'approved' | 'denied' | 'settings';
 
 export const AdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('prayers');
@@ -51,6 +57,200 @@ export const AdminPortal: React.FC = () => {
   const [seedLoading, setSeedLoading] = useState(false);
   const [cleanupLoading, setCleanupLoading] = useState(false);
 
+  // Analytics stats
+  const [stats, setStats] = useState({
+    totalPageViews: 0,
+    todayPageViews: 0,
+    weekPageViews: 0,
+    monthPageViews: 0,
+    loading: true
+  });
+
+  // Pending preference changes
+  const [pendingPreferenceChanges, setPendingPreferenceChanges] = useState<any[]>([]);
+  const [loadingPreferenceChanges, setLoadingPreferenceChanges] = useState(true);
+
+  // Fetch analytics stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const monthStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        // Total page views
+        const { count: total } = await supabase
+          .from('analytics')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_type', 'page_view');
+
+        // Today's page views
+        const { count: today } = await supabase
+          .from('analytics')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_type', 'page_view')
+          .gte('created_at', todayStart.toISOString());
+
+        // This week's page views
+        const { count: week } = await supabase
+          .from('analytics')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_type', 'page_view')
+          .gte('created_at', weekStart.toISOString());
+
+        // This month's page views
+        const { count: month } = await supabase
+          .from('analytics')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_type', 'page_view')
+          .gte('created_at', monthStart.toISOString());
+
+        setStats({
+          totalPageViews: total || 0,
+          todayPageViews: today || 0,
+          weekPageViews: week || 0,
+          monthPageViews: month || 0,
+          loading: false
+        });
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+        setStats(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  // Fetch pending preference changes
+  useEffect(() => {
+    const fetchPendingPreferenceChanges = async () => {
+      try {
+        setLoadingPreferenceChanges(true);
+        const { data, error } = await supabase
+          .from('pending_preference_changes')
+          .select('*')
+          .eq('approval_status', 'pending')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setPendingPreferenceChanges(data || []);
+      } catch (error) {
+        console.error('Error fetching pending preference changes:', error);
+      } finally {
+        setLoadingPreferenceChanges(false);
+      }
+    };
+
+    fetchPendingPreferenceChanges();
+  }, []);
+
+  const approvePreferenceChange = async (id: string) => {
+    try {
+      // Get the preference change
+      const { data: change, error: fetchError } = await supabase
+        .from('pending_preference_changes')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Check if user_preferences already exists
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('email', change.email)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing preferences
+        const { error: updateError } = await supabase
+          .from('user_preferences')
+          .update({
+            name: change.name,
+            receive_new_prayer_notifications: change.receive_new_prayer_notifications
+          })
+          .eq('email', change.email);
+
+        if (updateError) throw updateError;
+      } else {
+        // Insert new preferences
+        const { error: insertError } = await supabase
+          .from('user_preferences')
+          .insert({
+            email: change.email,
+            name: change.name,
+            receive_new_prayer_notifications: change.receive_new_prayer_notifications
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      // Mark as approved
+      const { error: approveError } = await supabase
+        .from('pending_preference_changes')
+        .update({
+          approval_status: 'approved',
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (approveError) throw approveError;
+
+      // Send approval email to user
+      await sendApprovedPreferenceChangeNotification({
+        name: change.name,
+        email: change.email,
+        receiveNotifications: change.receive_new_prayer_notifications
+      });
+
+      // Remove from pending list
+      setPendingPreferenceChanges(prev => prev.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Error approving preference change:', error);
+      alert('Failed to approve preference change');
+    }
+  };
+
+  const denyPreferenceChange = async (id: string, reason: string) => {
+    try {
+      // Get the preference change details
+      const { data: change, error: fetchError } = await supabase
+        .from('pending_preference_changes')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const { error } = await supabase
+        .from('pending_preference_changes')
+        .update({
+          approval_status: 'denied',
+          denial_reason: reason,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Send denial email to user
+      await sendDeniedPreferenceChangeNotification({
+        name: change.name,
+        email: change.email,
+        receiveNotifications: change.receive_new_prayer_notifications,
+        denialReason: reason
+      });
+
+      // Remove from pending list
+      setPendingPreferenceChanges(prev => prev.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Error denying preference change:', error);
+      alert('Failed to deny preference change');
+    }
+  };
+
   // Automatically select the first tab with pending items on initial load only
   const initialAutoSelectRef = useRef(false);
   useEffect(() => {
@@ -63,6 +263,8 @@ export const AdminPortal: React.FC = () => {
         setActiveTab('deletions');
       } else if (pendingStatusChangeRequests.length > 0) {
         setActiveTab('status-changes');
+      } else if (pendingPreferenceChanges.length > 0) {
+        setActiveTab('preferences');
       }
       // Mark that we've auto-selected once so we don't override user's tab after refreshes
       initialAutoSelectRef.current = true;
@@ -181,6 +383,23 @@ export const AdminPortal: React.FC = () => {
                   {pendingStatusChangeRequests.length}
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-300">Status</div>
+              </div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('preferences')}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+              activeTab === 'preferences' ? 'ring-2 ring-purple-500 border-purple-500' : 'hover:border-purple-300 dark:hover:border-purple-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Mail className="text-purple-500" size={20} />
+              <div className="text-center">
+                <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                  {pendingPreferenceChanges.length}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">Preferences</div>
               </div>
             </div>
           </button>
@@ -440,6 +659,42 @@ export const AdminPortal: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'preferences' && (
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
+              Pending Notification Preference Changes ({pendingPreferenceChanges.length})
+            </h2>
+            
+            {loadingPreferenceChanges ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-300">Loading preference changes...</p>
+              </div>
+            ) : pendingPreferenceChanges.length === 0 ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
+                <Mail className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
+                <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  No pending preference changes
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  All notification preference requests have been reviewed.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingPreferenceChanges.map((change) => (
+                  <PendingPreferenceChangeCard
+                    key={change.id}
+                    change={change}
+                    onApprove={approvePreferenceChange}
+                    onDeny={denyPreferenceChange}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'approved' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
@@ -668,6 +923,70 @@ export const AdminPortal: React.FC = () => {
             </h2>
             
             <div className="max-w-2xl space-y-6">
+              {/* Site Analytics Stats */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp className="text-blue-600 dark:text-blue-400" size={24} />
+                  <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
+                    Site Analytics
+                  </h3>
+                </div>
+                
+                {stats.loading ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Eye className="text-blue-600 dark:text-blue-400" size={20} />
+                        <div className="text-sm font-medium text-blue-900 dark:text-blue-100">Today</div>
+                      </div>
+                      <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                        {stats.todayPageViews.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-1">page views</div>
+                    </div>
+
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="text-purple-600 dark:text-purple-400" size={20} />
+                        <div className="text-sm font-medium text-purple-900 dark:text-purple-100">This Week</div>
+                      </div>
+                      <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                        {stats.weekPageViews.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-1">page views</div>
+                    </div>
+
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="text-green-600 dark:text-green-400" size={20} />
+                        <div className="text-sm font-medium text-green-900 dark:text-green-100">This Month</div>
+                      </div>
+                      <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                        {stats.monthPageViews.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-green-600/70 dark:text-green-400/70 mt-1">page views</div>
+                    </div>
+
+                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Users className="text-orange-600 dark:text-orange-400" size={20} />
+                        <div className="text-sm font-medium text-orange-900 dark:text-orange-100">All Time</div>
+                      </div>
+                      <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                        {stats.totalPageViews.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-orange-600/70 dark:text-orange-400/70 mt-1">total page views</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <PrayerSearch />
+              <EmailSubscribers />
               <EmailSettings />
               <PasswordChange onPasswordChange={changePassword} />
 
@@ -731,6 +1050,8 @@ export const AdminPortal: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              <BackupRestore />
             </div>
           </div>
         )}

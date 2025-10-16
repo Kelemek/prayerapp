@@ -917,3 +917,298 @@ function generateDeniedStatusChangeHTML(payload: DeniedStatusChangePayload): str
     </html>
   `;
 }
+
+/**
+ * Preference Change Payloads
+ */
+interface PreferenceChangeNotificationPayload {
+  name: string;
+  email: string;
+  receiveNotifications: boolean;
+}
+
+interface ApprovedPreferenceChangePayload {
+  name: string;
+  email: string;
+  receiveNotifications: boolean;
+}
+
+interface DeniedPreferenceChangePayload {
+  name: string;
+  email: string;
+  receiveNotifications: boolean;
+  denialReason: string;
+}
+
+/**
+ * Send admin notification when a preference change is submitted
+ */
+export async function sendPreferenceChangeNotification(payload: PreferenceChangeNotificationPayload): Promise<void> {
+  try {
+    // Get admin email list from email_subscribers table
+    const { data: subscribers, error: subscribersError } = await supabase
+      .from('email_subscribers')
+      .select('email')
+      .eq('is_active', true);
+
+    if (subscribersError) {
+      console.error('Error fetching admin emails:', subscribersError);
+      return;
+    }
+
+    if (!subscribers || subscribers.length === 0) {
+      console.warn('No active admin email subscribers found.');
+      return;
+    }
+
+    const adminEmails = subscribers.map(s => s.email);
+
+    const subject = `New Notification Preference Change: ${payload.name}`;
+    const notificationStatus = payload.receiveNotifications ? 'Opt IN' : 'Opt OUT';
+    
+    const body = `A new notification preference change has been submitted and is pending approval.
+
+Name: ${payload.name}
+Email: ${payload.email}
+Preference: ${notificationStatus} of new prayer notifications
+
+Please review and approve/deny this request in the admin portal.`;
+
+    const html = generatePreferenceChangeNotificationHTML(payload);
+
+    // Send email via Supabase Edge Function
+    const { error: functionError } = await supabase.functions.invoke('send-notification', {
+      body: {
+        to: adminEmails,
+        subject,
+        body,
+        html
+      }
+    });
+
+    if (functionError) {
+      console.error('Error sending preference change notification:', functionError);
+      throw functionError;
+    }
+  } catch (error) {
+    console.error('Error in sendPreferenceChangeNotification:', error);
+  }
+}
+
+/**
+ * Send approval email to user when their preference change is approved
+ */
+export async function sendApprovedPreferenceChangeNotification(payload: ApprovedPreferenceChangePayload): Promise<void> {
+  try {
+    const subject = `Notification Preferences Updated`;
+    const notificationStatus = payload.receiveNotifications ? 'opted IN to' : 'opted OUT of';
+    
+    const body = `Hello ${payload.name},
+
+Your notification preference change has been approved!
+
+You have successfully ${notificationStatus} receiving new prayer notifications.
+
+${payload.receiveNotifications 
+  ? 'You will now receive email notifications when new prayers are posted to the prayer list.' 
+  : 'You will no longer receive email notifications when new prayers are posted. You will still receive approval/denial notifications for prayers you submit.'}
+
+Thank you for being part of our prayer community!`;
+
+    const html = generateApprovedPreferenceChangeHTML(payload);
+
+    // Send email via Supabase Edge Function
+    const { error: functionError } = await supabase.functions.invoke('send-notification', {
+      body: {
+        to: [payload.email],
+        subject,
+        body,
+        html
+      }
+    });
+
+    if (functionError) {
+      console.error('Error sending approved preference change notification:', functionError);
+      throw functionError;
+    }
+  } catch (error) {
+    console.error('Error in sendApprovedPreferenceChangeNotification:', error);
+  }
+}
+
+/**
+ * Send denial email to user when their preference change is denied
+ */
+export async function sendDeniedPreferenceChangeNotification(payload: DeniedPreferenceChangePayload): Promise<void> {
+  try {
+    const subject = `Notification Preference Change - Unable to Process`;
+    const notificationStatus = payload.receiveNotifications ? 'opt IN to' : 'opt OUT of';
+    
+    const body = `Hello ${payload.name},
+
+Thank you for your notification preference change request. After careful review, we are unable to process this change at this time.
+
+Requested Change: ${notificationStatus} new prayer notifications
+
+Reason: ${payload.denialReason}
+
+If you have questions or would like to discuss this decision, please feel free to contact the administrator.`;
+
+    const html = generateDeniedPreferenceChangeHTML(payload);
+
+    // Send email via Supabase Edge Function
+    const { error: functionError } = await supabase.functions.invoke('send-notification', {
+      body: {
+        to: [payload.email],
+        subject,
+        body,
+        html
+      }
+    });
+
+    if (functionError) {
+      console.error('Error sending denied preference change notification:', functionError);
+      throw functionError;
+    }
+  } catch (error) {
+    console.error('Error in sendDeniedPreferenceChangeNotification:', error);
+  }
+}
+
+/**
+ * Generate HTML for preference change notification email (to admins)
+ */
+function generatePreferenceChangeNotificationHTML(payload: PreferenceChangeNotificationPayload): string {
+  const baseUrl = window.location.origin;
+  const adminUrl = `${baseUrl}/#admin`;
+  const notificationStatus = payload.receiveNotifications ? 'Opt IN' : 'Opt OUT';
+  const statusColor = payload.receiveNotifications ? '#10b981' : '#f59e0b';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Notification Preference Change</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(to right, #8b5cf6, #7c3aed); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">📧 New Preference Change Request</h1>
+        </div>
+        <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+          <p style="margin-top: 0; font-size: 16px;">A new notification preference change has been submitted and requires your review.</p>
+          <div style="background: white; padding: 20px; border-radius: 6px; border: 1px solid #e5e7eb; margin: 20px 0;">
+            <h2 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px;">User Information</h2>
+            <p style="margin: 5px 0;"><strong>Name:</strong> ${payload.name}</p>
+            <p style="margin: 5px 0;"><strong>Email:</strong> ${payload.email}</p>
+            <div style="margin-top: 15px; padding: 15px; background: #f3f4f6; border-radius: 6px; border-left: 4px solid ${statusColor};">
+              <p style="margin: 0;"><strong>Requested Preference:</strong></p>
+              <p style="margin: 5px 0 0 0; font-size: 18px; font-weight: 600; color: ${statusColor};">${notificationStatus}</p>
+              <p style="margin: 5px 0 0 0; font-size: 14px; color: #6b7280;">
+                ${payload.receiveNotifications 
+                  ? 'User wants to receive notifications when new prayers are posted' 
+                  : 'User wants to stop receiving new prayer notifications'}
+              </p>
+            </div>
+          </div>
+          <p style="font-size: 14px; color: #6b7280;">Please review this request in the admin portal and approve or deny accordingly.</p>
+          <div style="margin-top: 30px; text-align: center;">
+            <a href="${adminUrl}" style="background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Review in Admin Portal</a>
+          </div>
+        </div>
+        <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
+          <p>This is an automated notification from your prayer app admin system.</p>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+/**
+ * Generate HTML for approved preference change email (to user)
+ */
+function generateApprovedPreferenceChangeHTML(payload: ApprovedPreferenceChangePayload): string {
+  const baseUrl = window.location.origin;
+  const appUrl = `${baseUrl}/`;
+  const notificationStatus = payload.receiveNotifications ? 'opted IN to' : 'opted OUT of';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Preference Change Approved</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">✅ Preferences Updated</h1>
+        </div>
+        <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+          <p style="margin-top: 0; font-size: 16px;">Hello ${payload.name},</p>
+          <p>Great news! Your notification preference change has been approved.</p>
+          <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 20px; border-radius: 6px; margin: 20px 0;">
+            <h3 style="margin: 0 0 10px 0; color: #059669;">✓ You have successfully ${notificationStatus} new prayer notifications</h3>
+            <p style="margin: 10px 0 0 0; color: #047857;">
+              ${payload.receiveNotifications 
+                ? '📬 You will now receive email notifications when new prayers are posted to the prayer list.' 
+                : '🔕 You will no longer receive email notifications when new prayers are posted. Note: You will still receive approval/denial notifications for prayers you submit.'}
+            </p>
+          </div>
+          <p style="font-size: 14px; color: #6b7280;">You can change your notification preferences at any time by clicking the settings icon in the prayer app.</p>
+          <div style="margin-top: 30px; text-align: center;">
+            <a href="${appUrl}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Visit Prayer App</a>
+          </div>
+          <p style="margin-top: 30px; font-size: 14px; color: #6b7280; text-align: center;">Thank you for being part of our prayer community! 🙏</p>
+        </div>
+        <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
+          <p>This is an automated notification from your prayer app.</p>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+/**
+ * Generate HTML for denied preference change email (to user)
+ */
+function generateDeniedPreferenceChangeHTML(payload: DeniedPreferenceChangePayload): string {
+  const baseUrl = window.location.origin;
+  const appUrl = `${baseUrl}/`;
+  const notificationStatus = payload.receiveNotifications ? 'opt IN to' : 'opt OUT of';
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Preference Change Request</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(to right, #ef4444, #dc2626); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">📋 Preference Change Request</h1>
+        </div>
+        <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+          <p style="margin-top: 0; font-size: 16px;">Hello ${payload.name},</p>
+          <p>Thank you for your notification preference change request. After careful review, we are unable to process this change at this time.</p>
+          <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb; margin: 15px 0;">
+            <p style="margin: 5px 0;"><strong>Requested Change:</strong> ${notificationStatus} new prayer notifications</p>
+          </div>
+          <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 0; color: #991b1b;"><strong>Reason:</strong></p>
+            <p style="margin: 10px 0 0 0; color: #991b1b;">${payload.denialReason}</p>
+          </div>
+          <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">If you have questions or would like to discuss this decision, please feel free to contact the administrator.</p>
+          <div style="margin-top: 30px; text-align: center;">
+            <a href="${appUrl}" style="background: #6b7280; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Visit Prayer App</a>
+          </div>
+        </div>
+        <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
+          <p>This is an automated notification from your prayer app.</p>
+        </div>
+      </body>
+    </html>
+  `;
+}

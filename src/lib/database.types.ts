@@ -261,6 +261,96 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_preferences: {
+        Row: {
+          id: string
+          email: string
+          name: string | null
+          receive_new_prayer_notifications: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          name?: string | null
+          receive_new_prayer_notifications?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          name?: string | null
+          receive_new_prayer_notifications?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      pending_preference_changes: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          receive_new_prayer_notifications: boolean
+          approval_status: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+          denial_reason: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email: string
+          receive_new_prayer_notifications: boolean
+          approval_status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          denial_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          receive_new_prayer_notifications?: boolean
+          approval_status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          denial_reason?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      email_subscribers: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
