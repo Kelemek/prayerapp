@@ -1,7 +1,7 @@
 # Prayer Timer Feature
 
 ## Overview
-Added a prayer timer feature to the presentation screens that allows users to set a timer for their prayer time and receive notifications when the time is up.
+Added a prayer timer feature to both desktop and mobile presentation screens that allows users to set a timer for their prayer time and receive notifications when the time is up.
 
 ## Features Implemented
 
@@ -108,13 +108,14 @@ const [showTimerNotification, setShowTimerNotification] = useState(false); // Vi
 - [ ] Different notification sounds
 
 ## Files Modified
-- `src/components/PrayerPresentation.tsx`: Complete timer implementation
-  - Added state variables
-  - Added timer logic and effects
-  - Added UI controls in settings
-  - Added active timer display
-  - Added completion notification overlay
-  - Added helper functions
+- `src/components/PrayerPresentation.tsx`: Desktop/TV presentation timer implementation
+- `src/components/MobilePresentation.tsx`: Mobile presentation timer implementation
+  - Both files contain identical timer functionality
+  - Added state variables for timer control
+  - Added timer logic and countdown effects
+  - Added UI controls in settings panels
+  - Added completion notification overlays
+  - Added helper functions for timer operations
 
 ## Testing Checklist
 - [x] TypeScript compiles without errors

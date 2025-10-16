@@ -347,7 +347,14 @@ export const PrayerPresentation: React.FC = () => {
       {/* Timer Complete Notification */}
       {showTimerNotification && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-3xl p-12 shadow-2xl border-4 border-green-400 text-center max-w-2xl mx-4 animate-pulse">
+          <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-3xl p-12 shadow-2xl border-4 border-green-400 text-center max-w-2xl mx-4 animate-pulse relative">
+            <button
+              onClick={() => setShowTimerNotification(false)}
+              className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+              title="Close"
+            >
+              <X size={32} className="text-white" />
+            </button>
             <Bell size={80} className="mx-auto mb-6 text-white" />
             <h2 className="text-6xl font-bold mb-4">Prayer Timer Complete! 🙏</h2>
             <p className="text-2xl opacity-90">Your prayer time has ended</p>

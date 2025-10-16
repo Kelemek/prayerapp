@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, Settings, X } from 'lucide-react';
+import { Play, Pause, Settings, X, Timer, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Prayer {
@@ -30,6 +30,10 @@ export const MobilePresentation: React.FC = () => {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
+  const [prayerTimerMinutes, setPrayerTimerMinutes] = useState(10);
+  const [prayerTimerActive, setPrayerTimerActive] = useState(false);
+  const [prayerTimerRemaining, setPrayerTimerRemaining] = useState(0);
+  const [showTimerNotification, setShowTimerNotification] = useState(false);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
@@ -129,6 +133,57 @@ export const MobilePresentation: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [isPlaying, displayDuration, smartMode, prayers.length, currentIndex]);
+
+  // Prayer timer countdown
+  useEffect(() => {
+    if (!prayerTimerActive || prayerTimerRemaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setPrayerTimerRemaining((prev) => {
+        if (prev <= 1) {
+          setPrayerTimerActive(false);
+          setShowTimerNotification(true);
+          
+          // Request notification permission and send notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Prayer Timer Complete!', {
+              body: 'Your prayer time has ended',
+              icon: '/prayer-icon.png'
+            });
+          }
+          
+          // Auto-hide notification after 10 seconds
+          setTimeout(() => setShowTimerNotification(false), 10000);
+          
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [prayerTimerActive, prayerTimerRemaining]);
+
+  const startPrayerTimer = async () => {
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+    
+    setPrayerTimerRemaining(prayerTimerMinutes * 60);
+    setPrayerTimerActive(true);
+  };
+
+  const stopPrayerTimer = () => {
+    setPrayerTimerActive(false);
+    setPrayerTimerRemaining(0);
+  };
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const goToPrevious = () => {
     setCurrentIndex((currentIndex - 1 + prayers.length) % prayers.length);
@@ -316,8 +371,8 @@ export const MobilePresentation: React.FC = () => {
       {/* Settings Panel */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-gray-900 rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 pb-4">
               <h2 className="text-2xl font-bold">Settings</h2>
               <button
                 onClick={() => setShowSettings(false)}
@@ -327,7 +382,7 @@ export const MobilePresentation: React.FC = () => {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 px-6 pb-6 overflow-y-auto">
               <div>
                 <label className="flex items-center gap-3 mb-4">
                   <input
@@ -431,6 +486,62 @@ export const MobilePresentation: React.FC = () => {
                 </select>
               </div>
 
+              {/* Prayer Timer */}
+              <div className="border-t border-gray-600 pt-4 mt-4">
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <Timer size={20} />
+                  Prayer Timer
+                </h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-base mb-2">Timer Duration (minutes)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="120"
+                      value={prayerTimerMinutes}
+                      onChange={(e) => setPrayerTimerMinutes(Math.max(1, parseInt(e.target.value) || 1))}
+                      disabled={prayerTimerActive}
+                      className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg text-base border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+
+                  {prayerTimerActive && (
+                    <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-3 text-center">
+                      <div className="text-3xl font-bold mb-1">{formatTime(prayerTimerRemaining)}</div>
+                      <div className="text-sm opacity-90">Time Remaining</div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    {!prayerTimerActive ? (
+                      <button
+                        onClick={startPrayerTimer}
+                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-base font-semibold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Timer size={18} />
+                        Start Timer
+                      </button>
+                    ) : (
+                      <button
+                        onClick={stopPrayerTimer}
+                        className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-base font-semibold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <X size={18} />
+                        Stop Timer
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
+                    <p className="text-xs opacity-90">
+                      Set a timer for your prayer time. You'll receive a notification when the time is up.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <button
                 onClick={fetchPrayers}
                 className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-base font-semibold transition-colors"
@@ -438,6 +549,24 @@ export const MobilePresentation: React.FC = () => {
                 Refresh Prayers
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Timer Complete Notification */}
+      {showTimerNotification && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-3xl p-8 shadow-2xl border-4 border-green-400 text-center max-w-sm mx-4 animate-pulse relative">
+            <button
+              onClick={() => setShowTimerNotification(false)}
+              className="absolute top-3 right-3 p-2 hover:bg-white/20 rounded-full transition-colors"
+              title="Close"
+            >
+              <X size={28} className="text-white" />
+            </button>
+            <Bell size={60} className="mx-auto mb-4 text-white" />
+            <h2 className="text-4xl font-bold mb-3">Prayer Timer Complete! 🙏</h2>
+            <p className="text-lg opacity-90">Your prayer time has ended</p>
           </div>
         </div>
       )}
