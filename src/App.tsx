@@ -5,6 +5,8 @@ import { PrayerCard } from './components/PrayerCard';
 import { PrayerFiltersComponent } from './components/PrayerFilters';
 import { ThemeToggle } from './components/ThemeToggle';
 import { PrintPrayerList } from './components/PrintPrayerList';
+import { PrayerPresentation } from './components/PrayerPresentation';
+import { MobilePresentation } from './components/MobilePresentation';
 import { ToastProvider } from './components/Toast';
 import { AdminPortal } from './components/AdminPortal';
 import { AdminLogin } from './components/AdminLogin';
@@ -125,6 +127,14 @@ function AppContent() {
                 )}
                 <ThemeToggle />
                 <PrintPrayerList />
+                {/* Mobile: Mobile Mode button */}
+                <button
+                  onClick={() => window.location.hash = '#mobile-presentation'}
+                  className="flex items-center gap-1 bg-purple-600 text-white px-2 py-2 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm"
+                  title="Mobile Display"
+                >
+                  <span>Mobile</span>
+                </button>
                 <button
                   onClick={() => setShowForm(true)}
                   className="flex items-center gap-1 bg-blue-600 dark:bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm"
@@ -136,10 +146,19 @@ function AppContent() {
 
               {/* Tablet/Desktop: two rows */}
               <div className="hidden sm:flex flex-col gap-2">
-                {/* First row: theme, print, new prayer */}
+                {/* First row: theme, print, presentation, new prayer */}
                 <div className="flex items-center gap-3 justify-end">
                   <ThemeToggle />
                   <PrintPrayerList />
+                  {/* Desktop: TV Display button */}
+                  <button
+                    onClick={() => window.location.hash = '#presentation'}
+                    className="flex items-center gap-2 bg-purple-600 dark:bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-base"
+                    title="TV Presentation Mode"
+                  >
+                    <span className="hidden lg:inline">TV Display</span>
+                    <span className="lg:hidden">TV</span>
+                  </button>
                   <button
                     onClick={() => setShowForm(true)}
                     className="flex items-center gap-2 bg-blue-600 dark:bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-base"
@@ -354,12 +373,16 @@ function AppContent() {
 
 function AdminWrapper() {
   const { isAdmin, loading } = useAdminAuth();
-  const [currentView, setCurrentView] = useState<'public' | 'admin-login' | 'admin-portal'>('public');
+  const [currentView, setCurrentView] = useState<'public' | 'admin-login' | 'admin-portal' | 'presentation' | 'mobile-presentation'>('public');
   
   // Handle hash changes for admin access
   useEffect(() => {
     const handleHashChange = () => {
-      if (window.location.hash === '#admin') {
+      if (window.location.hash === '#presentation') {
+        setCurrentView('presentation');
+      } else if (window.location.hash === '#mobile-presentation') {
+        setCurrentView('mobile-presentation');
+      } else if (window.location.hash === '#admin') {
         if (isAdmin) {
           setCurrentView('admin-portal');
         } else {
@@ -395,6 +418,14 @@ function AdminWrapper() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+  
+  if (currentView === 'presentation') {
+    return <PrayerPresentation />;
+  }
+  
+  if (currentView === 'mobile-presentation') {
+    return <MobilePresentation />;
   }
   
   if (currentView === 'admin-login') {
