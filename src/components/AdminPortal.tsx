@@ -825,6 +825,17 @@ export const AdminPortal: React.FC = () => {
                                   <p className="break-words">Email: {prayer.email}</p>
                                 )}
                                 <p>Status: {prayer.status}</p>
+                                {prayer.approved_at && (
+                                  <p className="text-green-600 dark:text-green-400 font-medium mt-1">
+                                    Approved: {new Date(prayer.approved_at).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
@@ -857,6 +868,17 @@ export const AdminPortal: React.FC = () => {
                               </p>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
                                 <p>By: {update.author}</p>
+                                {update.approved_at && (
+                                  <p className="text-green-600 dark:text-green-400 font-medium mt-1">
+                                    Approved: {new Date(update.approved_at).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">

@@ -14,6 +14,8 @@ export interface PrayerRequest {
   updates?: PrayerUpdate[];
   approval_status?: 'pending' | 'approved' | 'denied';
   denial_reason?: string | null;
+  approved_at?: string | null;
+  denied_at?: string | null;
 }
 
 export interface PrayerUpdate {
@@ -26,6 +28,8 @@ export interface PrayerUpdate {
   created_at: string;
   approval_status?: 'pending' | 'approved' | 'denied';
   denial_reason?: string | null;
+  approved_at?: string | null;
+  denied_at?: string | null;
 }
 
 export interface DeletionRequest {
