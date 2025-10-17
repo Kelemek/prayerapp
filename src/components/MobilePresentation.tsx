@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, Settings, X, Timer, Bell } from 'lucide-react';
+import { Play, Pause, Settings, X, Timer, Bell, Sun, Moon, Monitor } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Prayer {
@@ -30,6 +30,7 @@ export const MobilePresentation: React.FC = () => {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   const [prayerTimerMinutes, setPrayerTimerMinutes] = useState(10);
   const [prayerTimerActive, setPrayerTimerActive] = useState(false);
   const [prayerTimerRemaining, setPrayerTimerRemaining] = useState(0);
@@ -37,6 +38,49 @@ export const MobilePresentation: React.FC = () => {
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
+
+  // Initialize theme
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
+    setTheme(savedTheme || 'system');
+  }, []);
+
+  // Apply theme
+  useEffect(() => {
+    const applyTheme = () => {
+      const root = document.documentElement;
+      
+      let effectiveTheme: 'light' | 'dark';
+      
+      if (theme === 'system') {
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        effectiveTheme = systemPrefersDark ? 'dark' : 'light';
+      } else {
+        effectiveTheme = theme as 'light' | 'dark';
+      }
+      
+      if (effectiveTheme === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+      
+      localStorage.setItem('theme', theme);
+    };
+
+    applyTheme();
+
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (theme === 'system') {
+        applyTheme();
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
 
   // Fetch prayers
   useEffect(() => {
@@ -185,6 +229,25 @@ export const MobilePresentation: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    // Apply theme immediately
+    if (newTheme === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } else if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
   const goToPrevious = () => {
     setCurrentIndex((currentIndex - 1 + prayers.length) % prayers.length);
   };
@@ -220,16 +283,16 @@ export const MobilePresentation: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 flex items-center justify-center">
-        <div className="text-white text-2xl">Loading prayers...</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-900 dark:text-white text-2xl">Loading prayers...</div>
       </div>
     );
   }
 
   if (prayers.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 flex items-center justify-center">
-        <div className="text-white text-center px-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-900 dark:text-white text-center px-4">
           <h1 className="text-3xl font-bold mb-4">No Prayers Available</h1>
           <p className="text-lg">Please add some prayers to display.</p>
         </div>
@@ -244,7 +307,7 @@ export const MobilePresentation: React.FC = () => {
     : [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col">
       {/* Prayer Content - scrollable and centered with swipe support */}
       <div 
         className="flex-1 overflow-y-auto px-4 py-6 pb-24 flex items-center"
@@ -254,30 +317,30 @@ export const MobilePresentation: React.FC = () => {
       >
         <div className="max-w-2xl mx-auto w-full">
           {/* Prayer Card */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 shadow-2xl border border-white/20">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
             {/* Prayer For */}
             <div className="mb-4">
-              <div className="text-lg font-semibold mb-1 text-blue-200">Prayer For:</div>
-              <div className="text-3xl font-bold leading-tight">{currentPrayer.prayer_for}</div>
+              <div className="text-lg font-semibold mb-1 text-blue-600 dark:text-blue-400">Prayer For:</div>
+              <div className="text-3xl font-bold leading-tight text-gray-900 dark:text-white">{currentPrayer.prayer_for}</div>
             </div>
 
             {/* Description */}
             <div className="mb-4">
-              <div className="text-xl leading-relaxed">{currentPrayer.description}</div>
+              <div className="text-xl leading-relaxed text-gray-800 dark:text-gray-200">{currentPrayer.description}</div>
             </div>
 
             {/* Meta Info */}
-            <div className="flex justify-between items-center mb-1 text-base opacity-90 flex-wrap gap-2">
+            <div className="flex justify-between items-center mb-1 text-base text-gray-700 dark:text-gray-300 flex-wrap gap-2">
               <div>
                 <span className="font-semibold">Requested by:</span> {currentPrayer.requester || 'Anonymous'}
               </div>
-              <div className="px-4 py-1 bg-white/20 rounded-full text-sm">
+              <div className="px-4 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200 rounded-full text-sm">
                 {currentPrayer.status.charAt(0).toUpperCase() + currentPrayer.status.slice(1)}
               </div>
             </div>
 
             {/* Date and Time */}
-            <div className="mb-4 text-sm opacity-75">
+            <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
               <span className="font-semibold">Date:</span> {new Date(currentPrayer.created_at).toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -292,12 +355,12 @@ export const MobilePresentation: React.FC = () => {
 
             {/* Updates */}
             {sortedUpdates.length > 0 && (
-              <div className="border-t border-white/30 pt-4">
-                <div className="text-xl font-semibold mb-3">Recent Updates ({sortedUpdates.length})</div>
+              <div className="border-t border-gray-300 dark:border-gray-600 pt-4">
+                <div className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">Recent Updates ({sortedUpdates.length})</div>
                 <div className="space-y-3">
                   {sortedUpdates.slice(0, 3).map((update) => (
-                    <div key={update.id} className="bg-white/10 rounded-lg p-4">
-                      <div className="text-sm opacity-80 mb-1">
+                    <div key={update.id} className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                         {update.author} • {new Date(update.created_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -308,7 +371,7 @@ export const MobilePresentation: React.FC = () => {
                           hour12: true
                         })}
                       </div>
-                      <div className="text-base">{update.content}</div>
+                      <div className="text-base text-gray-800 dark:text-gray-200">{update.content}</div>
                     </div>
                   ))}
                 </div>
@@ -319,14 +382,14 @@ export const MobilePresentation: React.FC = () => {
       </div>
 
       {/* Fixed Controls Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/50 backdrop-blur-md p-4 border-t border-white/20">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="max-w-2xl mx-auto">
           {/* Top Row: Play/Pause and Close */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                className="p-3 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-200 rounded-full transition-colors"
                 title={isPlaying ? 'Pause' : 'Play'}
               >
                 {isPlaying ? <Pause size={24} /> : <Play size={24} />}
@@ -336,14 +399,14 @@ export const MobilePresentation: React.FC = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                className="p-3 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-200 rounded-full transition-colors"
                 title="Settings"
               >
                 <Settings size={24} />
               </button>
               <button
                 onClick={() => window.location.hash = ''}
-                className="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+                className="p-3 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-200 rounded-full transition-colors"
                 title="Exit Presentation"
               >
                 <X size={24} />
@@ -352,7 +415,7 @@ export const MobilePresentation: React.FC = () => {
           </div>
 
           {/* Bottom Row: Status */}
-          <div className="text-center text-sm opacity-90">
+          <div className="text-center text-sm text-gray-900 dark:text-white">
             {isPlaying 
               ? smartMode 
                 ? 'Auto-advancing (Smart Mode)' 
@@ -360,7 +423,7 @@ export const MobilePresentation: React.FC = () => {
               : 'Paused'
             } • {currentIndex + 1} of {prayers.length} • Swipe to navigate
             {(statusFilter !== 'all' || timeFilter !== 'all') && (
-              <div className="text-xs mt-1 opacity-75">
+              <div className="text-xs mt-1 text-gray-600 dark:text-gray-400">
                 Filtered: {statusFilter !== 'all' ? statusFilter : ''}{statusFilter !== 'all' && timeFilter !== 'all' ? ', ' : ''}{timeFilter !== 'all' ? timeFilter : ''}
               </div>
             )}
@@ -371,18 +434,68 @@ export const MobilePresentation: React.FC = () => {
       {/* Settings Panel */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 pb-4">
-              <h2 className="text-2xl font-bold">Settings</h2>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h2>
               <button
                 onClick={() => setShowSettings(false)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
               >
                 <X size={24} />
               </button>
             </div>
 
             <div className="space-y-4 px-6 pb-6 overflow-y-auto">
+              {/* Theme Selection */}
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <Sun className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" size={18} />
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-800 dark:text-gray-100 mb-2 text-sm">
+                      Theme Preference
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        onClick={() => handleThemeChange('light')}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all ${
+                          theme === 'light'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'
+                        }`}
+                      >
+                        <Sun size={18} className="text-amber-600" />
+                        <span className="text-xs font-medium text-gray-800 dark:text-gray-100">Light</span>
+                      </button>
+                      <button
+                        onClick={() => handleThemeChange('dark')}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all ${
+                          theme === 'dark'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'
+                        }`}
+                      >
+                        <Moon size={18} className="text-blue-600 dark:text-blue-400" />
+                        <span className="text-xs font-medium text-gray-800 dark:text-gray-100">Dark</span>
+                      </button>
+                      <button
+                        onClick={() => handleThemeChange('system')}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all ${
+                          theme === 'system'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'
+                        }`}
+                      >
+                        <Monitor size={18} className="text-gray-600 dark:text-gray-400" />
+                        <span className="text-xs font-medium text-gray-800 dark:text-gray-100">System</span>
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                      Choose your preferred color theme or use your system settings
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="flex items-center gap-3 mb-4">
                   <input
@@ -391,14 +504,14 @@ export const MobilePresentation: React.FC = () => {
                     onChange={(e) => setSmartMode(e.target.checked)}
                     className="w-5 h-5 rounded cursor-pointer"
                   />
-                  <span className="text-base">Smart Mode (adjust time based on content length)</span>
+                  <span className="text-base text-gray-900 dark:text-white">Smart Mode (adjust time based on content length)</span>
                 </label>
               </div>
 
               {!smartMode && (
                 <>
                   <div>
-                    <label className="block text-base mb-2">Auto-advance interval (seconds)</label>
+                    <label className="block text-base mb-2 text-gray-900 dark:text-white">Auto-advance interval (seconds)</label>
                     <input
                       type="range"
                       min="5"
@@ -406,27 +519,27 @@ export const MobilePresentation: React.FC = () => {
                       step="5"
                       value={displayDuration}
                       onChange={(e) => setDisplayDuration(Number(e.target.value))}
-                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      className="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                     />
-                    <div className="text-center text-xl mt-2 font-semibold">{displayDuration}s</div>
+                    <div className="text-center text-xl mt-2 font-semibold text-gray-900 dark:text-white">{displayDuration}s</div>
                   </div>
 
                   <div className="flex gap-2">
                     <button
                       onClick={() => setDisplayDuration(10)}
-                      className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
+                      className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm transition-colors"
                     >
                       10s
                     </button>
                     <button
                       onClick={() => setDisplayDuration(20)}
-                      className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
+                      className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm transition-colors"
                     >
                       20s
                     </button>
                     <button
                       onClick={() => setDisplayDuration(30)}
-                      className="flex-1 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors"
+                      className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm transition-colors"
                     >
                       30s
                     </button>
@@ -435,8 +548,8 @@ export const MobilePresentation: React.FC = () => {
               )}
 
               {smartMode && (
-                <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-3">
-                  <p className="text-sm opacity-90">
+                <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg p-3">
+                  <p className="text-sm text-gray-800 dark:text-gray-200">
                     Smart mode automatically adjusts display time (10-90s) based on the amount of text in each prayer.
                   </p>
                 </div>
@@ -444,13 +557,13 @@ export const MobilePresentation: React.FC = () => {
 
               {/* Status Filter */}
               <div>
-                <label className="block text-base mb-2">Prayer Status</label>
+                <label className="block text-base mb-2 text-gray-900 dark:text-white">Prayer Status</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg text-base cursor-pointer hover:bg-gray-700 transition-colors border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
                   style={{
-                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                     backgroundPosition: 'right 0.5rem center',
                     backgroundRepeat: 'no-repeat',
                     backgroundSize: '1.5em 1.5em',
@@ -466,13 +579,13 @@ export const MobilePresentation: React.FC = () => {
 
               {/* Time Filter */}
               <div>
-                <label className="block text-base mb-2">Time Period</label>
+                <label className="block text-base mb-2 text-gray-900 dark:text-white">Time Period</label>
                 <select
                   value={timeFilter}
                   onChange={(e) => setTimeFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg text-base cursor-pointer hover:bg-gray-700 transition-colors border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
                   style={{
-                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                     backgroundPosition: 'right 0.5rem center',
                     backgroundRepeat: 'no-repeat',
                     backgroundSize: '1.5em 1.5em',
@@ -487,15 +600,15 @@ export const MobilePresentation: React.FC = () => {
               </div>
 
               {/* Prayer Timer */}
-              <div className="border-t border-gray-600 pt-4 mt-4">
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <div className="border-t border-gray-300 dark:border-gray-600 pt-4 mt-4">
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-white">
                   <Timer size={20} />
                   Prayer Timer
                 </h3>
                 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-base mb-2">Timer Duration (minutes)</label>
+                    <label className="block text-base mb-2 text-gray-900 dark:text-white">Timer Duration (minutes)</label>
                     <input
                       type="number"
                       min="1"
@@ -503,14 +616,14 @@ export const MobilePresentation: React.FC = () => {
                       value={prayerTimerMinutes}
                       onChange={(e) => setPrayerTimerMinutes(Math.max(1, parseInt(e.target.value) || 1))}
                       disabled={prayerTimerActive}
-                      className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg text-base border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
 
                   {prayerTimerActive && (
-                    <div className="bg-blue-900/30 border border-blue-500/30 rounded-lg p-3 text-center">
-                      <div className="text-3xl font-bold mb-1">{formatTime(prayerTimerRemaining)}</div>
-                      <div className="text-sm opacity-90">Time Remaining</div>
+                    <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg p-3 text-center">
+                      <div className="text-3xl font-bold mb-1 text-gray-900 dark:text-white">{formatTime(prayerTimerRemaining)}</div>
+                      <div className="text-sm text-gray-700 dark:text-gray-300">Time Remaining</div>
                     </div>
                   )}
 
@@ -518,7 +631,7 @@ export const MobilePresentation: React.FC = () => {
                     {!prayerTimerActive ? (
                       <button
                         onClick={startPrayerTimer}
-                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-base font-semibold transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-base font-semibold transition-colors flex items-center justify-center gap-2"
                       >
                         <Timer size={18} />
                         Start Timer
@@ -526,7 +639,7 @@ export const MobilePresentation: React.FC = () => {
                     ) : (
                       <button
                         onClick={stopPrayerTimer}
-                        className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-base font-semibold transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-base font-semibold transition-colors flex items-center justify-center gap-2"
                       >
                         <X size={18} />
                         Stop Timer
@@ -534,8 +647,8 @@ export const MobilePresentation: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
-                    <p className="text-xs opacity-90">
+                  <div className="bg-gray-100 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-600 rounded-lg p-3">
+                    <p className="text-xs text-gray-700 dark:text-gray-300">
                       Set a timer for your prayer time. You'll receive a notification when the time is up.
                     </p>
                   </div>
@@ -544,7 +657,7 @@ export const MobilePresentation: React.FC = () => {
 
               <button
                 onClick={fetchPrayers}
-                className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-base font-semibold transition-colors"
+                className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-base font-semibold transition-colors"
               >
                 Refresh Prayers
               </button>
