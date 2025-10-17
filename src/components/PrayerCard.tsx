@@ -496,7 +496,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               <select
                 value={requestedStatus}
                 onChange={(e) => setRequestedStatus(e.target.value as PrayerStatus)}
-                className="w-full appearance-none px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8"
+                className="w-full appearance-none px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
                 required
               >
                 <option value={PrayerStatus.CURRENT}>Current</option>
@@ -504,7 +504,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                 <option value={PrayerStatus.ANSWERED}>Answered</option>
                 <option value={PrayerStatus.CLOSED}>Closed</option>
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={16} />
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 dark:text-blue-400" size={20} />
             </div>
             <textarea
               placeholder="Reason for status change request..."
