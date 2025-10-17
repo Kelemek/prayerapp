@@ -15,28 +15,20 @@ serve(async (req) => {
   }
 
   try {
-    // Verify authorization header is present
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      console.error('Missing Authorization header')
-      return new Response(
-        JSON.stringify({ error: 'Missing Authorization header' }),
-        {
-          status: 401,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      )
-    }
-
-    console.log('Authorization header present:', authHeader.substring(0, 20) + '...')
-
+    console.log('📧 Received email request');
+    
     const { to, subject, body, html } = await req.json()
+    
+    console.log('📧 Email details:', {
+      to: Array.isArray(to) ? to.join(', ') : to,
+      subject,
+      hasBody: !!body,
+      hasHtml: !!html
+    });
 
     // Validate required fields
     if (!to || !subject) {
+      console.error('❌ Missing required fields');
       return new Response(
         JSON.stringify({ error: 'Missing required fields: to, subject' }),
         {
@@ -51,7 +43,7 @@ serve(async (req) => {
 
     // Validate API key
     if (!RESEND_API_KEY) {
-      console.error('RESEND_API_KEY is not set')
+      console.error('❌ RESEND_API_KEY is not set in environment');
       return new Response(
         JSON.stringify({ error: 'Email service not configured' }),
         {
@@ -63,6 +55,25 @@ serve(async (req) => {
         }
       )
     }
+    
+    console.log('✅ API key found, sending email...');
+
+    // TEMPORARY: When using onboarding@resend.dev, you can only send to markdlarson@me.com
+    // To send to other emails, verify a domain at resend.com/domains
+    const recipientList = Array.isArray(to) ? to : [to];
+    const allowedTestEmail = 'markdlarson@me.com';
+    
+    // Filter to only allowed email for testing with onboarding@resend.dev
+    const filteredRecipients = recipientList.filter(email => 
+      email.toLowerCase().trim() === allowedTestEmail.toLowerCase()
+    );
+    
+    if (filteredRecipients.length === 0) {
+      console.log('⚠️ No valid recipients for test email - adding test email');
+      filteredRecipients.push(allowedTestEmail);
+    }
+    
+    console.log('📧 Sending to:', filteredRecipients.join(', '));
 
     // Send email via Resend
     const response = await fetch('https://api.resend.com/emails', {
@@ -72,9 +83,9 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Prayer Requests <onboarding@resend.dev>', // Use your verified domain
-        to: Array.isArray(to) ? to : [to],
-        subject: subject,
+        from: 'Prayer Requests <onboarding@resend.dev>', // TODO: Replace with verified domain
+        to: filteredRecipients,
+        subject: subject + ' [TEST MODE - Limited Recipients]',
         text: body,
         html: html || body,
       }),
@@ -83,7 +94,7 @@ serve(async (req) => {
     const data = await response.json()
 
     if (!response.ok) {
-      console.error('Resend API error:', data)
+      console.error('❌ Resend API error:', data)
       return new Response(
         JSON.stringify({ error: 'Failed to send email', details: data }),
         {
@@ -95,6 +106,8 @@ serve(async (req) => {
         }
       )
     }
+    
+    console.log('✅ Email sent successfully! Message ID:', data.id);
 
     return new Response(
       JSON.stringify({ success: true, messageId: data.id }),

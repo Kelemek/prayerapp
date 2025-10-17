@@ -302,6 +302,22 @@ export const PrayerPresentation: React.FC = () => {
     setCurrentIndex((currentIndex + 1) % prayers.length);
   };
 
+  // Get status badge colors matching the main PrayerCard component
+  const getStatusBadgeClasses = (status: string) => {
+    switch (status) {
+      case 'current':
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700';
+      case 'ongoing':
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700';
+      case 'answered':
+        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700';
+      case 'closed':
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600';
+      default:
+        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600';
+    }
+  };
+
   const currentPrayer = prayers[currentIndex];
 
   if (loading) {
@@ -347,7 +363,7 @@ export const PrayerPresentation: React.FC = () => {
         <div>
           <span className="font-semibold">Requested by:</span> {prayer.requester || 'Anonymous'}
         </div>
-        <div className="px-5 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200 rounded-full">
+        <div className={`px-5 py-2 rounded-full border ${getStatusBadgeClasses(prayer.status)}`}>
           {prayer.status.charAt(0).toUpperCase() + prayer.status.slice(1)}
         </div>
       </div>

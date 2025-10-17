@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
+import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';
 
 interface PrayerFormProps {
   onSubmit: (prayer: Omit<PrayerRequest, 'id' | 'date_requested' | 'created_at' | 'updated_at' | 'updates'>) => Promise<any>;
@@ -18,10 +19,25 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
     email: '',
     is_anonymous: false
   });
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Load saved user info when component mounts
+  useEffect(() => {
+    const userInfo = getUserInfo();
+    if (userInfo.firstName || userInfo.lastName || userInfo.email) {
+      setFirstName(userInfo.firstName);
+      setLastName(userInfo.lastName);
+      setFormData(prev => ({
+        ...prev,
+        email: userInfo.email
+      }));
+    }
+  }, []);
 
   // Auto-close form 5 seconds after successful submission
   useEffect(() => {
@@ -38,12 +54,20 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.description.trim() || !formData.requester.trim() || !formData.prayer_for.trim() || !formData.email.trim()) return;
+    if (!formData.description.trim() || !firstName.trim() || !lastName.trim() || !formData.prayer_for.trim() || !formData.email.trim()) return;
 
     try {
       setIsSubmitting(true);
+      
+      // Concatenate first and last name
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      
+      // Save user info to localStorage for future use
+      saveUserInfo(firstName, lastName, formData.email);
+      
       await onSubmit({
         ...formData,
+        requester: fullName,
         title: `Prayer for ${formData.prayer_for}`,
         status: PrayerStatus.CURRENT
       });
@@ -51,14 +75,17 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
       // Show success message and mark as submitted
       setShowSuccessMessage(true);
       setIsSubmitted(true);
-      setFormData({
+      
+      // Clear form but keep name and email for next time
+      setFormData(prev => ({
         title: '',
         description: '',
-        requester: '',
+        requester: fullName,
         prayer_for: '',
-        email: '',
+        email: prev.email,
         is_anonymous: false
-      });
+      }));
+      // Keep firstName and lastName filled
       
     } catch (error) {
       console.error('Failed to add prayer:', error);
@@ -98,16 +125,45 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
             </div>
           )}
           
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                First Name *
+              </label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                placeholder="First name"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Last Name *
+              </label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                placeholder="Last name"
+                required
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Requested By *
+              Email Address *
             </label>
             <input
-              type="text"
-              value={formData.requester}
-              onChange={(e) => setFormData({ ...formData, requester: e.target.value })}
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              placeholder="Name of person requesting prayer"
+              placeholder="Your email address"
               required
             />
           </div>
@@ -122,20 +178,6 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
               onChange={(e) => setFormData({ ...formData, prayer_for: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Who or what this prayer is for"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Email Address *
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              placeholder="Your email address"
               required
             />
           </div>

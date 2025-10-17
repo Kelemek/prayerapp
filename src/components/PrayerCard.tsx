@@ -3,6 +3,7 @@ import { Calendar, User, CheckCircle, Trash2, ChevronDown } from 'lucide-react';
 import { useToast } from './Toast';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
+import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';
 
 interface PrayerCardProps {
   prayer: PrayerRequest;
@@ -34,16 +35,19 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   const displayedRequester = prayer.is_anonymous ? 'Anonymous' : prayer.requester;
   const [showAddUpdate, setShowAddUpdate] = useState(false);
   const [updateText, setUpdateText] = useState('');
-  const [updateAuthor, setUpdateAuthor] = useState('');
+  const [updateFirstName, setUpdateFirstName] = useState('');
+  const [updateLastName, setUpdateLastName] = useState('');
   const [updateAuthorEmail, setUpdateAuthorEmail] = useState('');
   const [updateIsAnonymous, setUpdateIsAnonymous] = useState(false);
   const [showDeleteRequest, setShowDeleteRequest] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
-  const [deleteRequesterName, setDeleteRequesterName] = useState('');
+  const [deleteRequesterFirstName, setDeleteRequesterFirstName] = useState('');
+  const [deleteRequesterLastName, setDeleteRequesterLastName] = useState('');
   const [deleteRequesterEmail, setDeleteRequesterEmail] = useState('');
   const [showStatusChangeRequest, setShowStatusChangeRequest] = useState(false);
   const [statusChangeReason, setStatusChangeReason] = useState('');
-  const [statusChangeRequesterName, setStatusChangeRequesterName] = useState('');
+  const [statusChangeRequesterFirstName, setStatusChangeRequesterFirstName] = useState('');
+  const [statusChangeRequesterLastName, setStatusChangeRequesterLastName] = useState('');
   const [statusChangeRequesterEmail, setStatusChangeRequesterEmail] = useState('');
   const [requestedStatus, setRequestedStatus] = useState<PrayerStatus>(prayer.status);
   // State for update deletion request UI
@@ -51,10 +55,34 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   const [updateDeleteError, setUpdateDeleteError] = useState<string | null>(null);
   const [showUpdateDeleteRequest, setShowUpdateDeleteRequest] = useState<string | null>(null);
   const [updateDeleteReason, setUpdateDeleteReason] = useState('');
-  const [updateDeleteRequesterName, setUpdateDeleteRequesterName] = useState('');
+  const [updateDeleteRequesterFirstName, setUpdateDeleteRequesterFirstName] = useState('');
+  const [updateDeleteRequesterLastName, setUpdateDeleteRequesterLastName] = useState('');
   const [updateDeleteRequesterEmail, setUpdateDeleteRequesterEmail] = useState('');
   const [showAllUpdates, setShowAllUpdates] = useState(false);
   const { showToast } = useToast();
+
+  // Load saved user info when component mounts
+  useEffect(() => {
+    const userInfo = getUserInfo();
+    if (userInfo.firstName) {
+      setUpdateFirstName(userInfo.firstName);
+      setDeleteRequesterFirstName(userInfo.firstName);
+      setStatusChangeRequesterFirstName(userInfo.firstName);
+      setUpdateDeleteRequesterFirstName(userInfo.firstName);
+    }
+    if (userInfo.lastName) {
+      setUpdateLastName(userInfo.lastName);
+      setDeleteRequesterLastName(userInfo.lastName);
+      setStatusChangeRequesterLastName(userInfo.lastName);
+      setUpdateDeleteRequesterLastName(userInfo.lastName);
+    }
+    if (userInfo.email) {
+      setUpdateAuthorEmail(userInfo.email);
+      setDeleteRequesterEmail(userInfo.email);
+      setStatusChangeRequesterEmail(userInfo.email);
+      setUpdateDeleteRequesterEmail(userInfo.email);
+    }
+  }, []);
 
   // Register callback to close all forms in this card
   useEffect(() => {
@@ -76,13 +104,21 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
 
   const handleAddUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!updateText.trim() || !updateAuthor.trim() || !updateAuthorEmail.trim()) return;
+    if (!updateText.trim() || !updateFirstName.trim() || !updateLastName.trim() || !updateAuthorEmail.trim()) return;
+    
+    // Concatenate first and last name
+    const fullName = `${updateFirstName.trim()} ${updateLastName.trim()}`;
+    
+    // Save user info to localStorage for future use
+    saveUserInfo(updateFirstName, updateLastName, updateAuthorEmail);
     
     // include author email and anonymous flag when adding an update
-    onAddUpdate(prayer.id, updateText, updateAuthor, updateAuthorEmail, updateIsAnonymous);
+    onAddUpdate(prayer.id, updateText, fullName, updateAuthorEmail, updateIsAnonymous);
     setUpdateText('');
-    setUpdateAuthor('');
-    setUpdateAuthorEmail('');
+    // Don't reset name and email - keep them for next time
+    // setUpdateFirstName('');
+    // setUpdateLastName('');
+    // setUpdateAuthorEmail('');
     setUpdateIsAnonymous(false);
     setShowAddUpdate(false);
     try { showToast('Update submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
@@ -90,13 +126,21 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
 
   const handleDeleteRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!deleteReason.trim() || !deleteRequesterName.trim() || !deleteRequesterEmail.trim()) return;
+    if (!deleteReason.trim() || !deleteRequesterFirstName.trim() || !deleteRequesterLastName.trim() || !deleteRequesterEmail.trim()) return;
+    
+    // Concatenate first and last name
+    const fullName = `${deleteRequesterFirstName.trim()} ${deleteRequesterLastName.trim()}`;
+    
+    // Save user info to localStorage for future use
+    saveUserInfo(deleteRequesterFirstName, deleteRequesterLastName, deleteRequesterEmail);
     
     try {
-      await onRequestDelete(prayer.id, deleteReason, deleteRequesterName, deleteRequesterEmail);
+      await onRequestDelete(prayer.id, deleteReason, fullName, deleteRequesterEmail);
       setDeleteReason('');
-      setDeleteRequesterName('');
-      setDeleteRequesterEmail('');
+      // Don't reset name and email - keep them for next time
+      // setDeleteRequesterFirstName('');
+      // setDeleteRequesterLastName('');
+      // setDeleteRequesterEmail('');
       setShowDeleteRequest(false);
       try { showToast('Deletion request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
     } catch (error) {
@@ -113,13 +157,21 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
 
   const handleStatusChangeRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!statusChangeReason.trim() || !statusChangeRequesterName.trim() || !statusChangeRequesterEmail.trim()) return;
+    if (!statusChangeReason.trim() || !statusChangeRequesterFirstName.trim() || !statusChangeRequesterLastName.trim() || !statusChangeRequesterEmail.trim()) return;
+    
+    // Concatenate first and last name
+    const fullName = `${statusChangeRequesterFirstName.trim()} ${statusChangeRequesterLastName.trim()}`;
+    
+    // Save user info to localStorage for future use
+    saveUserInfo(statusChangeRequesterFirstName, statusChangeRequesterLastName, statusChangeRequesterEmail);
     
     try {
-      await onRequestStatusChange(prayer.id, requestedStatus, statusChangeReason, statusChangeRequesterName, statusChangeRequesterEmail);
+      await onRequestStatusChange(prayer.id, requestedStatus, statusChangeReason, fullName, statusChangeRequesterEmail);
       setStatusChangeReason('');
-      setStatusChangeRequesterName('');
-      setStatusChangeRequesterEmail('');
+      // Don't reset name and email - keep them for next time
+      // setStatusChangeRequesterFirstName('');
+      // setStatusChangeRequesterLastName('');
+      // setStatusChangeRequesterEmail('');
       setShowStatusChangeRequest(false);
       try { showToast('Status change request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
     } catch (error) {
@@ -140,11 +192,18 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
 
   const handleUpdateDeletionRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!updateDeleteReason.trim() || !updateDeleteRequesterName.trim() || !updateDeleteRequesterEmail.trim() || !showUpdateDeleteRequest) return;
+    if (!updateDeleteReason.trim() || !updateDeleteRequesterFirstName.trim() || !updateDeleteRequesterLastName.trim() || !updateDeleteRequesterEmail.trim() || !showUpdateDeleteRequest) return;
+    
+    // Concatenate first and last name
+    const fullName = `${updateDeleteRequesterFirstName.trim()} ${updateDeleteRequesterLastName.trim()}`;
+    
+    // Save user info to localStorage for future use
+    saveUserInfo(updateDeleteRequesterFirstName, updateDeleteRequesterLastName, updateDeleteRequesterEmail);
+    
     try {
       setIsSubmittingUpdateDelete(true);
       setUpdateDeleteError(null);
-      const res: any = await onRequestUpdateDelete(showUpdateDeleteRequest, updateDeleteReason, updateDeleteRequesterName, updateDeleteRequesterEmail);
+      const res: any = await onRequestUpdateDelete(showUpdateDeleteRequest, updateDeleteReason, fullName, updateDeleteRequesterEmail);
       if (!res || res.ok === false) {
         // Handle common Supabase errors more gracefully
         let errMsg = (res && res.error) ? res.error : 'Failed to submit update deletion request';
@@ -159,8 +218,9 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         return;
       }
       setUpdateDeleteReason('');
-      setUpdateDeleteRequesterName('');
-      setUpdateDeleteRequesterEmail('');
+      // Don't reset name and email - keep them for next time
+      // setUpdateDeleteRequesterName('');
+      // setUpdateDeleteRequesterEmail('');
       setShowUpdateDeleteRequest(null);
       // show a toast to match other successful actions
       try { showToast('Update deletion request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
@@ -283,14 +343,24 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         <form onSubmit={handleAddUpdate} className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
           <h4 className="text-sm font-medium text-green-800 dark:text-green-200 mb-3">Add Prayer Update</h4>
           <div className="space-y-2">
-            <input
-              type="text"
-              placeholder="Your name"
-              value={updateAuthor}
-              onChange={(e) => setUpdateAuthor(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-green-300 dark:border-green-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
-              required
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                placeholder="First name"
+                value={updateFirstName}
+                onChange={(e) => setUpdateFirstName(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-green-300 dark:border-green-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Last name"
+                value={updateLastName}
+                onChange={(e) => setUpdateLastName(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-green-300 dark:border-green-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+                required
+              />
+            </div>
             <input
               type="email"
               placeholder="Your email"
@@ -339,14 +409,24 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         <form onSubmit={handleDeleteRequest} className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-3">Request Prayer Deletion</h4>
           <div className="space-y-2">
-            <input
-              type="text"
-              placeholder="Your name"
-              value={deleteRequesterName}
-              onChange={(e) => setDeleteRequesterName(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-              required
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                placeholder="First name"
+                value={deleteRequesterFirstName}
+                onChange={(e) => setDeleteRequesterFirstName(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Last name"
+                value={deleteRequesterLastName}
+                onChange={(e) => setDeleteRequesterLastName(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                required
+              />
+            </div>
             <input
               type="email"
               placeholder="Your email"
@@ -386,14 +466,24 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         <form onSubmit={handleStatusChangeRequest} className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-3">Request Status Change</h4>
           <div className="space-y-2">
-            <input
-              type="text"
-              placeholder="Your name"
-              value={statusChangeRequesterName}
-              onChange={(e) => setStatusChangeRequesterName(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                placeholder="First name"
+                value={statusChangeRequesterFirstName}
+                onChange={(e) => setStatusChangeRequesterFirstName(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Last name"
+                value={statusChangeRequesterLastName}
+                onChange={(e) => setStatusChangeRequesterLastName(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
             <input
               type="email"
               placeholder="Your email"
@@ -505,14 +595,24 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                   <form onSubmit={handleUpdateDeletionRequest} className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                     <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">Request Update Deletion</h4>
                     <div className="space-y-2">
-                      <input
-                        type="text"
-                        placeholder="Your name"
-                        value={updateDeleteRequesterName}
-                        onChange={(e) => setUpdateDeleteRequesterName(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        required
-                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder="First name"
+                          value={updateDeleteRequesterFirstName}
+                          onChange={(e) => setUpdateDeleteRequesterFirstName(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          required
+                        />
+                        <input
+                          type="text"
+                          placeholder="Last name"
+                          value={updateDeleteRequesterLastName}
+                          onChange={(e) => setUpdateDeleteRequesterLastName(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          required
+                        />
+                      </div>
                       <input
                         type="email"
                         placeholder="Your email"
@@ -562,14 +662,24 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             <form onSubmit={handleUpdateDeletionRequest} className="mt-4 mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-3">Request Update Deletion</h4>
               <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="Your name"
-                  value={updateDeleteRequesterName}
-                  onChange={(e) => setUpdateDeleteRequesterName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                  required
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="First name"
+                    value={updateDeleteRequesterFirstName}
+                    onChange={(e) => setUpdateDeleteRequesterFirstName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Last name"
+                    value={updateDeleteRequesterLastName}
+                    onChange={(e) => setUpdateDeleteRequesterLastName(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                  />
+                </div>
                   <input
                     type="email"
                     placeholder="Your email"

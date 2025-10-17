@@ -3,6 +3,7 @@ import { Settings, Mail, X, CheckCircle, AlertTriangle, Sun, Moon, Monitor, Prin
 import { supabase } from '../lib/supabase';
 import { sendPreferenceChangeNotification } from '../lib/emailNotifications';
 import { downloadPrintablePrayerList } from '../utils/printablePrayerList';
+import { getUserInfo } from '../utils/userInfoStorage';
 
 interface UserSettingsProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
   const [success, setSuccess] = useState<string | null>(null);
   const [hasPreferences, setHasPreferences] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(false);
 
   const handlePrint = async (range: 'week' | 'month' | 'year') => {
     setIsPrinting(true);
@@ -38,22 +40,44 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
 
   useEffect(() => {
     if (isOpen) {
-      // Reset states when modal opens
-      setName('');
-      setEmail('');
-      setReceiveNotifications(true);
+      // Load saved user info from localStorage
+      const userInfo = getUserInfo();
+      const fullName = userInfo.firstName && userInfo.lastName 
+        ? `${userInfo.firstName} ${userInfo.lastName}`
+        : '';
+      
+      // Set initial values from localStorage
+      setName(fullName);
+      setEmail(userInfo.email);
+      // Don't set receiveNotifications here - let the database load set it
+      // Only set to true if there's no email (no database lookup will happen)
+      if (!userInfo.email.trim()) {
+        setReceiveNotifications(true);
+      }
       setError(null);
       setSuccess(null);
       setHasPreferences(false);
+      setIsInitialLoad(true); // Mark that we're doing initial load
       
       // Load current theme from localStorage
       const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
       setTheme(savedTheme || 'system');
+      
+      // If we have an email, try to load preferences from database
+      if (userInfo.email.trim()) {
+        loadPreferencesAutomatically(userInfo.email, fullName);
+      }
+      
+      // Reset flag after a short delay
+      setTimeout(() => setIsInitialLoad(false), 100);
     }
   }, [isOpen]);
 
   // Auto-load preferences when email changes (with debounce)
   useEffect(() => {
+    // Skip if this is the initial load (already handled in the first useEffect)
+    if (isInitialLoad) return;
+    
     if (!email.trim()) return;
     
     // Basic email validation
@@ -61,19 +85,33 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
     if (!emailRegex.test(email)) return;
 
     const timer = setTimeout(() => {
-      loadPreferencesAutomatically();
+      loadPreferencesAutomatically(undefined, name);
     }, 800); // Wait 800ms after user stops typing
 
     return () => clearTimeout(timer);
-  }, [email]);
+  }, [email, isInitialLoad]);
 
-  const loadPreferencesAutomatically = async () => {
+  const loadPreferencesAutomatically = async (emailToLoad?: string, currentName?: string) => {
+    const emailAddress = emailToLoad || email;
+    if (!emailAddress.trim()) return;
+    
     try {
-      const { data, error } = await supabase
+      // Check for pending preference changes first (most recent user intent)
+      const { data: pendingData } = await supabase
+        .from('pending_preference_changes')
+        .select('*')
+        .eq('email', emailAddress.toLowerCase().trim())
+        .eq('approval_status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      // Check for approved preferences in email_subscribers
+      const { data: subscriberData, error } = await supabase
         .from('email_subscribers')
         .select('*')
-        .eq('email', email.toLowerCase().trim())
-        .eq('is_admin', false) // Only load regular user preferences, not admin subscribers
+        .eq('email', emailAddress.toLowerCase().trim())
+        .eq('is_admin', false)
         .maybeSingle();
 
       if (error) {
@@ -81,13 +119,32 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         return;
       }
 
-      if (data) {
-        setName(data.name || '');
-        setReceiveNotifications(data.is_active);
+      // Priority: pending changes > approved subscriber data > defaults
+      if (pendingData) {
+        // User has pending changes, show what they requested
+        if (pendingData.name && pendingData.name.trim()) {
+          setName(pendingData.name);
+        } else if (currentName) {
+          setName(currentName);
+        }
+        setReceiveNotifications(pendingData.receive_new_prayer_notifications);
+        setHasPreferences(true);
+      } else if (subscriberData) {
+        // User has approved preferences
+        if (subscriberData.name && subscriberData.name.trim()) {
+          setName(subscriberData.name);
+        } else if (currentName) {
+          setName(currentName);
+        }
+        setReceiveNotifications(subscriberData.is_active);
         setHasPreferences(true);
       } else {
-        // No preferences found, reset to defaults
-        setName('');
+        // No preferences found, use defaults
+        if (currentName) {
+          setName(currentName);
+        } else if (!emailToLoad) {
+          setName('');
+        }
         setReceiveNotifications(true);
         setHasPreferences(false);
       }
@@ -144,12 +201,17 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
 
       if (error) throw error;
 
-      // Send admin notification email
-      await sendPreferenceChangeNotification({
-        name: name.trim(),
-        email: emailLower,
-        receiveNotifications
-      });
+      // Send admin notification email (don't let this block the save)
+      try {
+        await sendPreferenceChangeNotification({
+          name: name.trim(),
+          email: emailLower,
+          receiveNotifications
+        });
+      } catch (emailError) {
+        console.warn('⚠️ Admin notification email failed (but preference was saved):', emailError);
+        // Don't throw - preference was already saved
+      }
 
       setSuccess(
         '✅ Your preference change has been submitted for approval! ' +

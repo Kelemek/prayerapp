@@ -4,12 +4,8 @@ import { supabase } from './supabase';
  * Helper function to invoke the send-notification Edge Function with proper auth
  */
 async function invokeSendNotification(payload: { to: string[]; subject: string; body: string; html?: string }) {
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   return await supabase.functions.invoke('send-notification', {
-    body: payload,
-    headers: {
-      Authorization: `Bearer ${anonKey}`
-    }
+    body: payload
   });
 }
 
@@ -99,19 +95,8 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
       throw functionError;
     }
 
-    // Store notification attempt in database for tracking (optional)
-    try {
-      await supabase.from('notification_log').insert({
-        type: payload.type,
-        recipients: emails,
-        subject,
-        body,
-        sent_at: new Date().toISOString()
-      });
-    } catch (logError) {
-      // Ignore errors for notification log
-      console.log('Note: notification_log table may not exist yet');
-    }
+    // TODO: Store notification attempt in database for tracking (requires notification_log table)
+    // await supabase.from('notification_log').insert({ type, recipients, subject, body, sent_at });
 
   } catch (error) {
     console.error('Error in sendAdminNotification:', error);
@@ -979,10 +964,13 @@ Please review and approve/deny this request in the admin portal.`;
 
     if (functionError) {
       console.error('❌ Error sending preference change notification:', functionError);
-      throw functionError;
+      console.error('❌ Note: Preference was saved but admin notification email failed');
+      // Don't throw - allow the preference to save even if email fails
     }
   } catch (error) {
     console.error('❌ Error in sendPreferenceChangeNotification:', error);
+    console.error('❌ Note: Preference was saved but admin notification email failed');
+    // Don't throw - allow the preference to save even if email fails
   }
 }
 
