@@ -1,23 +1,18 @@
 # Church Prayer Manager
 
-A modern, responsive web application for m### Technical Details
+A modern, responsive web application for managing prayer requests in your church community. Built with React, TypeScript, Vite, and Supabase.
 
-Built with React 19, TypeScript, Vite, and Supabase for a modern, real-time experience.
+## 📚 Documentation
 
-## Supabase Setup
+**Complete documentation available in [`docs/`](docs/)**
 
-This app uses Supabase for real-time data storage and synchronization. See `SUPABASE_SETUP.md` for detailed setup instructions.
-
-**Quick Setup:**
-1. Create a Supabase project at [supabase.com](https://supabase.com)
-2. Run the SQL schema from `supabase-schema.sql` in your Supabase SQL Editor
-3. Copy your project URL and API key to the `.env` file
-4. Restart the development server
-
-### Real-time Features
-- Live prayer updates across multiple users
-- Instant synchronization when prayers are added, updated, or marked as answered
-- Collaborative prayer management for your church communityging prayer requests in your church community. Built with React, TypeScript, and Vite.
+Quick links:
+- **[Setup Guide](docs/SETUP.md)** - Installation and configuration
+- **[Features Guide](docs/FEATURES.md)** - Complete feature overview and usage
+- **[Email System](docs/EMAIL.md)** - Email notifications and configuration
+- **[Database Guide](docs/DATABASE.md)** - Schema, migrations, and RLS policies
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Deploy to production
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## Features
 

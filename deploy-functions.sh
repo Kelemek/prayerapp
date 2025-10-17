@@ -1,10 +1,10 @@
 #!/bin/bash
-# Quick deployment script for prayer reminders function
+# Deployment script for all Supabase Edge Functions
 
 set -e  # Exit on error
 
-echo "🚀 Deploying Prayer Reminders Function"
-echo "========================================"
+echo "🚀 Deploying Supabase Edge Functions"
+echo "====================================="
 echo ""
 
 # Check if supabase CLI is installed
@@ -20,56 +20,63 @@ fi
 echo "✅ Supabase CLI found: $(supabase --version)"
 echo ""
 
-# Check if linked to project
-if [ ! -f ".supabase/config.toml" ]; then
-    echo "⚠️  Not linked to a Supabase project"
-    echo ""
-    read -p "Enter your Supabase project ref: " PROJECT_REF
+# Parse command line arguments
+FUNCTION_NAME="${1:-all}"
+
+deploy_function() {
+    local func_name=$1
+    local flags=$2
     
-    if [ -z "$PROJECT_REF" ]; then
-        echo "❌ Project ref is required"
+    echo "📦 Deploying $func_name..."
+    if supabase functions deploy "$func_name" $flags; then
+        echo "✅ $func_name deployed successfully!"
+        echo ""
+    else
+        echo "❌ Failed to deploy $func_name"
+        return 1
+    fi
+}
+
+# Deploy based on argument
+case $FUNCTION_NAME in
+    "send-notification")
+        deploy_function "send-notification" "--no-verify-jwt"
+        echo "� Remember: send-notification runs without JWT verification"
+        echo "   This is for anonymous email sending (prayer requests, etc.)"
+        ;;
+    "send-prayer-reminders")
+        deploy_function "send-prayer-reminders" ""
+        echo "💡 Next steps:"
+        echo "   1. Configure reminder interval in Admin Settings"
+        echo "   2. Test with 'Send Reminders Now' button"
+        ;;
+    "auto-transition-prayers")
+        deploy_function "auto-transition-prayers" ""
+        echo "💡 This function runs on a schedule to auto-transition prayers"
+        ;;
+    "all")
+        echo "Deploying all functions..."
+        echo ""
+        deploy_function "send-notification" "--no-verify-jwt"
+        deploy_function "send-prayer-reminders" ""
+        deploy_function "auto-transition-prayers" ""
+        echo "🎉 All functions deployed successfully!"
+        ;;
+    *)
+        echo "❌ Unknown function: $FUNCTION_NAME"
+        echo ""
+        echo "Usage: ./deploy-functions.sh [function-name]"
+        echo ""
+        echo "Available functions:"
+        echo "  send-notification       - Email sending (no JWT)"
+        echo "  send-prayer-reminders   - Automated prayer reminders"
+        echo "  auto-transition-prayers - Auto-transition prayer statuses"
+        echo "  all                     - Deploy all functions (default)"
+        echo ""
         exit 1
-    fi
-    
-    echo ""
-    echo "Linking to project..."
-    supabase link --project-ref "$PROJECT_REF"
-    echo ""
-fi
+        ;;
+esac
 
-echo "📦 Deploying send-prayer-reminders function..."
 echo ""
-
-supabase functions deploy send-prayer-reminders
-
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "✅ Function deployed successfully!"
-    echo ""
-    echo "Next steps:"
-    echo "  1. Apply database migration: APPLY_REMINDER_MIGRATION.sql"
-    echo "  2. Configure reminder interval in Admin Settings"
-    echo "  3. Test with 'Send Reminders Now' button"
-    echo ""
-    
-    # Ask if user wants to deploy other functions too
-    read -p "Deploy other functions too? (auto-transition-prayers) [y/N]: " DEPLOY_ALL
-    
-    if [[ $DEPLOY_ALL =~ ^[Yy]$ ]]; then
-        echo ""
-        echo "📦 Deploying auto-transition-prayers function..."
-        supabase functions deploy auto-transition-prayers
-        echo ""
-        echo "✅ All functions deployed!"
-    fi
-else
-    echo ""
-    echo "❌ Deployment failed"
-    echo ""
-    echo "Common issues:"
-    echo "  - Not logged in: Run 'supabase login'"
-    echo "  - Wrong project: Check your project ref"
-    echo "  - Network issues: Check your internet connection"
-    echo ""
-    exit 1
-fi
+echo "✨ Deployment complete!"
+echo ""
