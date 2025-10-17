@@ -38,27 +38,25 @@ Get these from your Supabase project dashboard under Settings → API.
 2. Create a new project
 3. Wait for database to initialize (~2 minutes)
 
-### Run Migrations
+### 5. Run Database Migrations
 
-Execute these SQL files in order in your Supabase SQL Editor:
+In your Supabase SQL Editor, run these migrations **in this exact order**:
 
-1. **Core Schema**: `supabase/migrations/supabase-schema.sql`
-   - Creates prayers, prayer_updates, deletion_requests tables
-   
-2. **Admin Settings**: `supabase/migrations/create_admin_settings.sql`
-   - Creates admin configuration table
+```bash
+# All required migration files are in supabase/migrations/
+```
 
-3. **Status Changes**: `supabase/migrations/status-change-requests-migration.sql`
-   - Adds status change request workflow
-   - **Important**: Then run `supabase/migrations/fix_status_change_constraint.sql` to fix constraint
+**Order**:
+1. **Core schema**: `supabase-schema.sql` - Creates all base tables
+2. **Admin settings**: `create_admin_settings.sql` - Admin configuration
+3. **Email subscribers**: `20251015000001_create_email_subscribers_table.sql`
+4. **Pending preferences**: `20251016000001_create_pending_preference_changes.sql`
+5. **Status changes**: `status-change-requests-migration.sql`
+6. **RLS fix 1**: `fix_email_subscribers_rls.sql` ⚠️ Required for email preferences
+7. **RLS fix 2**: `fix_pending_preference_changes_rls.sql` ⚠️ Required for email preferences
+8. **⚠️ CRITICAL FIX**: `fix_status_change_constraint.sql` - Fixes status constraint
 
-4. **Email System**: 
-   - `supabase/migrations/20251015000001_create_email_subscribers_table.sql`
-   - `supabase/migrations/20251016000001_create_pending_preference_changes.sql`
-   - `supabase/migrations/fix_email_subscribers_rls.sql`
-   - `supabase/migrations/fix_pending_preference_changes_rls.sql`
-
-5. **Approval System**: `supabase/migrations/database_migration_approval_system.sql`
+**These are the only 8 migration files you need.** Others have been archived.
 
 ### Link Supabase CLI
 

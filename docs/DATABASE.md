@@ -239,20 +239,22 @@ USING (true);
 
 ## Migrations
 
+All migration files are in `supabase/migrations/`. **Only 8 files are required** (others archived).
+
 ### Migration Order
 
-Run these in order:
+Run these migrations **in this exact order**:
 
-1. **Core Schema** (`supabase-schema.sql`)
-2. **Admin Settings** (`create_admin_settings.sql`)
-3. **Email System**:
-   - `20251015000001_create_email_subscribers_table.sql`
-   - `20251016000001_create_pending_preference_changes.sql`
-4. **Status Changes** (`status-change-requests-migration.sql`)
-5. **RLS Fixes**:
-   - `fix_email_subscribers_rls.sql`
-   - `fix_pending_preference_changes_rls.sql`
-   - `fix_status_change_constraint.sql` ⚠️ **IMPORTANT**
+1. **`supabase-schema.sql`** - Core schema (all base tables)
+2. **`create_admin_settings.sql`** - Admin settings table
+3. **`20251015000001_create_email_subscribers_table.sql`** - Email subscribers
+4. **`20251016000001_create_pending_preference_changes.sql`** - Preference changes
+5. **`status-change-requests-migration.sql`** - Status change requests
+6. **`fix_email_subscribers_rls.sql`** - RLS for email_subscribers ⚠️
+7. **`fix_pending_preference_changes_rls.sql`** - RLS for pending_preference_changes ⚠️
+8. **`fix_status_change_constraint.sql`** - Fix 'active' → 'current' ⚠️ **CRITICAL**
+
+All other migration files in `archive/` are obsolete and not needed.
 
 ### Critical Migrations
 
