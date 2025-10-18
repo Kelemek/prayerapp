@@ -234,7 +234,10 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
       );
     } catch (err: unknown) {
       console.error('Error saving preferences:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Failed to save preferences';
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }

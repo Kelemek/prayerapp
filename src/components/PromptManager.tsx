@@ -91,7 +91,10 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       setPrompts(data || []);
     } catch (err: unknown) {
       console.error('Error searching prompts:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Failed to search prompts';
+      setError(errorMessage);
     } finally {
       setSearching(false);
     }
@@ -153,7 +156,9 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       onSuccess();
     } catch (err: unknown) {
       console.error('Error saving prompt:', err);
-      const message = err?.message || 'Unknown error';
+      const message = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Unknown error';
       setError(`Failed to save prayer prompt: ${message}`);
     } finally {
       setSubmitting(false);
@@ -197,7 +202,10 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       }
     } catch (err: unknown) {
       console.error('Error deleting prompt:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Failed to delete prompt';
+      setError(errorMessage);
     }
   };
 
@@ -312,7 +320,10 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       onSuccess();
     } catch (err: unknown) {
       console.error('Error uploading CSV:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Failed to upload CSV';
+      setError(errorMessage);
     } finally {
       setUploadingCSV(false);
     }

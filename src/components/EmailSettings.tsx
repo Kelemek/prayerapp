@@ -192,7 +192,9 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       }
     } catch (err: unknown) {
       console.error('Error sending reminders:', err);
-      const errorMessage = err.message || JSON.stringify(err);
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : JSON.stringify(err);
       setError(`Failed to send reminders: ${errorMessage}`);
       alert(`Failed to send reminders: ${errorMessage}`);
     } finally {

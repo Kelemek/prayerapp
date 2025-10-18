@@ -198,7 +198,10 @@ serve(async (req) => {
         console.log(`Sent reminder for prayer ${prayer.id}: ${prayer.title}`)
       } catch (error) {
         console.error(`Unexpected error sending reminder for prayer ${prayer.id}:`, error)
-        errors.push({ prayerId: prayer.id, error: error.message })
+        const errorMessage = error && typeof error === 'object' && 'message' in error 
+          ? String(error.message) 
+          : 'Unknown error';
+        errors.push({ prayerId: prayer.id, error: errorMessage })
       }
     }
 
@@ -216,8 +219,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Unexpected error:', error)
+    const errorDetails = error && typeof error === 'object' && 'message' in error 
+      ? String(error.message) 
+      : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: 'Unexpected error occurred', details: error.message }),
+      JSON.stringify({ error: 'Unexpected error occurred', details: errorDetails }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
