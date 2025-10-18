@@ -200,7 +200,7 @@ export const EmailSubscribers: React.FC = () => {
       setCSVSuccess(null);
 
       // Insert all valid subscribers
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('email_subscribers')
         .insert(
           validRows.map(row => ({

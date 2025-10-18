@@ -19,7 +19,6 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [hasPreferences, setHasPreferences] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isPrintingPrompts, setIsPrintingPrompts] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(false);
@@ -74,7 +73,6 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
       }
       setError(null);
       setSuccess(null);
-      setHasPreferences(false);
       setIsInitialLoad(true); // Mark that we're doing initial load
       
       // Load current theme from localStorage
@@ -146,7 +144,6 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
           setName(currentName);
         }
         setReceiveNotifications(pendingData.receive_new_prayer_notifications);
-        setHasPreferences(true);
       } else if (subscriberData) {
         // User has approved preferences
         if (subscriberData.name && subscriberData.name.trim()) {
@@ -155,7 +152,6 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
           setName(currentName);
         }
         setReceiveNotifications(subscriberData.is_active);
-        setHasPreferences(true);
       } else {
         // No preferences found, use defaults
         if (currentName) {
@@ -164,7 +160,6 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
           setName('');
         }
         setReceiveNotifications(true);
-        setHasPreferences(false);
       }
     } catch (err: any) {
       console.error('Error loading preferences:', err);
@@ -366,7 +361,6 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
-                setHasPreferences(false);
                 setSuccess(null);
               }}
               placeholder="your.email@example.com"
