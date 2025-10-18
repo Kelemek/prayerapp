@@ -21,10 +21,6 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Install Supabase CLI
-        run: |
-          npm install -g supabase
-      
       - name: Create backup directory
         run: |
           mkdir -p backups
