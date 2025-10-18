@@ -224,7 +224,6 @@ export default function BackupStatus() {
 
       let totalRestored = 0;
       const errors: string[] = [];
-      const skipped: string[] = [];
 
       for (const tableName of tables) {
         if (!backup.tables[tableName]) continue;
