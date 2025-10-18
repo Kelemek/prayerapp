@@ -1,14 +1,17 @@
-name: Daily Database Backup
+name: Daily Database Backup (PostgreSQL Direct - Disabled)
+
+# This workflow is disabled due to IPv6 connectivity issues from GitHub Actions
+# Use backup-database-api.yml instead (API-based backup)
 
 on:
-  schedule:
-    # Run daily at 2 AM UTC (adjust timezone as needed)
-    - cron: '0 2 * * *'
-  workflow_dispatch: # Allow manual trigger
+  # schedule:
+  #   - cron: '0 2 * * *'
+  workflow_dispatch: # Manual trigger only
 
 jobs:
   backup:
     runs-on: ubuntu-latest
+    if: false  # Disabled - use API backup method instead
     
     steps:
       - name: Checkout repository
