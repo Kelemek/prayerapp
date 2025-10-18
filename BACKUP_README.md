@@ -36,7 +36,20 @@ All data from these tables:
 
 ## 🔄 How to Restore
 
-### Option 1: Using GitHub Actions (Easiest - No Technical Skills Required)
+### Option 1: In Admin Portal (Easiest - No GitHub Access Required)
+
+1. Log in to admin
+2. Go to **Settings** tab
+3. Find **Database Backup Status** card
+4. Click **"Restore"** button
+5. Select your backup file (.json)
+6. Confirm the restoration (⚠️ This will overwrite all current data!)
+
+**Works with:**
+- Manual backups downloaded from the app
+- Backups downloaded from GitHub Actions artifacts
+
+### Option 2: Using GitHub Actions Workflow
 
 1. Go to **Actions** tab
 2. Find the backup you want to restore and copy its Run ID from the URL
@@ -45,9 +58,9 @@ All data from these tables:
 5. Enter the Run ID and type `RESTORE` to confirm
 6. Click **"Run workflow"** button
 
-👉 **See [RESTORE_SIMPLE_GUIDE.md](RESTORE_SIMPLE_GUIDE.md) for detailed step-by-step instructions with screenshots**
+👉 **See [RESTORE_SIMPLE_GUIDE.md](RESTORE_SIMPLE_GUIDE.md) for detailed step-by-step instructions**
 
-### Option 2: Using Terminal (For Technical Users)
+### Option 3: Using Terminal (For Technical Users)
 
 ```bash
 # Download backup from Actions → Artifacts
@@ -55,7 +68,22 @@ All data from these tables:
 ./scripts/restore-database-json.sh
 ```
 
-## 📁 Backup Files
+## 📊 View & Manage Backups
+
+**In the Admin Portal:**
+1. Log in to admin
+2. Go to **Settings** tab
+3. See **Database Backup Status** card at the top
+
+**Features:**
+- ✅ Latest backup status and time
+- 📈 Records backed up
+- ⏱️ Backup duration
+- 📋 Full backup history (last 30)
+- 💾 **Manual Backup** button - Download current database instantly
+- 🔄 **Restore** button - Upload and restore from a backup file
+
+## �📁 Backup Files
 
 **Location**: GitHub Actions Artifacts (not stored in repository)
 
@@ -65,6 +93,8 @@ All data from these tables:
 
 **Retention**: 30 days (auto-cleanup)
 
+**Activity Tracking**: Each backup writes to the `backup_logs` table, keeping your free tier database active!
+
 **Access Backups**:
 1. Go to **Actions** tab
 2. Click **"Daily Database Backup (API Method)"**
@@ -72,13 +102,30 @@ All data from these tables:
 4. Scroll to **Artifacts** section
 5. Download the backup file
 
-## 🚀 Test the Backup Now
+## � Create Manual Backup
+
+### In Admin Portal (Instant Download)
+
+1. Log in to admin
+2. Go to **Settings** tab
+3. Find **Database Backup Status** card
+4. Click **"Manual Backup"** button
+5. Wait a few seconds
+6. Backup file downloads automatically as `manual_backup_YYYY-MM-DD...json`
+
+**Benefits:**
+- ✅ Instant download to your computer
+- ✅ No GitHub access required
+- ✅ Perfect before making major changes
+- ✅ Logged to backup history
+
+### Via GitHub Actions
 
 1. Go to **Actions** tab
 2. Click **"Daily Database Backup (API Method)"**
 3. Click **"Run workflow"** → **"Run workflow"**
 4. Wait ~1 minute
-5. Check the workflow run for the artifact
+5. Download artifact from the workflow run
 
 ## 📚 More Information
 

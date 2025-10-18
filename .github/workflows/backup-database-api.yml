@@ -42,6 +42,7 @@ jobs:
               process.env.SUPABASE_SERVICE_KEY
             );
 
+            const startTime = Date.now();
             console.log('Fetching all tables data...');
             
             const tables = [
@@ -88,6 +89,10 @@ jobs:
             fs.writeFileSync(filename, JSON.stringify(backup, null, 2));
             console.log(`\n✓ Backup saved to ${filename}`);
 
+            // Calculate duration
+            const endTime = Date.now();
+            const durationSeconds = Math.round((endTime - startTime) / 1000);
+
             // Create summary
             const summary = {
               timestamp: backup.timestamp,
@@ -107,10 +112,51 @@ jobs:
 
             console.log('\nBackup Summary:');
             console.log(JSON.stringify(summary, null, 2));
+
+            // Log backup to database (keeps free tier active)
+            const totalRecords = Object.values(summary.tables).reduce((sum, count) => sum + count, 0);
+            
+            try {
+              const { error: logError } = await supabase
+                .from('backup_logs')
+                .insert({
+                  backup_date: new Date().toISOString(),
+                  status: 'success',
+                  tables_backed_up: summary.tables,
+                  total_records: totalRecords,
+                  duration_seconds: durationSeconds
+                });
+
+              if (logError) {
+                console.error('Warning: Failed to log backup to database:', logError);
+              } else {
+                console.log('✓ Backup logged to database');
+              }
+            } catch (logErr) {
+              console.error('Warning: Exception logging backup:', logErr);
+            }
           }
 
-          backupDatabase().catch(err => {
+          backupDatabase().catch(async err => {
             console.error('Backup failed:', err);
+            
+            // Try to log the failure
+            try {
+              const supabase = createClient(
+                process.env.SUPABASE_URL,
+                process.env.SUPABASE_SERVICE_KEY
+              );
+              
+              await supabase.from('backup_logs').insert({
+                backup_date: new Date().toISOString(),
+                status: 'failed',
+                error_message: err.message || String(err),
+                total_records: 0
+              });
+            } catch (logErr) {
+              console.error('Could not log failure:', logErr);
+            }
+            
             process.exit(1);
           });
           EOF
