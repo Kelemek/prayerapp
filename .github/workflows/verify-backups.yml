@@ -1,0 +1,128 @@
+name: Verify Backup Integrity
+
+on:
+  schedule:
+    # Run weekly on Mondays at 3 AM UTC
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Check for recent backups
+        id: check_backups
+        run: |
+          if [ ! -d "backups" ]; then
+            echo "❌ No backups directory found"
+            exit 1
+          fi
+          
+          # Count backup files
+          BACKUP_COUNT=$(ls -1 backups/backup_*.sql.gz 2>/dev/null | wc -l)
+          echo "Found $BACKUP_COUNT backup files"
+          
+          if [ "$BACKUP_COUNT" -eq 0 ]; then
+            echo "❌ No backup files found"
+            exit 1
+          fi
+          
+          # Check for backup from last 48 hours
+          RECENT_BACKUP=$(find backups -name "backup_*.sql.gz" -mtime -2 | head -n 1)
+          
+          if [ -z "$RECENT_BACKUP" ]; then
+            echo "⚠️  Warning: No backup found from the last 48 hours"
+            echo "Latest backup:"
+            ls -lt backups/backup_*.sql.gz | head -n 1
+            exit 1
+          else
+            echo "✅ Recent backup found: $RECENT_BACKUP"
+            ls -lh "$RECENT_BACKUP"
+          fi
+      
+      - name: Verify backup file integrity
+        run: |
+          echo "Verifying backup file integrity..."
+          
+          # Get the most recent backup
+          LATEST_BACKUP=$(ls -t backups/backup_*.sql.gz | head -n 1)
+          
+          if [ -z "$LATEST_BACKUP" ]; then
+            echo "❌ No backup file to verify"
+            exit 1
+          fi
+          
+          echo "Checking: $LATEST_BACKUP"
+          
+          # Test if file can be decompressed
+          if gzip -t "$LATEST_BACKUP" 2>/dev/null; then
+            echo "✅ Backup file is valid and can be decompressed"
+            
+            # Show file size
+            SIZE=$(du -h "$LATEST_BACKUP" | cut -f1)
+            echo "Backup size: $SIZE"
+            
+            # Check if backup contains expected SQL content
+            if gunzip -c "$LATEST_BACKUP" | head -n 20 | grep -q "PostgreSQL"; then
+              echo "✅ Backup contains valid PostgreSQL dump"
+            else
+              echo "⚠️  Warning: Backup may not contain valid SQL"
+            fi
+          else
+            echo "❌ Backup file is corrupted or invalid"
+            exit 1
+          fi
+      
+      - name: Check metadata files
+        run: |
+          echo "Checking backup metadata..."
+          
+          METADATA_COUNT=$(ls -1 backups/backup_*.json 2>/dev/null | wc -l)
+          echo "Found $METADATA_COUNT metadata files"
+          
+          # Show latest metadata
+          LATEST_METADATA=$(ls -t backups/backup_*.json | head -n 1)
+          if [ -n "$LATEST_METADATA" ]; then
+            echo "Latest backup metadata:"
+            cat "$LATEST_METADATA"
+          fi
+      
+      - name: Create verification report
+        if: always()
+        run: |
+          echo "# Backup Verification Report" > verification_report.md
+          echo "" >> verification_report.md
+          echo "**Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> verification_report.md
+          echo "" >> verification_report.md
+          echo "## Summary" >> verification_report.md
+          echo "" >> verification_report.md
+          
+          BACKUP_COUNT=$(ls -1 backups/backup_*.sql.gz 2>/dev/null | wc -l || echo 0)
+          echo "- Total backups: $BACKUP_COUNT" >> verification_report.md
+          
+          if [ "$BACKUP_COUNT" -gt 0 ]; then
+            TOTAL_SIZE=$(du -sh backups/ | cut -f1)
+            echo "- Total size: $TOTAL_SIZE" >> verification_report.md
+            
+            OLDEST=$(ls -t backups/backup_*.sql.gz | tail -n 1)
+            NEWEST=$(ls -t backups/backup_*.sql.gz | head -n 1)
+            
+            echo "" >> verification_report.md
+            echo "## Backup Range" >> verification_report.md
+            echo "" >> verification_report.md
+            echo "- Oldest: $(basename $OLDEST)" >> verification_report.md
+            echo "- Newest: $(basename $NEWEST)" >> verification_report.md
+          fi
+          
+          cat verification_report.md
+      
+      - name: Upload verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-verification-report
+          path: verification_report.md

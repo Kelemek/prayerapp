@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 *.env
+
+# Database backups (committed by GitHub Actions only)
+# Uncomment the line below if you don't want backups in the repository
+# backups/

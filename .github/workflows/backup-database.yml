@@ -1,0 +1,105 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC (adjust timezone as needed)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install Supabase CLI
+        run: |
+          npm install -g supabase
+      
+      - name: Create backup directory
+        run: |
+          mkdir -p backups
+          echo "BACKUP_DATE=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
+      
+      - name: Backup database schema
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          # Extract database host from Supabase URL
+          DB_HOST="${SUPABASE_PROJECT_ID}.supabase.co"
+          
+          # Install PostgreSQL client
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          
+          # Backup schema and data
+          PGPASSWORD="${SUPABASE_DB_PASSWORD}" pg_dump \
+            -h "db.${DB_HOST}" \
+            -U postgres \
+            -d postgres \
+            --clean \
+            --if-exists \
+            --quote-all-identifiers \
+            --no-owner \
+            --no-privileges \
+            -f "backups/backup_${BACKUP_DATE}.sql"
+          
+          # Create a compressed version
+          gzip -c "backups/backup_${BACKUP_DATE}.sql" > "backups/backup_${BACKUP_DATE}.sql.gz"
+          
+          # Remove uncompressed version to save space
+          rm "backups/backup_${BACKUP_DATE}.sql"
+      
+      - name: Create backup metadata
+        run: |
+          cat > "backups/backup_${BACKUP_DATE}.json" << EOF
+          {
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "date": "${BACKUP_DATE}",
+            "type": "full",
+            "format": "sql.gz",
+            "workflow_run": "${{ github.run_id }}",
+            "triggered_by": "${{ github.event_name }}"
+          }
+          EOF
+      
+      - name: Commit and push backup
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add backups/
+          git commit -m "chore: automated database backup ${BACKUP_DATE}" || echo "No changes to commit"
+          git push || echo "No changes to push"
+      
+      - name: Keep only last 30 backups
+        run: |
+          cd backups
+          # List all backup files by date, skip the 30 most recent, delete the rest
+          ls -t backup_*.sql.gz | tail -n +31 | xargs -r rm
+          ls -t backup_*.json | tail -n +31 | xargs -r rm
+          
+          # Commit deletion if any files were removed
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "chore: cleanup old backups (keep last 30)" || echo "No old backups to remove"
+          git push || echo "No changes to push"
+      
+      - name: Upload backup as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup-${{ env.BACKUP_DATE }}
+          path: backups/backup_${{ env.BACKUP_DATE }}.sql.gz
+          retention-days: 30
