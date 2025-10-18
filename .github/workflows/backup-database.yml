@@ -44,41 +44,64 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client dnsutils
           
-          # Resolve IPv4 address explicitly
+          # Try multiple methods to resolve IPv4 address
           echo "Resolving database host (IPv4 only)..."
-          DB_IP=$(getent ahostsv4 ${DB_HOST} | awk '{print $1}' | head -n1)
           
+          # Method 1: Try dig with IPv4 only
+          DB_IP=$(dig +short -4 ${DB_HOST} A | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+          
+          # Method 2: Try nslookup if dig fails
           if [ -z "$DB_IP" ]; then
-            echo "Failed to resolve IPv4 address"
-            exit 1
+            echo "dig failed, trying nslookup..."
+            DB_IP=$(nslookup ${DB_HOST} | grep 'Address:' | grep -v '#' | awk '{print $2}' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
           fi
           
-          echo "Database IPv4: ${DB_IP}"
+          # Method 3: Try host command if nslookup fails
+          if [ -z "$DB_IP" ]; then
+            echo "nslookup failed, trying host..."
+            DB_IP=$(host -t A ${DB_HOST} | grep 'has address' | awk '{print $4}' | head -n1)
+          fi
           
-          # Add to /etc/hosts to force IPv4
-          echo "${DB_IP} ${DB_HOST}" | sudo tee -a /etc/hosts
+          if [ -z "$DB_IP" ]; then
+            echo "Warning: Could not resolve IPv4 address. Will use hostname directly."
+            echo "This may use IPv6 if available."
+          else
+            echo "Database IPv4: ${DB_IP}"
+            # Add to /etc/hosts to force IPv4
+            echo "${DB_IP} ${DB_HOST}" | sudo tee -a /etc/hosts
+          fi
+          
+          # Set connection parameters for PostgreSQL to prefer IPv4
+          export PGOPTIONS="-c client_encoding=UTF8"
           
           # Test connection first with pooler port (more reliable for external connections)
           echo "Testing database connection on port 6543..."
-          PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql \
+          if PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql \
             -h "${DB_HOST}" \
             -U postgres \
             -d postgres \
             -p 6543 \
-            -c "SELECT version();" || {
-              echo "Port 6543 failed. Trying port 5432..."
-              PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql \
-                -h "${DB_HOST}" \
-                -U postgres \
-                -d postgres \
-                -p 5432 \
-                -c "SELECT version();"
+            -c "SELECT version();" 2>&1; then
+            DB_PORT=6543
+            echo "✓ Connection successful on port 6543"
+          else
+            echo "Port 6543 failed. Trying port 5432..."
+            if PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql \
+              -h "${DB_HOST}" \
+              -U postgres \
+              -d postgres \
+              -p 5432 \
+              -c "SELECT version();" 2>&1; then
               DB_PORT=5432
-            }
-          
-          # Use port 6543 if connection test succeeded, otherwise use 5432
-          DB_PORT=${DB_PORT:-6543}
-          echo "Using port: ${DB_PORT}"
+              echo "✓ Connection successful on port 5432"
+            else
+              echo "✗ Failed to connect on both ports"
+              echo "Checking if Direct Connection is enabled in Supabase..."
+              echo "Please enable Direct Connection in your Supabase project settings:"
+              echo "Dashboard → Settings → Database → Connection Pooling"
+              exit 1
+            fi
+          fi
           
           # Backup schema and data
           echo "Starting backup..."
