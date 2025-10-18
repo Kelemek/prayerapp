@@ -32,9 +32,9 @@ jobs:
       
       - name: Create backup script
         run: |
-          cat > backup-script.js << 'EOF'
-          const { createClient } = require('@supabase/supabase-js');
-          const fs = require('fs');
+          cat > backup-script.mjs << 'EOF'
+          import { createClient } from '@supabase/supabase-js';
+          import fs from 'fs';
 
           async function backupDatabase() {
             const supabase = createClient(
@@ -121,7 +121,7 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           BACKUP_DATE: ${{ env.BACKUP_DATE }}
         run: |
-          node backup-script.js
+          node backup-script.mjs
       
       - name: Compress backup
         run: |
