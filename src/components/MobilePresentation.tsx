@@ -162,7 +162,7 @@ export const MobilePresentation: React.FC = () => {
   };
 
   const fetchPrompts = async () => {
-    let query = supabase
+    const query = supabase
       .from('prayer_prompts')
       .select('*')
       .order('type', { ascending: true })
