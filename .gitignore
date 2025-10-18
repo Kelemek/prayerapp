@@ -27,7 +27,8 @@ dist-ssr
 # Database backups - not synced to repository
 backups/
 
-# Test coverage reports
+# Coverage reports
 coverage/
 *.lcov
 .nyc_output/
+.vitest/
