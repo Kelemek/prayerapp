@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminLogin } from './AdminLogin';
-import * as useAdminAuth from '../hooks/useAdminAuth';
+import * as useAdminAuth from '../hooks/useAdminAuthHook';
 
 // Mock the useAdminAuth hook
-vi.mock('../hooks/useAdminAuth', () => ({
+vi.mock('../hooks/useAdminAuthHook', () => ({
   useAdminAuth: vi.fn(),
 }));
 

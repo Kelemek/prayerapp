@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import { CheckCircle, X } from 'lucide-react';
+import { ToastContext } from '../contexts/ToastContext';
 
 interface Toast {
   id: string;
   message: string;
   type: 'success' | 'info' | 'warning' | 'error';
 }
-
-interface ToastContextType {
-  showToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
-}
-
-export const ToastContext = React.createContext<ToastContextType | null>(null);
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -49,8 +44,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider value={{ showToast }}>
       {children}
       
-  {/* Toast Container: bottom-right on small screens, top-right on md+ */}
-  <div className="fixed right-4 bottom-4 md:top-4 md:bottom-auto z-50 space-y-2">
+      {/* Toast Container: bottom-right on small screens, top-right on md+ */}
+      <div className="fixed right-4 bottom-4 md:top-4 md:bottom-auto z-50 space-y-2">
         {toasts.map((toast) => (
           <div
             key={toast.id}
@@ -69,12 +64,4 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       </div>
     </ToastContext.Provider>
   );
-};
-
-export const useToast = () => {
-  const context = React.useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToast must be used within ToastProvider');
-  }
-  return context;
 };

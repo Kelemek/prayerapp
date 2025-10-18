@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, ChevronDown } from 'lucide-react';
-import { useToast } from './Toast';
+import { useToast } from '../hooks/useToast';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';

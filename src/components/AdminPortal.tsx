@@ -14,7 +14,7 @@ import BackupStatus from './BackupStatus';
 import { PromptManager } from './PromptManager'; // Prayer prompts management
 import { PrayerTypesManager } from './PrayerTypesManager';
 import { useAdminData } from '../hooks/useAdminData';
-import { useAdminAuth } from '../hooks/useAdminAuth';
+import { useAdminAuth } from '../hooks/useAdminAuthHook';
 import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
 import { supabase } from '../lib/supabase';
 import { sendApprovedPreferenceChangeNotification, sendDeniedPreferenceChangeNotification } from '../lib/emailNotifications';
