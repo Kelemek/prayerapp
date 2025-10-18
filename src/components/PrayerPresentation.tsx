@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Settings, Play, Pause, Timer, Bell, X, ChevronLeft, ChevronRight, Sun, Moon, Monitor } from 'lucide-react';
+import { Settings, Play, Pause, Timer, Bell, X, ChevronLeft, ChevronRight, Sun, Moon, Monitor } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Prayer {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, User, CheckCircle, XCircle, MessageCircle, ArrowRight, Edit2, Save, X } from 'lucide-react';
+import { Calendar, User, CheckCircle, XCircle, MessageCircle, Edit2, Save, X } from 'lucide-react';
 import type { PrayerUpdate } from '../types/prayer';
 
 interface PendingUpdateCardProps {

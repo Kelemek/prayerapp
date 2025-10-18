@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, XCircle, User, Calendar, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, User, Calendar } from 'lucide-react';
 import type { DeletionRequest } from '../types/prayer';
 import { DeletionStyleCard } from './DeletionStyleCard';
 

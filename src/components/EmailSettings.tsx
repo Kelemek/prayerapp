@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, X, Save, Trash2, RefreshCw } from 'lucide-react';
+import { Mail, Plus, X, Save, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface EmailSettingsProps {
