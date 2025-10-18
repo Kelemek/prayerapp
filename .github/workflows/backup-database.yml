@@ -34,17 +34,57 @@ jobs:
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: |
           # Extract database host from Supabase URL
-          DB_HOST="${SUPABASE_PROJECT_ID}.supabase.co"
+          DB_HOST="db.${SUPABASE_PROJECT_ID}.supabase.co"
           
           # Install PostgreSQL client
           sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          sudo apt-get install -y postgresql-client dnsutils
           
-          # Backup schema and data
-          PGPASSWORD="${SUPABASE_DB_PASSWORD}" pg_dump \
-            -h "db.${DB_HOST}" \
+          # Resolve IPv4 address to avoid IPv6 issues
+          echo "Resolving database host..."
+          DB_IP=$(dig +short ${DB_HOST} A | head -n1)
+          echo "Database IP: ${DB_IP}"
+          
+          # If DNS resolution fails, try with IPv4 directly
+          if [ -z "$DB_IP" ]; then
+            echo "Using hostname directly..."
+            DB_TARGET="${DB_HOST}"
+          else
+            echo "Using resolved IP..."
+            DB_TARGET="${DB_IP}"
+          fi
+          
+          # Test connection first
+          echo "Testing database connection..."
+          PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql \
+            -h "${DB_TARGET}" \
             -U postgres \
             -d postgres \
+            -p 5432 \
+            -c "SELECT version();" 2>/dev/null || {
+              echo "Direct connection failed. Trying with connection pooler (port 6543)..."
+              # Backup using connection pooler port with transaction mode
+              PGPASSWORD="${SUPABASE_DB_PASSWORD}" pg_dump \
+                -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
+                -U postgres \
+                -d postgres \
+                -p 6543 \
+                --clean \
+                --if-exists \
+                --quote-all-identifiers \
+                --no-owner \
+                --no-privileges \
+                -f "backups/backup_${BACKUP_DATE}.sql"
+              exit 0
+            }
+          
+          # Backup schema and data (if direct connection worked)
+          echo "Starting backup..."
+          PGPASSWORD="${SUPABASE_DB_PASSWORD}" pg_dump \
+            -h "${DB_TARGET}" \
+            -U postgres \
+            -d postgres \
+            -p 5432 \
             --clean \
             --if-exists \
             --quote-all-identifiers \
