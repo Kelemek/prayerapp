@@ -19,7 +19,7 @@ export const AdminLogin: React.FC = () => {
       if (!success) {
         setError('Invalid email or password');
       }
-    } catch (error) {
+    } catch {
       setError('Login failed. Please try again.');
     } finally {
       setLoading(false);

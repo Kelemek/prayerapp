@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Plus, Heart, Shield, LogOut, Settings } from 'lucide-react';
+import { Shield, LogOut, Settings } from 'lucide-react';
 import { PrayerForm } from './components/PrayerForm';
 import { PrayerCard } from './components/PrayerCard';
 import { PromptCard } from './components/PromptCard';
@@ -522,7 +522,7 @@ function AppContent() {
                 onFormOpen={closeAllForms}
                 onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => {
                   try {
-                    const { data, error } = await supabase
+                    const { error } = await supabase
                       .from('status_change_requests')
                       .insert({ prayer_id: prayerId, requested_status: newStatus, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' })
                       .select()
@@ -543,7 +543,7 @@ function AppContent() {
                 }}
                 onRequestDelete={async (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => {
                   try {
-                    const { data, error } = await supabase
+                    const { error } = await supabase
                       .from('deletion_requests')
                       .insert({ prayer_id: prayerId, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' })
                       .select()

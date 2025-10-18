@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, User, CheckCircle, Trash2, ChevronDown } from 'lucide-react';
+import { Trash2, ChevronDown } from 'lucide-react';
 import { useToast } from './Toast';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
