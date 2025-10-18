@@ -33,6 +33,10 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: |
+          # Force IPv4 by disabling IPv6 for this session
+          sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+          sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+          
           # Extract database host from Supabase URL
           DB_HOST="db.${SUPABASE_PROJECT_ID}.supabase.co"
           
@@ -40,51 +44,49 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client dnsutils
           
-          # Resolve IPv4 address to avoid IPv6 issues
-          echo "Resolving database host..."
-          DB_IP=$(dig +short ${DB_HOST} A | head -n1)
-          echo "Database IP: ${DB_IP}"
+          # Resolve IPv4 address explicitly
+          echo "Resolving database host (IPv4 only)..."
+          DB_IP=$(getent ahostsv4 ${DB_HOST} | awk '{print $1}' | head -n1)
           
-          # If DNS resolution fails, try with IPv4 directly
           if [ -z "$DB_IP" ]; then
-            echo "Using hostname directly..."
-            DB_TARGET="${DB_HOST}"
-          else
-            echo "Using resolved IP..."
-            DB_TARGET="${DB_IP}"
+            echo "Failed to resolve IPv4 address"
+            exit 1
           fi
           
-          # Test connection first
-          echo "Testing database connection..."
+          echo "Database IPv4: ${DB_IP}"
+          
+          # Add to /etc/hosts to force IPv4
+          echo "${DB_IP} ${DB_HOST}" | sudo tee -a /etc/hosts
+          
+          # Test connection first with pooler port (more reliable for external connections)
+          echo "Testing database connection on port 6543..."
           PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql \
-            -h "${DB_TARGET}" \
+            -h "${DB_HOST}" \
             -U postgres \
             -d postgres \
-            -p 5432 \
-            -c "SELECT version();" 2>/dev/null || {
-              echo "Direct connection failed. Trying with connection pooler (port 6543)..."
-              # Backup using connection pooler port with transaction mode
-              PGPASSWORD="${SUPABASE_DB_PASSWORD}" pg_dump \
-                -h "db.${SUPABASE_PROJECT_ID}.supabase.co" \
+            -p 6543 \
+            -c "SELECT version();" || {
+              echo "Port 6543 failed. Trying port 5432..."
+              PGPASSWORD="${SUPABASE_DB_PASSWORD}" psql \
+                -h "${DB_HOST}" \
                 -U postgres \
                 -d postgres \
-                -p 6543 \
-                --clean \
-                --if-exists \
-                --quote-all-identifiers \
-                --no-owner \
-                --no-privileges \
-                -f "backups/backup_${BACKUP_DATE}.sql"
-              exit 0
+                -p 5432 \
+                -c "SELECT version();"
+              DB_PORT=5432
             }
           
-          # Backup schema and data (if direct connection worked)
+          # Use port 6543 if connection test succeeded, otherwise use 5432
+          DB_PORT=${DB_PORT:-6543}
+          echo "Using port: ${DB_PORT}"
+          
+          # Backup schema and data
           echo "Starting backup..."
           PGPASSWORD="${SUPABASE_DB_PASSWORD}" pg_dump \
-            -h "${DB_TARGET}" \
+            -h "${DB_HOST}" \
             -U postgres \
             -d postgres \
-            -p 5432 \
+            -p ${DB_PORT} \
             --clean \
             --if-exists \
             --quote-all-identifiers \
