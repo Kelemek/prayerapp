@@ -27,17 +27,6 @@ export const PrintPrayerList: React.FC = () => {
     }
   };
 
-  const getRangeLabel = (range: TimeRange): string => {
-    switch (range) {
-      case 'week':
-        return 'Last Week';
-      case 'month':
-        return 'Last Month';
-      case 'year':
-        return 'Last Year';
-    }
-  };
-
   return (
     <div className="relative">
       <button
