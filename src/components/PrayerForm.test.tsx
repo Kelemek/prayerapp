@@ -120,7 +120,7 @@ describe('PrayerForm', () => {
     expect(checkbox.checked).toBe(false);
   });
 
-  it('calls onCancel when cancel button is clicked', () => {
+  it('calls onCancel when Done button is clicked', () => {
     render(
       <PrayerForm
         onSubmit={mockOnSubmit}
@@ -129,8 +129,8 @@ describe('PrayerForm', () => {
       />
     );
 
-    const cancelButton = screen.getByRole('button', { name: /cancel/i });
-    fireEvent.click(cancelButton);
+    const doneButton = screen.getByRole('button', { name: /done/i });
+    fireEvent.click(doneButton);
 
     expect(mockOnCancel).toHaveBeenCalledTimes(1);
   });
@@ -177,7 +177,7 @@ describe('PrayerForm', () => {
     expect(submittedData.email).toBe('john@example.com');
   });
 
-  it('saves user info after successful submission', async () => {
+  it('saves user info when form is filled and submitted', async () => {
     mockOnSubmit.mockResolvedValue(undefined);
 
     render(
@@ -188,33 +188,26 @@ describe('PrayerForm', () => {
       />
     );
 
-    // Fill out the form
-    fireEvent.change(screen.getByPlaceholderText('First name'), {
-      target: { value: 'Jane' }
-    });
-    fireEvent.change(screen.getByPlaceholderText('Last name'), {
-      target: { value: 'Smith' }
-    });
-    fireEvent.change(screen.getByPlaceholderText('Your email address'), {
-      target: { value: 'jane@example.com' }
-    });
-    fireEvent.change(screen.getByPlaceholderText('Who or what this prayer is for'), {
-      target: { value: 'Test' }
-    });
-    fireEvent.change(screen.getByPlaceholderText('Describe the prayer request in detail'), {
-      target: { value: 'Test prayer' }
-    });
+    const firstNameInput = screen.getByPlaceholderText('First name');
+    const lastNameInput = screen.getByPlaceholderText('Last name');
+    const emailInput = screen.getByPlaceholderText('Your email address');
+    const prayerForInput = screen.getByPlaceholderText('Who or what this prayer is for');
+    const descriptionInput = screen.getByPlaceholderText('Describe the prayer request in detail');
 
+    fireEvent.change(firstNameInput, { target: { value: 'Jane' } });
+    fireEvent.change(lastNameInput, { target: { value: 'Smith' } });
+    fireEvent.change(emailInput, { target: { value: 'jane@example.com' } });
+    fireEvent.change(prayerForInput, { target: { value: 'Family' } });
+    fireEvent.change(descriptionInput, { target: { value: 'Prayers for healing' } });
+
+    // Submit the form
     const submitButton = screen.getByRole('button', { name: /submit/i });
     fireEvent.click(submitButton);
 
+    // saveUserInfo should be called during submission
     await waitFor(() => {
-      expect(userInfoStorage.saveUserInfo).toHaveBeenCalledWith({
-        firstName: 'Jane',
-        lastName: 'Smith',
-        email: 'jane@example.com'
-      });
-    });
+      expect(vi.mocked(userInfoStorage.saveUserInfo)).toHaveBeenCalledWith('Jane', 'Smith', 'jane@example.com');
+    }, { timeout: 3000 });
   });
 
   it('resets form after successful submission', async () => {
@@ -228,19 +221,32 @@ describe('PrayerForm', () => {
       />
     );
 
+    // Fill all required fields
+    const firstNameInput = screen.getByPlaceholderText('First name');
+    const lastNameInput = screen.getByPlaceholderText('Last name');
+    const emailInput = screen.getByPlaceholderText('Your email address');
     const prayerForInput = screen.getByPlaceholderText('Who or what this prayer is for') as HTMLInputElement;
     const descriptionInput = screen.getByPlaceholderText('Describe the prayer request in detail') as HTMLInputElement;
 
+    fireEvent.change(firstNameInput, { target: { value: 'John' } });
+    fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
+    fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
     fireEvent.change(prayerForInput, { target: { value: 'Test' } });
     fireEvent.change(descriptionInput, { target: { value: 'Test description' } });
 
     const submitButton = screen.getByRole('button', { name: /submit/i });
     fireEvent.click(submitButton);
 
+    // Wait for submission to complete and form to reset
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalled();
+    }, { timeout: 3000 });
+
+    // Form should clear prayer_for and description (but keeps email)
     await waitFor(() => {
       expect(prayerForInput.value).toBe('');
       expect(descriptionInput.value).toBe('');
-    });
+    }, { timeout: 3000 });
   });
 
   it('handles submission errors gracefully', async () => {
@@ -255,6 +261,10 @@ describe('PrayerForm', () => {
       />
     );
 
+    // Fill all required fields
+    fireEvent.change(screen.getByPlaceholderText('First name'), { target: { value: 'John' } });
+    fireEvent.change(screen.getByPlaceholderText('Last name'), { target: { value: 'Doe' } });
+    fireEvent.change(screen.getByPlaceholderText('Your email address'), { target: { value: 'john@example.com' } });
     fireEvent.change(screen.getByPlaceholderText('Who or what this prayer is for'), {
       target: { value: 'Test' }
     });
@@ -265,9 +275,14 @@ describe('PrayerForm', () => {
     const submitButton = screen.getByRole('button', { name: /submit/i });
     fireEvent.click(submitButton);
 
+    // Wait for error handling
     await waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalled();
-    });
+      expect(mockOnSubmit).toHaveBeenCalled();
+    }, { timeout: 3000 });
+
+    await waitFor(() => {
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to add prayer:', expect.any(Error));
+    }, { timeout: 3000 });
 
     consoleErrorSpy.mockRestore();
   });
