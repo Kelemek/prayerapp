@@ -69,18 +69,6 @@ export default function BackupStatus() {
     return `${minutes}m ${secs}s`;
   }
 
-  function getTimeSince(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    return 'Less than 1 hour ago';
-  }
-
   async function handleManualBackup() {
     if (!confirm('Create a manual backup now? This will back up all current data.')) {
       return;

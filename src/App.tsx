@@ -153,7 +153,7 @@ function AppContent() {
 
   const filteredPrayers = useMemo(() => {
     return getFilteredPrayers(filters.status, filters.searchTerm);
-  }, [prayers, filters, getFilteredPrayers]);
+  }, [filters, getFilteredPrayers]);
 
   if (loading) {
     return (
@@ -563,10 +563,8 @@ function AppContent() {
                   }
                 }}
                 onDeleteUpdate={deletePrayerUpdate}
-                onRequestUpdateDelete={async (updateId: string, reason: string, requesterName: string) => {
-                  // The PrayerCard now supplies requester email as the 4th arg; forward it to the hook
-                  // @ts-ignore - forward all args
-                  return await requestUpdateDeletion(updateId, reason, requesterName, arguments[3]);
+                onRequestUpdateDelete={async (updateId: string, reason: string, requesterName: string, requesterEmail?: string) => {
+                  return await requestUpdateDeletion(updateId, reason, requesterName, requesterEmail);
                 }}
                 isAdmin={isAdmin}
               />

@@ -111,6 +111,7 @@ export const MobilePresentation: React.FC = () => {
     };
     
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, timeFilter, contentType]);
 
   const fetchPrayers = async () => {
@@ -221,6 +222,7 @@ export const MobilePresentation: React.FC = () => {
     }, currentDuration * 1000);
 
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, displayDuration, smartMode, prayers.length, prompts.length, currentIndex, contentType]);
 
   // Prayer timer countdown
