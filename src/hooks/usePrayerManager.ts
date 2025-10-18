@@ -131,7 +131,7 @@ export const usePrayerManager = () => {
   const addPrayer = async (prayer: Omit<PrayerRequest, 'id' | 'date_requested' | 'created_at' | 'updated_at' | 'updates'>) => {
     try {
       // Prepare the base prayer data
-      const prayerData: any = {
+      const prayerData: Record<string, string | boolean | null> = {
         title: prayer.title,
         description: prayer.description,
         status: prayer.status,
@@ -202,7 +202,7 @@ export const usePrayerManager = () => {
 
   const updatePrayerStatus = async (id: string, status: PrayerStatus) => {
     try {
-      const updateData: any = { status };
+      const updateData: Record<string, string> = { status };
       if (status === PrayerStatus.ANSWERED) {
         updateData.date_answered = new Date().toISOString();
       }

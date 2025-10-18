@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
-import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest } from '../types/prayer';
+import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest, UpdateDeletionRequest } from '../types/prayer';
 import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification, sendApprovedStatusChangeNotification, sendDeniedStatusChangeNotification } from '../lib/emailNotifications';
 
 interface AdminData {
-  pendingUpdateDeletionRequests: any[];
+  pendingUpdateDeletionRequests: UpdateDeletionRequest[];
   pendingPrayers: PrayerRequest[];
   pendingUpdates: (PrayerUpdate & { prayer_title?: string })[];
   pendingDeletionRequests: (DeletionRequest & { prayer_title?: string })[];
@@ -169,35 +169,35 @@ export const useAdminData = () => {
       if (deniedStatusChangeRequestsError && deniedStatusChangeRequestsError.code !== '42P01') throw deniedStatusChangeRequestsError;
 
       // Transform joins
-      const transformedUpdates = (pendingUpdates || []).map((update: any) => ({
+      const transformedUpdates = (pendingUpdates || []).map((update: Record<string, unknown>) => ({
         ...update,
-        prayer_title: update.prayers?.title
-      }));
+        prayer_title: (update.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (PrayerUpdate & { prayer_title?: string })[];
 
-      const transformedDeletionRequests = (pendingDeletionRequests || []).map((request: any) => ({
+      const transformedDeletionRequests = (pendingDeletionRequests || []).map((request: Record<string, unknown>) => ({
         ...request,
-        prayer_title: request.prayers?.title
-      }));
+        prayer_title: (request.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (DeletionRequest & { prayer_title?: string })[];
 
-      const transformedStatusChangeRequests = (pendingStatusChangeRequests || []).map((request: any) => ({
+      const transformedStatusChangeRequests = (pendingStatusChangeRequests || []).map((request: Record<string, unknown>) => ({
         ...request,
-        prayer_title: request.prayers?.title
-      }));
+        prayer_title: (request.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (StatusChangeRequest & { prayer_title?: string })[];
 
-      const transformedApprovedUpdates = (approvedUpdates || []).map((update: any) => ({
+      const transformedApprovedUpdates = (approvedUpdates || []).map((update: Record<string, unknown>) => ({
         ...update,
-        prayer_title: update.prayers?.title
-      }));
+        prayer_title: (update.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (PrayerUpdate & { prayer_title?: string })[];
 
-      const transformedDeniedUpdates = (deniedUpdates || []).map((update: any) => ({
+      const transformedDeniedUpdates = (deniedUpdates || []).map((update: Record<string, unknown>) => ({
         ...update,
-        prayer_title: update.prayers?.title
-      }));
+        prayer_title: (update.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (PrayerUpdate & { prayer_title?: string })[];
 
-      const transformedDeniedStatusChangeRequests = (deniedStatusChangeRequests || []).map((req: any) => ({
+      const transformedDeniedStatusChangeRequests = (deniedStatusChangeRequests || []).map((req: Record<string, unknown>) => ({
         ...req,
-        prayer_title: req.prayers?.title
-      }));
+        prayer_title: (req.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (StatusChangeRequest & { prayer_title?: string })[];
 
       setData({
         pendingPrayers: pendingPrayers || [],
