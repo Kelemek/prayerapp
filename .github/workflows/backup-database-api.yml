@@ -2,8 +2,8 @@ name: Daily Database Backup (API Method)
 
 on:
   schedule:
-    # Run daily at 2 AM UTC (adjust timezone as needed)
-    - cron: '0 2 * * *'
+    # Run daily at 2 AM CST (8 AM UTC)
+    - cron: '0 8 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:

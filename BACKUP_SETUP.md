@@ -1,6 +1,6 @@
 # Database Backup Setup
 
-This repository includes automated daily backups of the Supabase database using GitHub Actions.
+This repository includes automated daily backups of the Supabase database using GitHub Actions with the API method.
 
 ## Setup Instructions
 
@@ -10,28 +10,21 @@ You'll need the following information from your Supabase project:
 
 1. **Project URL**: Found in your Supabase project settings
    - Format: `https://xxxxxxxxxxxxx.supabase.co`
+   - Example: `https://eqiafsygvfaifhoaewxi.supabase.co`
 
-2. **Project ID**: The part before `.supabase.co` in your URL
-   - Example: If URL is `https://abcd1234efgh.supabase.co`, then ID is `abcd1234efgh`
-
-3. **Database Password**: Your database password (set when you created the project)
-   - Go to Supabase Dashboard → Settings → Database
-   - Look for "Connection string" or reset your password if needed
-
-4. **Service Role Key**: Found in Supabase Dashboard → Settings → API
+2. **Service Role Key**: Found in Supabase Dashboard → Settings → API
    - Copy the `service_role` key (not the `anon` key)
+   - Starts with `eyJ...`
 
 ### 2. Add GitHub Secrets
 
 Go to your GitHub repository → Settings → Secrets and variables → Actions → New repository secret
 
-Add these four secrets:
+Add these two secrets:
 
 | Secret Name | Value | Example |
 |-------------|-------|---------|
-| `SUPABASE_URL` | Your Supabase project URL | `https://abcd1234efgh.supabase.co` |
-| `SUPABASE_PROJECT_ID` | Project ID from URL | `abcd1234efgh` |
-| `SUPABASE_DB_PASSWORD` | Your database password | `your-secure-password` |
+| `SUPABASE_URL` | Your Supabase project URL | `https://eqiafsygvfaifhoaewxi.supabase.co` |
 | `SUPABASE_SERVICE_KEY` | Service role key from API settings | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
 
 ### 3. Enable Actions (if needed)
@@ -46,7 +39,7 @@ Add these four secrets:
 - Check the Actions tab to see the results
 
 **Option 2: Trigger manually**
-- Go to Actions → Daily Database Backup
+- Go to Actions → "Daily Database Backup (API Method)"
 - Click "Run workflow" → "Run workflow"
 - This will create a backup immediately
 
@@ -54,16 +47,19 @@ Add these four secrets:
 
 ### What Gets Backed Up
 
-- ✅ All database tables and data
-- ✅ Database schema (table definitions, indexes, constraints)
-- ✅ Functions and triggers
-- ✅ Row Level Security (RLS) policies
+- ✅ All table data from your database
+- ✅ 10 tables: prayers, prayer_updates, prayer_prompts, prayer_types, email_subscribers, user_preferences, status_change_requests, update_deletion_requests, admin_settings, analytics
 
 ### What Doesn't Get Backed Up
 
+- ⚠️ Database schema (table definitions, indexes, constraints) - tracked in migrations
+- ⚠️ Functions and triggers - tracked in migrations
+- ⚠️ Row Level Security (RLS) policies - tracked in migrations
 - ❌ Storage files (uploaded images, documents, etc.)
 - ❌ Auth users (managed separately by Supabase)
 - ❌ Realtime subscriptions
+
+**Note**: Schema is not backed up because it should be version-controlled in your migrations folder.
 
 ### Backup Schedule
 
@@ -76,43 +72,44 @@ Add these four secrets:
 Backups are stored in the `backups/` directory with the following naming convention:
 ```
 backups/
-  ├── backup_2025-10-18_02-00-00.sql.gz
-  ├── backup_2025-10-18_02-00-00.json
-  ├── backup_2025-10-17_02-00-00.sql.gz
-  └── backup_2025-10-17_02-00-00.json
+  ├── backup_2025-10-18_02-00-00.json.gz
+  ├── backup_2025-10-18_02-00-00_summary.json
+  ├── backup_2025-10-17_02-00-00.json.gz
+  └── backup_2025-10-17_02-00-00_summary.json
 ```
 
 ## Restoring from Backup
 
-### Method 1: Using pg_restore (Recommended)
+### Using the Restore Script (Recommended)
 
-1. Download the backup file:
+1. Make sure you have the required environment variables:
 ```bash
-cd backups
-gunzip backup_YYYY-MM-DD_HH-MM-SS.sql.gz
+# Add to your .env file
+VITE_SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your_service_role_key
 ```
 
-2. Get your Supabase connection string:
-   - Go to Supabase Dashboard → Settings → Database
-   - Copy the connection string (select "URI" format)
-
-3. Restore the database:
+2. Run the restore script:
 ```bash
-psql "postgresql://postgres:[YOUR-PASSWORD]@db.xxxxxxxxxxxxx.supabase.co:5432/postgres" < backup_YYYY-MM-DD_HH-MM-SS.sql
+./scripts/restore-database-json.sh
 ```
 
-### Method 2: Using Supabase Dashboard
+3. Follow the prompts to select a backup file
 
-1. Download and decompress the backup file
-2. Go to Supabase Dashboard → SQL Editor
-3. Copy and paste the SQL content
-4. Run the SQL (in chunks if the file is large)
+### Manual Restore (Advanced)
 
-### Method 3: Using GitHub Actions Artifact
+If you prefer to restore manually:
 
-1. Go to Actions → Daily Database Backup → Select a workflow run
+1. Install dependencies: `npm install @supabase/supabase-js`
+2. Decompress the backup: `gunzip backups/backup_*.json.gz`
+3. Write a custom Node.js script to read the JSON and insert into Supabase
+4. Use the service role key for authentication
+
+### Using GitHub Actions Artifact
+
+1. Go to Actions → "Daily Database Backup (API Method)" → Select a workflow run
 2. Download the artifact (backup file)
-3. Follow Method 1 or 2 above
+3. Follow the restore script method above
 
 ## Customization
 
