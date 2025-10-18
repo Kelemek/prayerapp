@@ -44,7 +44,7 @@ export const PasswordChange: React.FC<PasswordChangeProps> = ({ onPasswordChange
       } else {
         setMessage({ type: 'error', text: 'Failed to change password. Please try again.' });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Failed to change password. Please try again.' });
     } finally {
       setLoading(false);
