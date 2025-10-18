@@ -170,3 +170,4 @@ The system backs up ALL user tables, including:
 - [BACKUP_SIMPLE_GUIDE.md](../BACKUP_SIMPLE_GUIDE.md) - Non-technical user guide
 - [BACKUP_AUTO_DISCOVERY.md](../BACKUP_AUTO_DISCOVERY.md) - Auto-discovery technical details
 - [MANUAL_BACKUP_IMPLEMENTATION.md](../MANUAL_BACKUP_IMPLEMENTATION.md) - Implementation details
+
