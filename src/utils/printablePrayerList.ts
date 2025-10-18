@@ -435,7 +435,7 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
 /**
  * Generate HTML for a single prayer
  */
-function generatePrayerHTML(prayer: any, number: number): string {
+function generatePrayerHTML(prayer: any, _number: number): string {
   const createdDate = new Date(prayer.created_at).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',

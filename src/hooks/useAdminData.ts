@@ -439,7 +439,7 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayer_updates')
-        // @ts-ignore
+        // @ts-expect-error - Supabase typing issue with dynamic updates
         .update(updates)
         .eq('id', updateId)
         .eq('approval_status', 'pending'); // only allow editing pending updates
@@ -455,7 +455,6 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayers')
-        // @ts-ignore
         .update(updates)
         .eq('id', prayerId)
         .eq('approval_status', 'pending'); // Only allow editing pending prayers

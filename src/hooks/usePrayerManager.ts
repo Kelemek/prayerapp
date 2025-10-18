@@ -220,7 +220,6 @@ export const usePrayerManager = () => {
 
       const { error } = await supabase
         .from('prayers')
-        // @ts-ignore
         .update(updateData)
         .eq('id', id);
 
