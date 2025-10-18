@@ -7,10 +7,16 @@
 ### Getting Started
 - **[Setup Guide](SETUP.md)** - Initial installation and configuration
 - **[Database Guide](DATABASE.md)** - Schema, migrations, and RLS policies
+- **[Testing Guide](TESTING.md)** - Testing with Vitest, CI/CD, and Netlify previews
 
 ### Features & Usage
 - **[Features Guide](FEATURES.md)** - All app features and how to use them
 - **[Email System](EMAIL.md)** - Email notifications, reminders, and setup
+- **[Backup System](backup/)** - Database backups, restore, and automation
+
+### Development
+- **[Testing Setup Complete](TESTING_SETUP_COMPLETE.md)** - Testing infrastructure overview
+- **[Backup Documentation](backup/README.md)** - Complete backup system docs
 
 ### Deployment & Maintenance
 - **[Deployment Guide](DEPLOYMENT.md)** - Production deployment and Edge Functions
@@ -39,6 +45,9 @@
 
 ## 📝 Documentation Status
 
-Last updated: October 17, 2025
+Last updated: October 18, 2025
 
-All documentation has been consolidated and organized. Historical debugging guides and implementation notes are archived in the `archive/` folder for reference.
+All documentation has been consolidated and organized:
+- **Testing docs**: Vitest, React Testing Library, CI/CD workflows
+- **Backup docs**: Complete backup system documentation in `backup/` subfolder
+- **Historical docs**: Debugging guides and implementation notes archived in `archive/` folder
