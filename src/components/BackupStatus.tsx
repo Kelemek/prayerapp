@@ -17,6 +17,7 @@ export default function BackupStatus() {
   const [latestBackup, setLatestBackup] = useState<BackupLog | null>(null);
   const [allBackups, setAllBackups] = useState<BackupLog[]>([]);
   const [showFullLog, setShowFullLog] = useState(false);
+  const [expandedBackupId, setExpandedBackupId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [backingUp, setBackingUp] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -33,7 +34,7 @@ export default function BackupStatus() {
         .from('backup_logs')
         .select('*')
         .order('backup_date', { ascending: false })
-        .limit(30);
+        .limit(100);
 
       if (error) throw error;
 
@@ -376,89 +377,8 @@ export default function BackupStatus() {
         </div>
       </div>
 
-      {/* Latest Backup Status */}
+      {/* Recent Backups (Last 5) */}
       <div className="space-y-4 mb-6">
-        <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-          <div className="flex-shrink-0 mt-1">
-            {latestBackup.status === 'success' ? (
-              <CheckCircle className="h-8 w-8 text-green-500" />
-            ) : latestBackup.status === 'failed' ? (
-              <XCircle className="h-8 w-8 text-red-500" />
-            ) : (
-              <Clock className="h-8 w-8 text-yellow-500 animate-pulse" />
-            )}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                latestBackup.status === 'success'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                  : latestBackup.status === 'failed'
-                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-              }`}>
-                {latestBackup.status.toUpperCase()}
-              </span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {getTimeSince(latestBackup.backup_date)}
-              </span>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-              <div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Date</div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  {formatDate(latestBackup.backup_date)}
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Records</div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  {latestBackup.total_records.toLocaleString()}
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Duration</div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  {formatDuration(latestBackup.duration_seconds)}
-                </div>
-              </div>
-              
-              <div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Tables</div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  {Object.keys(latestBackup.tables_backed_up || {}).length}
-                </div>
-              </div>
-            </div>
-
-            {latestBackup.error_message && (
-              <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm text-red-700 dark:text-red-400">
-                <strong>Error:</strong> {latestBackup.error_message}
-              </div>
-            )}
-
-            {latestBackup.tables_backed_up && (
-              <details className="mt-3">
-                <summary className="text-xs text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-gray-300">
-                  View table breakdown
-                </summary>
-                <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                  {Object.entries(latestBackup.tables_backed_up).map(([table, count]) => (
-                    <div key={table} className="flex justify-between p-1.5 bg-white dark:bg-gray-800 rounded">
-                      <span className="text-gray-600 dark:text-gray-400">{table}</span>
-                      <span className="font-medium text-gray-900 dark:text-white">{count}</span>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            )}
-          </div>
-        </div>
-
         {/* Info Box */}
         <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <div className="flex gap-2">
@@ -470,46 +390,167 @@ export default function BackupStatus() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Full Log */}
-      {showFullLog && (
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            Backup History (Last 30)
+        {/* Backup List */}
+        <div>
+          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+            Recent Backups
           </h4>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {allBackups.map((backup) => (
-              <div
-                key={backup.id}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {backup.status === 'success' ? (
-                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-gray-900 dark:text-white truncate">
-                      {formatDate(backup.backup_date)}
+          <div className="space-y-2">
+            {(showFullLog ? allBackups : allBackups.slice(0, 5)).map((backup) => (
+              <div key={backup.id}>
+                <div
+                  onClick={() => setExpandedBackupId(expandedBackupId === backup.id ? null : backup.id)}
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {backup.status === 'success' ? (
+                      <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-gray-900 dark:text-white truncate">
+                        {formatDate(backup.backup_date)}
+                      </div>
+                      {backup.error_message && (
+                        <div className="text-xs text-red-600 dark:text-red-400 truncate">
+                          {backup.error_message}
+                        </div>
+                      )}
                     </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                    <span>{backup.total_records.toLocaleString()} records</span>
+                    <span>{formatDuration(backup.duration_seconds)}</span>
+                    <span className="text-indigo-600 dark:text-indigo-400">
+                      {expandedBackupId === backup.id ? '▼' : '▶'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Expanded Detail View */}
+                {expandedBackupId === backup.id && (
+                  <div className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Backup ID</div>
+                        <div className="text-sm font-mono text-gray-900 dark:text-white truncate">
+                          {backup.id}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Status</div>
+                        <div className="text-sm">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            backup.status === 'success'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : backup.status === 'failed'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}>
+                            {backup.status.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Backup Date</div>
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatDate(backup.backup_date)}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Created At</div>
+                        <div className="text-sm text-gray-900 dark:text-white">
+                          {formatDate(backup.created_at)}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Total Records</div>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {backup.total_records.toLocaleString()}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Duration</div>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {formatDuration(backup.duration_seconds)}
+                        </div>
+                      </div>
+                    </div>
+
                     {backup.error_message && (
-                      <div className="text-xs text-red-600 dark:text-red-400 truncate">
-                        {backup.error_message}
+                      <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                        <div className="text-xs font-semibold text-red-800 dark:text-red-300 mb-1">Error Message</div>
+                        <div className="text-sm text-red-700 dark:text-red-400 font-mono">
+                          {backup.error_message}
+                        </div>
+                      </div>
+                    )}
+
+                    {backup.tables_backed_up && Object.keys(backup.tables_backed_up).length > 0 && (
+                      <div>
+                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                          Tables Backed Up ({Object.keys(backup.tables_backed_up).length})
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {Object.entries(backup.tables_backed_up)
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([table, count]) => (
+                              <div
+                                key={table}
+                                className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700/50 rounded text-xs"
+                              >
+                                <span className="text-gray-700 dark:text-gray-300 truncate mr-2">
+                                  {table}
+                                </span>
+                                <span className="font-semibold text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                                  {count}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                  <span>{backup.total_records.toLocaleString()} records</span>
-                  <span>{formatDuration(backup.duration_seconds)}</span>
-                </div>
+                )}
               </div>
             ))}
           </div>
+
+          {/* Show More Button */}
+          {!showFullLog && allBackups.length > 5 && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => setShowFullLog(true)}
+                className="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+              >
+                Show More ({allBackups.length - 5} older backups)
+              </button>
+            </div>
+          )}
+
+          {/* Show Less Button */}
+          {showFullLog && allBackups.length > 5 && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => {
+                  setShowFullLog(false);
+                  setExpandedBackupId(null); // Collapse any expanded details
+                }}
+                className="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+              >
+                Show Less
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Restore Dialog */}
       {showRestoreDialog && (

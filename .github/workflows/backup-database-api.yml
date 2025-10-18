@@ -150,6 +150,28 @@ jobs:
             } catch (logErr) {
               console.error('Warning: Exception logging backup:', logErr);
             }
+
+            // Clean up old backup logs (keep last 30 days)
+            try {
+              const thirtyDaysAgo = new Date();
+              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+              
+              const { data: deletedLogs, error: deleteError } = await supabase
+                .from('backup_logs')
+                .delete()
+                .lt('created_at', thirtyDaysAgo.toISOString())
+                .select('id');
+
+              if (deleteError) {
+                console.error('Warning: Failed to clean up old backup logs:', deleteError);
+              } else if (deletedLogs && deletedLogs.length > 0) {
+                console.log(`✓ Cleaned up ${deletedLogs.length} old backup log(s)`);
+              } else {
+                console.log('✓ No old backup logs to clean up');
+              }
+            } catch (cleanupErr) {
+              console.error('Warning: Exception cleaning up old logs:', cleanupErr);
+            }
           }
 
           backupDatabase().catch(async err => {
