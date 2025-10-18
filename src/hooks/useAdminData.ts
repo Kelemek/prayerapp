@@ -246,6 +246,7 @@ export const useAdminData = () => {
         .eq('id', requestId)
         .single();
       if (fetchError) throw fetchError;
+      if (!request) throw new Error('Request not found');
 
       // Approve the request
       const { error: approveError } = await supabase
@@ -258,7 +259,7 @@ export const useAdminData = () => {
       const { error: deleteError } = await supabase
         .from('prayer_updates')
         .delete()
-        .eq('id', (request as any).update_id);
+        .eq('id', (request as { update_id: string }).update_id);
       if (deleteError) throw deleteError;
 
       await fetchAdminData();
@@ -392,8 +393,11 @@ export const useAdminData = () => {
       if (error) throw error;
 
       // Send email notification
+      const prayerTitle = update.prayers && typeof update.prayers === 'object' && 'title' in update.prayers
+        ? String(update.prayers.title)
+        : 'Prayer';
       await sendApprovedUpdateNotification({
-        prayerTitle: (update.prayers as any)?.title || 'Prayer',
+        prayerTitle,
         content: update.content,
         author: update.is_anonymous ? 'Anonymous' : (update.author || 'Anonymous')
       });
@@ -427,8 +431,11 @@ export const useAdminData = () => {
 
       // Send email notification to the author
       if (update.author_email) {
+        const prayerTitle = update.prayers && typeof update.prayers === 'object' && 'title' in update.prayers
+          ? String(update.prayers.title)
+          : 'Prayer';
         await sendDeniedUpdateNotification({
-          prayerTitle: (update.prayers as any)?.title || 'Prayer',
+          prayerTitle,
           content: update.content,
           author: update.is_anonymous ? 'Anonymous' : (update.author || 'Anonymous'),
           authorEmail: update.author_email,
@@ -481,6 +488,8 @@ export const useAdminData = () => {
         .eq('id', requestId)
         .single();
       if (fetchError) throw fetchError;
+      if (!deletionRequest) throw new Error('Deletion request not found');
+      
       const { error: approveError } = await supabase
         .from('deletion_requests')
         .update({ approval_status: 'approved' })
@@ -489,7 +498,7 @@ export const useAdminData = () => {
       const { error: deleteError } = await supabase
         .from('prayers')
         .delete()
-        .eq('id', (deletionRequest as any).prayer_id);
+        .eq('id', (deletionRequest as { prayer_id: string }).prayer_id);
       if (deleteError) throw deleteError;
       await fetchAdminData();
     } catch (error) {
@@ -532,14 +541,21 @@ export const useAdminData = () => {
       // Update status change request to approved
       const { error: approveError } = await supabase
         .from('status_change_requests')
-        .update({ approval_status: 'approved', reviewed_by: 'admin', reviewed_at: new Date().toISOString() } as any)
+        .update({ 
+          approval_status: 'approved', 
+          reviewed_by: 'admin', 
+          reviewed_at: new Date().toISOString() 
+        })
         .eq('id', requestId);
       if (approveError) throw approveError;
       
       // Update prayer status
       const { error: updateError } = await supabase
         .from('prayers')
-        .update({ status: newStatus, date_answered: newStatus === 'answered' ? new Date().toISOString() : null } as any)
+        .update({ 
+          status: newStatus, 
+          date_answered: newStatus === 'answered' ? new Date().toISOString() : null 
+        })
         .eq('id', statusChangeRequest.prayer_id);
       if (updateError) throw updateError;
       
@@ -580,7 +596,12 @@ export const useAdminData = () => {
       // Update status change request to denied
       const { error } = await supabase
         .from('status_change_requests')
-        .update({ approval_status: 'denied', reviewed_by: 'admin', reviewed_at: new Date().toISOString(), denial_reason: reason } as any)
+        .update({ 
+          approval_status: 'denied', 
+          reviewed_by: 'admin', 
+          reviewed_at: new Date().toISOString(), 
+          denial_reason: reason 
+        })
         .eq('id', requestId);
       if (error) throw error;
       

@@ -61,14 +61,20 @@ export const usePrayerManager = () => {
 
       if (prayersError) throw prayersError;
 
-      const formattedPrayers = prayersData?.map(prayer => 
-        convertDbPrayer(prayer, (prayer as any).prayer_updates || [])
-      ) || [];
+      const formattedPrayers = prayersData?.map(prayer => {
+        const updates = prayer && typeof prayer === 'object' && 'prayer_updates' in prayer
+          ? (prayer.prayer_updates as DbPrayerUpdate[])
+          : [];
+        return convertDbPrayer(prayer, updates);
+      }) || [];
 
       setPrayers(formattedPrayers);
     } catch (error: unknown) {
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : 'Failed to load prayers';
       console.error('Failed to load prayers:', error);
-      setError(error.message);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -91,7 +97,7 @@ export const usePrayerManager = () => {
         { event: 'INSERT', schema: 'public', table: 'prayers' },
         (payload) => {
           if (payload.new) {
-            const newPrayer = convertDbPrayer(payload.new as any);
+            const newPrayer = convertDbPrayer(payload.new as DbPrayer);
             setPrayers(prev => [newPrayer, ...prev]);
           }
         }
@@ -100,7 +106,7 @@ export const usePrayerManager = () => {
         { event: 'UPDATE', schema: 'public', table: 'prayers' },
         (payload) => {
           if (payload.new) {
-            const updatedPrayer = convertDbPrayer(payload.new as any);
+            const updatedPrayer = convertDbPrayer(payload.new as DbPrayer);
             setPrayers(prev => prev.map(p => 
               p.id === updatedPrayer.id ? { ...updatedPrayer, updates: p.updates } : p
             ));
@@ -111,7 +117,7 @@ export const usePrayerManager = () => {
         { event: 'DELETE', schema: 'public', table: 'prayers' },
         (payload) => {
           if (payload.old) {
-            setPrayers(prev => prev.filter(p => p.id !== (payload.old as any).id));
+            setPrayers(prev => prev.filter(p => p.id !== (payload.old as { id: string }).id));
           }
         }
       )
@@ -251,7 +257,7 @@ export const usePrayerManager = () => {
           author_email: authorEmail || null,
           is_anonymous: isAnonymous || false,
           approval_status: 'pending' // Require admin approval
-        } as any);
+        });
 
       if (error) {
         throw error;
@@ -367,7 +373,10 @@ export const usePrayerManager = () => {
     } catch (error: unknown) {
       console.error('requestUpdateDeletion error:', error);
       handleSupabaseError(error);
-      return { ok: false, error: error?.message || String(error) };
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : String(error);
+      return { ok: false, error: errorMessage };
     }
   };
 
