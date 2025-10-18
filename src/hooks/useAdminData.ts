@@ -4,7 +4,16 @@ import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest,
 import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification, sendApprovedStatusChangeNotification, sendDeniedStatusChangeNotification } from '../lib/emailNotifications';
 
 interface AdminData {
-  pendingUpdateDeletionRequests: UpdateDeletionRequest[];
+  pendingUpdateDeletionRequests: (UpdateDeletionRequest & {
+    prayer_updates?: {
+      content?: string;
+      author?: string;
+      author_email?: string;
+      prayers?: {
+        title?: string;
+      };
+    };
+  })[];
   pendingPrayers: PrayerRequest[];
   pendingUpdates: (PrayerUpdate & { prayer_title?: string })[];
   pendingDeletionRequests: (DeletionRequest & { prayer_title?: string })[];
@@ -439,7 +448,6 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayer_updates')
-        // @ts-expect-error - Supabase typing issue with dynamic updates
         .update(updates)
         .eq('id', updateId)
         .eq('approval_status', 'pending'); // only allow editing pending updates

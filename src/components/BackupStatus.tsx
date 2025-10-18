@@ -101,13 +101,17 @@ export default function BackupStatus() {
           'user_preferences'
         ];
       } else {
-        tables = tableList?.map((t: any) => t.table_name) || [];
+        tables = tableList?.map((t: Record<string, unknown>) => t.table_name as string) || [];
       }
 
       console.log(`Backing up ${tables.length} tables:`, tables);
 
       const startTime = Date.now();
-      const backup: any = {
+      const backup: {
+        timestamp: string;
+        version: string;
+        tables: Record<string, { count?: number; error?: string; data: unknown[] }>;
+      } = {
         timestamp: new Date().toISOString(),
         version: '1.0',
         tables: {}
@@ -126,7 +130,10 @@ export default function BackupStatus() {
           }
         } catch (err: unknown) {
           console.error(`Exception backing up ${table}:`, err);
-          backup.tables[table] = { error: err.message, data: [] };
+          const errorMessage = err && typeof err === 'object' && 'message' in err 
+            ? String(err.message)
+            : String(err);
+          backup.tables[table] = { error: errorMessage, data: [] };
         }
       }
 
@@ -168,15 +175,19 @@ export default function BackupStatus() {
     } catch (error: unknown) {
       console.error('Backup failed:', error);
       
+      const errorMessage = error && typeof error === 'object' && 'message' in error 
+        ? String(error.message)
+        : String(error);
+      
       // Log failure
       await supabase.from('backup_logs').insert({
         backup_date: new Date().toISOString(),
         status: 'failed',
-        error_message: error.message || String(error),
+        error_message: errorMessage,
         total_records: 0
       });
 
-      alert('❌ Backup failed: ' + (error.message || String(error)));
+      alert('❌ Backup failed: ' + errorMessage);
     } finally {
       setBackingUp(false);
     }
@@ -281,7 +292,10 @@ export default function BackupStatus() {
             totalRestored += batch.length;
           }
         } catch (err: unknown) {
-          errors.push(`Exception restoring ${tableName}: ${err.message}`);
+          const errorMessage = err && typeof err === 'object' && 'message' in err 
+            ? String(err.message)
+            : String(err);
+          errors.push(`Exception restoring ${tableName}: ${errorMessage}`);
         }
       }
 
@@ -304,7 +318,10 @@ export default function BackupStatus() {
       window.location.reload();
     } catch (error: unknown) {
       console.error('Restore failed:', error);
-      alert('❌ Restore failed: ' + (error.message || String(error)));
+      const errorMessage = error && typeof error === 'object' && 'message' in error 
+        ? String(error.message)
+        : String(error);
+      alert('❌ Restore failed: ' + errorMessage);
     } finally {
       setRestoring(false);
     }
