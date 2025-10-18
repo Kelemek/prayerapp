@@ -3,6 +3,7 @@ import { Settings, Mail, X, CheckCircle, AlertTriangle, Sun, Moon, Monitor, Prin
 import { supabase } from '../lib/supabase';
 import { sendPreferenceChangeNotification } from '../lib/emailNotifications';
 import { downloadPrintablePrayerList } from '../utils/printablePrayerList';
+import { downloadPrintablePromptList } from '../utils/printablePromptList';
 import { getUserInfo } from '../utils/userInfoStorage';
 
 interface UserSettingsProps {
@@ -20,6 +21,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
   const [success, setSuccess] = useState<string | null>(null);
   const [hasPreferences, setHasPreferences] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [isPrintingPrompts, setIsPrintingPrompts] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(false);
 
   const handlePrint = async (range: 'week' | 'month' | 'year') => {
@@ -35,6 +37,22 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
       if (newWindow) newWindow.close();
     } finally {
       setIsPrinting(false);
+    }
+  };
+
+  const handlePrintPrompts = async () => {
+    setIsPrintingPrompts(true);
+    
+    // Open window immediately (Safari requires this to be synchronous with user click)
+    const newWindow = window.open('', '_blank');
+    
+    try {
+      await downloadPrintablePromptList(newWindow);
+    } catch (error) {
+      console.error('Error printing prompts:', error);
+      if (newWindow) newWindow.close();
+    } finally {
+      setIsPrintingPrompts(false);
     }
   };
 
@@ -248,15 +266,26 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
 
         {/* Content */}
         <div className="p-4 sm:p-6 space-y-4">
-          {/* Print Button */}
-          <button
-            onClick={() => handlePrint('week')}
-            disabled={isPrinting}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
-          >
-            <Printer size={18} className={isPrinting ? 'animate-spin' : ''} />
-            <span className="font-medium">{isPrinting ? 'Generating...' : 'Print Prayer List'}</span>
-          </button>
+          {/* Print Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              onClick={() => handlePrint('week')}
+              disabled={isPrinting}
+              className="flex items-center justify-center gap-2 px-4 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+            >
+              <Printer size={18} className={isPrinting ? 'animate-spin' : ''} />
+              <span className="font-medium">{isPrinting ? 'Generating...' : 'Print Prayer List'}</span>
+            </button>
+            
+            <button
+              onClick={handlePrintPrompts}
+              disabled={isPrintingPrompts}
+              className="flex items-center justify-center gap-2 px-4 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+            >
+              <Printer size={18} className={isPrintingPrompts ? 'animate-spin' : ''} />
+              <span className="font-medium">{isPrintingPrompts ? 'Generating...' : 'Print Prompts'}</span>
+            </button>
+          </div>
 
           {/* Theme Selection */}
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">

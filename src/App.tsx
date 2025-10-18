@@ -85,14 +85,36 @@ function AppContent() {
   const fetchPrompts = async () => {
     setPromptsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch prompts with prayer_types to get display_order
+      const { data: promptsData, error: promptsError } = await supabase
         .from('prayer_prompts')
         .select('*')
-        .order('type', { ascending: true })
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      setPrompts(data || []);
+      if (promptsError) throw promptsError;
+      
+      // Fetch prayer types for ordering
+      const { data: typesData, error: typesError } = await supabase
+        .from('prayer_types')
+        .select('name, display_order')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      
+      if (typesError) throw typesError;
+      
+      // Create a map of type name to display_order
+      const typeOrderMap = new Map(typesData?.map(t => [t.name, t.display_order]) || []);
+      
+      console.log('Prayer types order:', typesData); // Debug log
+      
+      // Sort prompts by type's display_order
+      const sortedPrompts = (promptsData || []).sort((a, b) => {
+        const orderA = typeOrderMap.get(a.type) ?? 999;
+        const orderB = typeOrderMap.get(b.type) ?? 999;
+        return orderA - orderB;
+      });
+      
+      setPrompts(sortedPrompts);
     } catch (error) {
       console.error('Error fetching prompts:', error);
     } finally {
@@ -384,7 +406,7 @@ function AppContent() {
                   {/* All Types Button */}
                   <button
                     onClick={() => setSelectedPromptTypes([])}
-                    className={`flex-1 whitespace-nowrap px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex-1 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                       selectedPromptTypes.length === 0
                         ? 'bg-yellow-500 text-white shadow-md'
                         : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-yellow-400 dark:hover:border-yellow-500'
@@ -393,30 +415,42 @@ function AppContent() {
                     All Types ({prompts.length})
                   </button>
                   
-                  {/* Individual Type Buttons */}
-                  {Array.from(new Set(prompts.map(p => p.type))).sort().map(type => {
-                    const count = prompts.filter(p => p.type === type).length;
-                    const isSelected = selectedPromptTypes.includes(type);
-                    return (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedPromptTypes(selectedPromptTypes.filter(t => t !== type));
-                          } else {
-                            setSelectedPromptTypes([...selectedPromptTypes, type]);
-                          }
-                        }}
-                        className={`flex-1 whitespace-nowrap px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                          isSelected
-                            ? 'bg-yellow-500 text-white shadow-md'
-                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-yellow-400 dark:hover:border-yellow-500'
-                        }`}
-                      >
-                        {type} ({count})
-                      </button>
-                    );
-                  })}
+                  {/* Individual Type Buttons - maintain the order from prompts array */}
+                  {(() => {
+                    // Get unique types in the order they appear in the sorted prompts array
+                    const seenTypes = new Set<string>();
+                    const orderedTypes: string[] = [];
+                    prompts.forEach(p => {
+                      if (!seenTypes.has(p.type)) {
+                        seenTypes.add(p.type);
+                        orderedTypes.push(p.type);
+                      }
+                    });
+                    
+                    return orderedTypes.map(type => {
+                      const count = prompts.filter(p => p.type === type).length;
+                      const isSelected = selectedPromptTypes.includes(type);
+                      return (
+                        <button
+                          key={type}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedPromptTypes(selectedPromptTypes.filter(t => t !== type));
+                            } else {
+                              setSelectedPromptTypes([...selectedPromptTypes, type]);
+                            }
+                          }}
+                          className={`flex-1 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                            isSelected
+                              ? 'bg-yellow-500 text-white shadow-md'
+                              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-yellow-400 dark:hover:border-yellow-500'
+                          }`}
+                        >
+                          {type} ({count})
+                        </button>
+                      );
+                    });
+                  })()}
                 </div>
               )}
               
