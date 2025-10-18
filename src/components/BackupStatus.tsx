@@ -211,6 +211,9 @@ export default function BackupStatus() {
       // This ensures we can restore old backups even if table structure changes
       const tablesInBackup = Object.keys(backup.tables);
       
+      // Tables to skip during restore (operational data that shouldn't be restored)
+      const skipTables = ['analytics', 'backup_logs'];
+      
       // Define dependency order for known tables (for proper foreign key handling)
       const knownOrder = [
         'prayer_types',
@@ -221,19 +224,19 @@ export default function BackupStatus() {
         'user_preferences',
         'status_change_requests',
         'update_deletion_requests',
-        'admin_settings',
-        'analytics',
-        'backup_logs'
+        'admin_settings'
       ];
       
       // Sort tables: known tables in dependency order first, then any unknown tables
+      // Exclude tables that should be skipped
       const tables = [
-        ...knownOrder.filter(t => tablesInBackup.includes(t)),
-        ...tablesInBackup.filter(t => !knownOrder.includes(t))
+        ...knownOrder.filter(t => tablesInBackup.includes(t) && !skipTables.includes(t)),
+        ...tablesInBackup.filter(t => !knownOrder.includes(t) && !skipTables.includes(t))
       ];
 
       let totalRestored = 0;
       const errors: string[] = [];
+      const skipped: string[] = [];
 
       for (const tableName of tables) {
         if (!backup.tables[tableName]) continue;
@@ -244,25 +247,44 @@ export default function BackupStatus() {
         if (records.length === 0) continue;
 
         try {
-          // Delete existing data
-          const { error: deleteError } = await supabase
+          // Get all existing records to delete them by their actual IDs
+          const { data: existingRecords, error: fetchError } = await supabase
             .from(tableName)
-            .delete()
-            .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+            .select('id');
 
-          if (deleteError) {
-            errors.push(`Error deleting from ${tableName}: ${deleteError.message}`);
+          if (fetchError) {
+            errors.push(`Error fetching ${tableName}: ${fetchError.message}`);
             continue;
           }
 
-          // Insert in batches of 100
+          // Delete all existing records in batches (Supabase has limits on .in() clause)
+          if (existingRecords && existingRecords.length > 0) {
+            const ids = existingRecords.map(r => r.id);
+            const deleteBatchSize = 100;
+            
+            for (let i = 0; i < ids.length; i += deleteBatchSize) {
+              const idBatch = ids.slice(i, i + deleteBatchSize);
+              const { error: deleteError } = await supabase
+                .from(tableName)
+                .delete()
+                .in('id', idBatch);
+
+              if (deleteError) {
+                errors.push(`Error deleting from ${tableName}: ${deleteError.message}`);
+                // Don't continue - try to restore anyway with upsert
+                break;
+              }
+            }
+          }
+
+          // Use upsert to handle any remaining conflicts
           const batchSize = 100;
           for (let i = 0; i < records.length; i += batchSize) {
             const batch = records.slice(i, i + batchSize);
             
             const { error: insertError } = await supabase
               .from(tableName)
-              .insert(batch);
+              .upsert(batch, { onConflict: 'id' });
 
             if (insertError) {
               errors.push(`Error inserting into ${tableName}: ${insertError.message}`);
@@ -276,11 +298,19 @@ export default function BackupStatus() {
         }
       }
 
+      // Log skipped tables info
+      if (skipTables.length > 0) {
+        console.log(`Skipped tables (operational data): ${skipTables.join(', ')}`);
+      }
+
       if (errors.length > 0) {
         console.error('Restore errors:', errors);
         alert(`⚠️ Restore completed with ${errors.length} error(s). Restored ${totalRestored.toLocaleString()} records.\n\nCheck console for details.`);
       } else {
-        alert(`✅ Restore complete! Restored ${totalRestored.toLocaleString()} records.`);
+        const skipMsg = skipTables.length > 0 
+          ? `\n\nSkipped: ${skipTables.join(', ')} (operational data)`
+          : '';
+        alert(`✅ Restore complete! Restored ${totalRestored.toLocaleString()} records.${skipMsg}`);
       }
 
       // Refresh the page to show updated data
@@ -367,12 +397,6 @@ export default function BackupStatus() {
                 Restore
               </>
             )}
-          </button>
-          <button
-            onClick={() => setShowFullLog(!showFullLog)}
-            className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
-          >
-            {showFullLog ? 'Hide Full Log' : 'Show Full Log'}
           </button>
         </div>
       </div>
