@@ -25,5 +25,5 @@
     "noUncheckedSideEffectImports": true
   },
   "include": ["src"],
-  "exclude": ["supabase/functions"]
+  "exclude": ["supabase/functions", "src/**/*.test.tsx", "src/**/*.test.ts"]
 }

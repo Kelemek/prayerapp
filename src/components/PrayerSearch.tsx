@@ -41,7 +41,10 @@ export const PrayerSearch: React.FC = () => {
       setSearchResults(data || []);
     } catch (err: unknown) {
       console.error('Error searching prayers:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Failed to search prayers';
+      setError(errorMessage);
     } finally {
       setSearching(false);
     }
@@ -96,7 +99,10 @@ export const PrayerSearch: React.FC = () => {
       });
     } catch (err: unknown) {
       console.error('Error deleting prayer:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Failed to delete prayer';
+      setError(errorMessage);
     } finally {
       setDeleting(false);
     }
@@ -125,7 +131,10 @@ export const PrayerSearch: React.FC = () => {
       setSelectedPrayers(new Set());
     } catch (err: unknown) {
       console.error('Error deleting prayers:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Failed to delete selected prayers';
+      setError(errorMessage);
     } finally {
       setDeleting(false);
     }

@@ -40,7 +40,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       setTypes(data || []);
     } catch (err: unknown) {
       console.error('Error fetching prayer types:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,9 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       onSuccess();
     } catch (err: unknown) {
       console.error('Error saving prayer type:', err);
-      const message = err?.message || 'Unknown error';
+      const message = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Unknown error';
       setError(`Failed to save prayer type: ${message}`);
     } finally {
       setSubmitting(false);
@@ -134,7 +136,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       await fetchTypes();
     } catch (err: unknown) {
       console.error('Error deleting prayer type:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     }
   };
 
@@ -154,7 +156,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       await fetchTypes();
     } catch (err: unknown) {
       console.error('Error toggling prayer type:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     }
   };
 
@@ -185,7 +187,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       await fetchTypes();
     } catch (err: unknown) {
       console.error('Error reordering prayer types:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     }
   };
 
