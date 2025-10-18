@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Play, Pause, Settings, X, Timer, Bell, Sun, Moon, Monitor } from 'lucide-react';
+import { Play, Pause, Settings, X, Timer, Bell, Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Prayer {
@@ -696,25 +696,21 @@ export const MobilePresentation: React.FC = () => {
               {/* Content Type Filter */}
               <div>
                 <label className="block text-base mb-2 text-gray-900 dark:text-white">Content Type</label>
-                <select
-                  value={contentType}
-                  onChange={(e) => {
-                    setContentType(e.target.value);
-                    setCurrentIndex(0);
-                  }}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                    backgroundPosition: 'right 0.5rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.5em 1.5em',
-                    paddingRight: '2.5rem'
-                  }}
-                >
-                  <option value="prayers">Prayers</option>
-                  <option value="prompts">Prayer Prompts</option>
-                  <option value="both">Both</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={contentType}
+                    onChange={(e) => {
+                      setContentType(e.target.value);
+                      setCurrentIndex(0);
+                    }}
+                    className="w-full appearance-none px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10"
+                  >
+                    <option value="prayers">Prayers</option>
+                    <option value="prompts">Prayer Prompts</option>
+                    <option value="both">Both</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={20} />
+                </div>
               </div>
 
               {/* Randomize Toggle */}
@@ -743,23 +739,19 @@ export const MobilePresentation: React.FC = () => {
               {contentType === 'prayers' && (
               <div>
                 <label className="block text-base mb-2 text-gray-900 dark:text-white">Prayer Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                    backgroundPosition: 'right 0.5rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.5em 1.5em',
-                    paddingRight: '2.5rem'
-                  }}
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="current">Current</option>
-                  <option value="ongoing">Ongoing</option>
-                  <option value="answered">Answered</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full appearance-none px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="current">Current</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="answered">Answered</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={20} />
+                </div>
               </div>
               )}
 
@@ -767,23 +759,19 @@ export const MobilePresentation: React.FC = () => {
               {contentType === 'prayers' && (
               <div>
                 <label className="block text-base mb-2 text-gray-900 dark:text-white">Time Period</label>
-                <select
-                  value={timeFilter}
-                  onChange={(e) => setTimeFilter(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                    backgroundPosition: 'right 0.5rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.5em 1.5em',
-                    paddingRight: '2.5rem'
-                  }}
-                >
-                  <option value="all">All Time</option>
-                  <option value="week">Last Week</option>
-                  <option value="month">Last Month</option>
-                  <option value="year">Last Year</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value)}
+                    className="w-full appearance-none px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="week">Last Week</option>
+                    <option value="month">Last Month</option>
+                    <option value="year">Last Year</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={20} />
+                </div>
               </div>
               )}
 

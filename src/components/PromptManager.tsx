@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Upload, X, Lightbulb, Search, Tag, Trash2, Edit2, AlertCircle } from 'lucide-react';
+import { Plus, Upload, X, Lightbulb, Search, Tag, Trash2, Edit2, AlertCircle, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PrayerType } from '../types/prayer';
 import type { PrayerPrompt, PrayerTypeRecord } from '../types/prayer';
@@ -544,16 +544,19 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Type *
               </label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {prayerTypes.length === 0 && <option value="">Loading types...</option>}
-                {prayerTypes.map(t => (
-                  <option key={t.id} value={t.name}>{t.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="w-full appearance-none px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
+                >
+                  {prayerTypes.length === 0 && <option value="">Loading types...</option>}
+                  {prayerTypes.map(t => (
+                    <option key={t.id} value={t.name}>{t.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={20} />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -657,16 +660,19 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Type *
                         </label>
-                        <select
-                          value={type}
-                          onChange={(e) => setType(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          {prayerTypes.length === 0 && <option value="">Loading types...</option>}
-                          {prayerTypes.map(t => (
-                            <option key={t.id} value={t.name}>{t.name}</option>
-                          ))}
-                        </select>
+                        <div className="relative">
+                          <select
+                            value={type}
+                            onChange={(e) => setType(e.target.value)}
+                            className="w-full appearance-none px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
+                          >
+                            {prayerTypes.length === 0 && <option value="">Loading types...</option>}
+                            {prayerTypes.map(t => (
+                              <option key={t.id} value={t.name}>{t.name}</option>
+                            ))}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={20} />
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
