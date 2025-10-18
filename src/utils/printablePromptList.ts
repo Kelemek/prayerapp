@@ -120,8 +120,13 @@ function generatePrintableHTML(prompts: PrayerPrompt[]): string {
     promptsByType[prompt.type].push(prompt);
   });
 
-  // Sort types alphabetically
-  const sortedTypes = Object.keys(promptsByType).sort();
+  // Get types in the order they appear in the already-sorted prompts array
+  const sortedTypes: string[] = [];
+  prompts.forEach(prompt => {
+    if (!sortedTypes.includes(prompt.type)) {
+      sortedTypes.push(prompt.type);
+    }
+  });
 
   // Type colors for visual distinction
   const typeColors: { [key: string]: string } = {
