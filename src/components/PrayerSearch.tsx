@@ -39,7 +39,7 @@ export const PrayerSearch: React.FC = () => {
       if (error) throw error;
 
       setSearchResults(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error searching prayers:', err);
       setError(err.message);
     } finally {
@@ -94,7 +94,7 @@ export const PrayerSearch: React.FC = () => {
         newSet.delete(prayerId);
         return newSet;
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting prayer:', err);
       setError(err.message);
     } finally {
@@ -123,7 +123,7 @@ export const PrayerSearch: React.FC = () => {
       // Remove deleted prayers from results
       setSearchResults(searchResults.filter(p => !selectedPrayers.has(p.id)));
       setSelectedPrayers(new Set());
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting prayers:', err);
       setError(err.message);
     } finally {

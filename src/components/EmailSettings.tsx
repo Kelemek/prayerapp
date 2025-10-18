@@ -56,7 +56,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       if (data?.reminder_interval_days !== null && data?.reminder_interval_days !== undefined) {
         setReminderIntervalDays(data.reminder_interval_days);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading emails:', err);
       setError('Failed to load email settings. Please make sure the database table is set up correctly.');
     } finally {
@@ -86,7 +86,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setTimeout(() => setSuccess(false), 3000);
       
       if (onSave) onSave();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving emails:', err);
       setError('Failed to save email settings');
     } finally {
@@ -141,7 +141,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         console.log('Auto-transition result:', data);
         alert(`Successfully transitioned ${data.transitioned} prayers from Current to Ongoing`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error running auto-transition:', err);
       setError('Failed to run auto-transition');
     } finally {
@@ -190,7 +190,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           alert(`Successfully sent ${data.sent || 0} reminder emails${data.total ? ` out of ${data.total} eligible prayers` : ''}`);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error sending reminders:', err);
       const errorMessage = err.message || JSON.stringify(err);
       setError(`Failed to send reminders: ${errorMessage}`);

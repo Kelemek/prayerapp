@@ -135,7 +135,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       if (error && error.message !== 'Auth session missing!') {
         console.error('Logout error:', error);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Ignore session missing errors
       if (error?.message !== 'Auth session missing!') {
         console.error('Logout error:', error);

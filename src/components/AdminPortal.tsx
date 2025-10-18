@@ -1151,7 +1151,7 @@ export const AdminPortal: React.FC = () => {
                         alert(`Successfully inserted:\n• Prayers: ${result.prayersCount}\n• Updates: ${result.updatesCount}`);
                         // Reload to show new data
                         window.location.reload();
-                      } catch (err: any) {
+                      } catch (err: unknown) {
                         console.error('Seed error:', err);
                         alert(`Error seeding data: ${err?.message || err}`);
                       } finally {
@@ -1176,7 +1176,7 @@ export const AdminPortal: React.FC = () => {
                         alert(`Successfully deleted:\n• Prayers: ${result.prayersCount}\n• Updates: ${result.updatesCount}`);
                         // Reload to show changes
                         window.location.reload();
-                      } catch (err: any) {
+                      } catch (err: unknown) {
                         console.error('Cleanup error:', err);
                         alert(`Error cleaning up data: ${err?.message || err}`);
                       } finally {

@@ -66,7 +66,7 @@ export const usePrayerManager = () => {
       ) || [];
 
       setPrayers(formattedPrayers);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to load prayers:', error);
       setError(error.message);
     } finally {
@@ -194,7 +194,7 @@ export const usePrayerManager = () => {
       // Don't add to local state since it's pending approval
       // Show success message that prayer is submitted for review
       return data; // Return the data but don't add to local state
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding prayer:', error);
       handleSupabaseError(error);
     }
@@ -228,7 +228,7 @@ export const usePrayerManager = () => {
         loadPrayers();
         throw error;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleSupabaseError(error);
     }
   };
@@ -270,7 +270,7 @@ export const usePrayerManager = () => {
       // Return success but don't update local state
       // Update will appear after admin approval
       return null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleSupabaseError(error);
     }
   };
@@ -293,7 +293,7 @@ export const usePrayerManager = () => {
         }
         throw error;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleSupabaseError(error);
     }
   };
@@ -364,7 +364,7 @@ export const usePrayerManager = () => {
       }
 
       return { ok: true, data };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('requestUpdateDeletion error:', error);
       handleSupabaseError(error);
       return { ok: false, error: error?.message || String(error) };
@@ -380,7 +380,7 @@ export const usePrayerManager = () => {
         .eq('id', updateId);
       if (error) throw error;
       loadPrayers();
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleSupabaseError(error);
     }
   };

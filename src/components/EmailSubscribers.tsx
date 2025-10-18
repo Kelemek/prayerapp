@@ -56,7 +56,7 @@ export const EmailSubscribers: React.FC = () => {
 
       if (error) throw error;
       setSubscribers(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error searching subscribers:', err);
       setError(err.message);
     } finally {
@@ -102,7 +102,7 @@ export const EmailSubscribers: React.FC = () => {
       if (searchQuery.trim()) {
         await handleSearch();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error adding subscriber:', err);
       if (err.code === '23505') {
         setError('This email address is already subscribed');
@@ -127,7 +127,7 @@ export const EmailSubscribers: React.FC = () => {
       if (searchQuery.trim()) {
         await handleSearch();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error toggling subscriber status:', err);
       setError(err.message);
     }
@@ -227,7 +227,7 @@ export const EmailSubscribers: React.FC = () => {
           await handleSearch();
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error uploading CSV:', err);
       setError(err.message);
     } finally {
@@ -252,7 +252,7 @@ export const EmailSubscribers: React.FC = () => {
       if (searchQuery.trim()) {
         await handleSearch();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting subscriber:', err);
       setError(err.message);
     }

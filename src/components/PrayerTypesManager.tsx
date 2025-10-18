@@ -38,7 +38,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
 
       if (error) throw error;
       setTypes(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching prayer types:', err);
       setError(err.message);
     } finally {
@@ -95,7 +95,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       
       await fetchTypes();
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving prayer type:', err);
       const message = err?.message || 'Unknown error';
       setError(`Failed to save prayer type: ${message}`);
@@ -132,7 +132,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       
       setSuccess('Prayer type deleted successfully!');
       await fetchTypes();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting prayer type:', err);
       setError(err.message);
     }
@@ -152,7 +152,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       
       setSuccess(`Prayer type ${!type.is_active ? 'activated' : 'deactivated'} successfully!`);
       await fetchTypes();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error toggling prayer type:', err);
       setError(err.message);
     }
@@ -183,7 +183,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
         .eq('id', target.id);
       
       await fetchTypes();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error reordering prayer types:', err);
       setError(err.message);
     }

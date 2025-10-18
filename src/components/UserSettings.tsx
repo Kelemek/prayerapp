@@ -163,7 +163,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         }
         setReceiveNotifications(true);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading preferences:', err);
     }
   };
@@ -232,7 +232,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         '✅ Your preference change has been submitted for approval! ' +
         'You will receive an email once approved. After approval, your preferences will be automatically updated the next time you open this settings panel.'
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving preferences:', err);
       setError(err.message);
     } finally {

@@ -124,7 +124,7 @@ export default function BackupStatus() {
           } else {
             backup.tables[table] = { count: data?.length || 0, data: data || [] };
           }
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error(`Exception backing up ${table}:`, err);
           backup.tables[table] = { error: err.message, data: [] };
         }
@@ -165,7 +165,7 @@ export default function BackupStatus() {
 
       alert(`✅ Backup complete! Downloaded ${totalRecords.toLocaleString()} records in ${durationSeconds}s`);
       fetchBackupLogs(); // Refresh the log
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Backup failed:', error);
       
       // Log failure
@@ -280,7 +280,7 @@ export default function BackupStatus() {
 
             totalRestored += batch.length;
           }
-        } catch (err: any) {
+        } catch (err: unknown) {
           errors.push(`Exception restoring ${tableName}: ${err.message}`);
         }
       }
@@ -302,7 +302,7 @@ export default function BackupStatus() {
 
       // Refresh the page to show updated data
       window.location.reload();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Restore failed:', error);
       alert('❌ Restore failed: ' + (error.message || String(error)));
     } finally {

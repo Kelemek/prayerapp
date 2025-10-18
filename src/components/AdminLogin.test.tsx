@@ -14,7 +14,7 @@ describe('AdminLogin Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useAdminAuth.useAdminAuth as any).mockReturnValue({
+    (useAdminAuth.useAdminAuth as ReturnType<typeof vi.fn>).mockReturnValue({
       login: mockLogin,
     });
   });

@@ -57,7 +57,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       if (data && data.length > 0 && !type) {
         setType(data[0].name);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching prayer types:', err);
     }
   };
@@ -89,7 +89,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
 
       if (error) throw error;
       setPrompts(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error searching prompts:', err);
       setError(err.message);
     } finally {
@@ -151,7 +151,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       }
       
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving prompt:', err);
       const message = err?.message || 'Unknown error';
       setError(`Failed to save prayer prompt: ${message}`);
@@ -195,7 +195,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       if (searchQuery.trim()) {
         await handleSearch();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting prompt:', err);
       setError(err.message);
     }
@@ -265,7 +265,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       }
 
       setCSVData(rows);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error reading CSV:', err);
       setError('Failed to read CSV file. Please check the format.');
     }
@@ -310,7 +310,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       }
       
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error uploading CSV:', err);
       setError(err.message);
     } finally {
