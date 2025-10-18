@@ -6,10 +6,8 @@
 
 1. **Add GitHub Secrets** (required):
    - Go to GitHub repo → Settings → Secrets and variables → Actions
-   - Add these secrets:
+   - Add these 2 secrets:
      - `SUPABASE_URL` - Your Supabase project URL
-     - `SUPABASE_PROJECT_ID` - Project ID from URL
-     - `SUPABASE_DB_PASSWORD` - Database password
      - `SUPABASE_SERVICE_KEY` - Service role key from API settings
 
 2. **Enable GitHub Actions**:
@@ -18,8 +16,8 @@
    - Save
 
 3. **Test it**:
-   - Go to Actions tab → "Daily Database Backup" → "Run workflow"
-   - Check that backup appears in `backups/` folder
+   - Go to Actions tab → "Daily Database Backup (API Method)" → "Run workflow"
+   - Check workflow run for artifact download
 
 ### 2. Manual Backup (Local)
 
@@ -32,11 +30,17 @@ If you want to trigger a backup manually:
 ### 3. Restore from Backup
 
 ```bash
-# Make sure you have .env file with these variables:
+# 1. Download backup from GitHub Actions
+# Go to Actions → Click workflow run → Download artifact
+
+# 2. Extract backup to backups/ folder
+unzip database-backup-*.zip -d backups/
+
+# 3. Make sure you have .env file with these variables:
 # VITE_SUPABASE_URL=https://your-project.supabase.co
 # SUPABASE_SERVICE_KEY=your_service_role_key
 
-# Run restore script
+# 4. Run restore script
 ./scripts/restore-database-json.sh
 
 # Follow the prompts to select a backup
@@ -46,13 +50,17 @@ If you want to trigger a backup manually:
 
 ### View Recent Backups
 ```bash
-ls -lht backups/ | head -10
+# Go to GitHub: Actions → "Daily Database Backup (API Method)"
+# Each successful run has an artifact to download
 ```
 
 ### Download Backup from GitHub
 ```bash
-# Go to Actions → Select workflow run → Download artifact
-# Or clone the repo to get all backups
+# 1. Go to Actions tab
+# 2. Click "Daily Database Backup (API Method)"
+# 3. Click any successful workflow run
+# 4. Scroll to "Artifacts" section
+# 5. Click to download
 ```
 
 ### Create Manual Backup Now

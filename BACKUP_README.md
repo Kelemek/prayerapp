@@ -36,22 +36,41 @@ All data from these tables:
 
 ## 🔄 How to Restore
 
-```bash
-# Run the restore script
-./scripts/restore-database-json.sh
+### Option 1: Using GitHub Actions (Easiest - No Technical Skills Required)
 
-# Follow the prompts to select a backup
+1. Go to **Actions** tab
+2. Find the backup you want to restore and copy its Run ID from the URL
+3. Click **"Restore Database from Backup"** workflow
+4. Click **"Run workflow"**
+5. Enter the Run ID and type `RESTORE` to confirm
+6. Click **"Run workflow"** button
+
+👉 **See [RESTORE_SIMPLE_GUIDE.md](RESTORE_SIMPLE_GUIDE.md) for detailed step-by-step instructions with screenshots**
+
+### Option 2: Using Terminal (For Technical Users)
+
+```bash
+# Download backup from Actions → Artifacts
+# Extract to backups/ folder, then:
+./scripts/restore-database-json.sh
 ```
 
 ## 📁 Backup Files
 
-Location: `backups/` folder
+**Location**: GitHub Actions Artifacts (not stored in repository)
 
-Format:
+**Format**:
 - `backup_YYYY-MM-DD_HH-MM-SS.json.gz` - Compressed data
 - `backup_YYYY-MM-DD_HH-MM-SS_summary.json` - Backup info
 
-Retention: Last 30 backups (auto-cleanup)
+**Retention**: 30 days (auto-cleanup)
+
+**Access Backups**:
+1. Go to **Actions** tab
+2. Click **"Daily Database Backup (API Method)"**
+3. Click any successful workflow run
+4. Scroll to **Artifacts** section
+5. Download the backup file
 
 ## 🚀 Test the Backup Now
 
@@ -59,7 +78,7 @@ Retention: Last 30 backups (auto-cleanup)
 2. Click **"Daily Database Backup (API Method)"**
 3. Click **"Run workflow"** → **"Run workflow"**
 4. Wait ~1 minute
-5. Check `backups/` folder for new files
+5. Check the workflow run for the artifact
 
 ## 📚 More Information
 
@@ -76,8 +95,10 @@ Retention: Last 30 backups (auto-cleanup)
 - Make sure workflow permissions are enabled
 
 **Need to restore?**
-- Use `./scripts/restore-database-json.sh`
-- Make sure `.env` has `VITE_SUPABASE_URL` and `SUPABASE_SERVICE_KEY`
+1. Download backup from **Actions** → **Artifacts**
+2. Extract to `backups/` folder
+3. Run `./scripts/restore-database-json.sh`
+4. Make sure `.env` has `VITE_SUPABASE_URL` and `SUPABASE_SERVICE_KEY`
 
 ---
 

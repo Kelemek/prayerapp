@@ -63,19 +63,26 @@ Add these two secrets:
 
 ### Backup Schedule
 
-- **Frequency**: Daily at 2 AM UTC
-- **Retention**: Last 30 backups are kept in the repository
-- **Artifacts**: Each backup is also available as a GitHub Actions artifact for 30 days
+- **Frequency**: Daily at 2 AM CST (8 AM UTC)
+- **Retention**: 30 days
+- **Storage**: GitHub Actions Artifacts (not in repository)
 
 ### Backup Location
 
-Backups are stored in the `backups/` directory with the following naming convention:
+Backups are stored as **GitHub Actions Artifacts** (not committed to the repository):
+
+**To access backups:**
+1. Go to **Actions** tab
+2. Click **"Daily Database Backup (API Method)"**
+3. Click any successful workflow run
+4. Scroll to **Artifacts** section
+5. Download `database-backup-YYYY-MM-DD_HH-MM-SS.zip`
+
+**File format:**
 ```
-backups/
+database-backup-2025-10-18_02-00-00.zip
   ├── backup_2025-10-18_02-00-00.json.gz
-  ├── backup_2025-10-18_02-00-00_summary.json
-  ├── backup_2025-10-17_02-00-00.json.gz
-  └── backup_2025-10-17_02-00-00_summary.json
+  └── backup_2025-10-18_02-00-00_summary.json
 ```
 
 ## Restoring from Backup
