@@ -204,8 +204,13 @@ describe('PrayerCard Component', () => {
   it('shows formatted date for prayer creation', () => {
     render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
     
-    // Date is formatted as "Dec 31, 2024, 06:00 PM" (or similar)
-    expect(screen.getByText(/2024|Dec|06:00/)).toBeInTheDocument();
+    // Date is formatted and displayed - the specific date element contains all parts
+    const dateElements = screen.getAllByText((content, element) => {
+      const text = element?.textContent || '';
+      // Looking for the date span that contains the full date
+      return text.includes('Dec 31, 2024') && text.includes('PM');
+    });
+    expect(dateElements.length).toBeGreaterThan(0);
   });
 
   it('handles long prayer content gracefully', () => {
