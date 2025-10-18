@@ -83,7 +83,14 @@ export async function seedDummyPrayers(): Promise<{ prayersCount: number; update
   }
 
   // Insert some updates for a subset of prayers
-  const updatesToInsert: any[] = [];
+  const updatesToInsert: Array<{
+    prayer_id: string;
+    content: string;
+    author: string;
+    approval_status: string;
+    is_seed_data: boolean;
+    created_at: string;
+  }> = [];
   const updateContents = [
     'Update: we have seen improvement this week. Thank you for praying.',
     'Short update: still holding on.',
