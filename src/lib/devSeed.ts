@@ -38,7 +38,16 @@ export async function seedDummyPrayers(): Promise<{ prayersCount: number; update
 
   const statuses = ['current', 'ongoing', 'answered'];
 
-  const prayersToInsert: any[] = [];
+  const prayersToInsert: Array<{
+    title: string;
+    prayer_for: string;
+    description: string;
+    requester: string;
+    status: string;
+    approval_status: string;
+    is_seed_data: boolean;
+    created_at: string;
+  }> = [];
   const now = new Date();
   const twoMonthsAgo = new Date(now);
   twoMonthsAgo.setMonth(now.getMonth() - 2);
