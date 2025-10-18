@@ -13,7 +13,7 @@ interface PrayerCardProps {
   onRequestDelete: (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
   onRequestStatusChange: (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
   onDeleteUpdate: (updateId: string) => Promise<void>;
-  onRequestUpdateDelete: (updateId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<any>;
+  onRequestUpdateDelete: (updateId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<unknown>;
   registerCloseCallback: (callback: () => void) => () => void;
   onFormOpen: () => void;
   isAdmin: boolean;
@@ -203,16 +203,16 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     try {
       setIsSubmittingUpdateDelete(true);
       setUpdateDeleteError(null);
-      const res: any = await onRequestUpdateDelete(showUpdateDeleteRequest, updateDeleteReason, fullName, updateDeleteRequesterEmail);
-      if (!res || res.ok === false) {
+      const res = await onRequestUpdateDelete(showUpdateDeleteRequest, updateDeleteReason, fullName, updateDeleteRequesterEmail);
+      if (!res || (res as { ok?: boolean }).ok === false) {
         // Handle common Supabase errors more gracefully
-        let errMsg = (res && res.error) ? res.error : 'Failed to submit update deletion request';
-        if (typeof errMsg === 'object' && errMsg.message) errMsg = errMsg.message;
+        let errMsg = (res && (res as { error?: unknown }).error) ? (res as { error?: unknown }).error : 'Failed to submit update deletion request';
+        if (typeof errMsg === 'object' && errMsg !== null && 'message' in errMsg) errMsg = (errMsg as { message: string }).message;
         // Detect missing table error message patterns
         if (typeof errMsg === 'string' && errMsg.toLowerCase().includes('relation') && errMsg.toLowerCase().includes('does not exist')) {
           errMsg = 'Server schema missing: update_deletion_requests table not found. Please run the migration.';
         }
-        setUpdateDeleteError(errMsg);
+        setUpdateDeleteError(errMsg as string);
         console.error('Failed to submit update deletion request', errMsg);
         setIsSubmittingUpdateDelete(false);
         return;

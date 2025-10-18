@@ -5,7 +5,7 @@ import type { PrayerRequest } from '../types/prayer';
 import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';
 
 interface PrayerFormProps {
-  onSubmit: (prayer: Omit<PrayerRequest, 'id' | 'date_requested' | 'created_at' | 'updated_at' | 'updates'>) => Promise<any>;
+  onSubmit: (prayer: Omit<PrayerRequest, 'id' | 'date_requested' | 'created_at' | 'updated_at' | 'updates'>) => Promise<void>;
   onCancel: () => void;
   isOpen: boolean;
 }

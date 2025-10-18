@@ -38,7 +38,7 @@ describe('EmailSettings Component', () => {
       })),
     }));
 
-    (supabase.from as any).mockReturnValue({
+    (supabase.from as typeof supabase.from).mockReturnValue({
       select: mockSelect,
     });
 
@@ -66,7 +66,7 @@ describe('EmailSettings Component', () => {
       })),
     }));
 
-    (supabase.from as any).mockReturnValue({
+    (supabase.from as typeof supabase.from).mockReturnValue({
       select: mockSelect,
     });
 
@@ -95,7 +95,7 @@ describe('EmailSettings Component', () => {
 
     const mockUpsert = vi.fn().mockResolvedValue({ data: null, error: null });
 
-    (supabase.from as any).mockReturnValue({
+    (supabase.from as typeof supabase.from).mockReturnValue({
       select: mockSelect,
       upsert: mockUpsert,
     });
@@ -128,7 +128,7 @@ describe('EmailSettings Component', () => {
 
     const mockUpsert = vi.fn().mockResolvedValue({ data: null, error: null });
 
-    (supabase.from as any).mockReturnValue({
+    (supabase.from as typeof supabase.from).mockReturnValue({
       select: mockSelect,
       upsert: mockUpsert,
     });
@@ -162,7 +162,7 @@ describe('EmailSettings Component', () => {
       })),
     }));
 
-    (supabase.from as any).mockReturnValue({
+    (supabase.from as typeof supabase.from).mockReturnValue({
       select: mockSelect,
     });
 
@@ -188,7 +188,7 @@ describe('EmailSettings Component', () => {
       })),
     }));
 
-    (supabase.from as any).mockReturnValue({
+    (supabase.from as typeof supabase.from).mockReturnValue({
       select: mockSelect,
     });
 
@@ -216,7 +216,7 @@ describe('EmailSettings Component', () => {
 
     const mockUpsert = vi.fn().mockResolvedValue({ error: null });
 
-    (supabase.from as any).mockReturnValue({
+    (supabase.from as typeof supabase.from).mockReturnValue({
       select: mockSelect,
       upsert: mockUpsert,
     });
@@ -251,7 +251,7 @@ describe('EmailSettings Component', () => {
       })),
     }));
 
-    (supabase.from as any).mockReturnValue({
+    (supabase.from as typeof supabase.from).mockReturnValue({
       select: mockSelect,
     });
 
