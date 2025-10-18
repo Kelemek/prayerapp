@@ -129,30 +129,6 @@ jobs:
           gzip backup_${BACKUP_DATE}.json
           echo "✓ Backup compressed"
       
-      - name: Commit and push backup
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-          git add backups/
-          git commit -m "chore: automated database backup ${BACKUP_DATE}" || echo "No changes to commit"
-          git push || echo "No changes to push"
-      
-      - name: Keep only last 30 backups
-        run: |
-          cd backups
-          # List all backup files by date, skip the 30 most recent, delete the rest
-          ls -t backup_*.json.gz 2>/dev/null | tail -n +31 | xargs -r rm
-          ls -t backup_*_summary.json 2>/dev/null | tail -n +31 | xargs -r rm
-          
-          # Commit deletion if any files were removed
-          if [ -n "$(git status --porcelain)" ]; then
-            git config user.name "GitHub Actions Bot"
-            git config user.email "actions@github.com"
-            git add .
-            git commit -m "chore: cleanup old backups (keep last 30)" || echo "No old backups to remove"
-            git push || echo "No changes to push"
-          fi
-      
       - name: Upload backup as artifact
         uses: actions/upload-artifact@v4
         with:

@@ -24,6 +24,5 @@ dist-ssr
 *.sw?
 *.env
 
-# Database backups (committed by GitHub Actions only)
-# Uncomment the line below if you don't want backups in the repository
-# backups/
+# Database backups - not synced to repository
+backups/
