@@ -40,6 +40,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
   // Fetch prayer types on mount
   useEffect(() => {
     fetchPrayerTypes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchPrayerTypes = async () => {

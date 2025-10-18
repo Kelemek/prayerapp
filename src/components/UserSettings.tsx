@@ -87,6 +87,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
       // Reset flag after a short delay
       setTimeout(() => setIsInitialLoad(false), 100);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // Auto-load preferences when email changes (with debounce)
@@ -105,6 +106,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
     }, 800); // Wait 800ms after user stops typing
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email, isInitialLoad]);
 
   const loadPreferencesAutomatically = async (emailToLoad?: string, currentName?: string) => {
