@@ -10,7 +10,6 @@ import { PasswordChange } from './PasswordChange';
 import { EmailSettings } from './EmailSettings';
 import { EmailSubscribers } from './EmailSubscribers';
 import { PrayerSearch } from './PrayerSearch';
-import { BackupRestore } from './BackupRestore';
 import BackupStatus from './BackupStatus';
 import { PromptManager } from './PromptManager'; // Prayer prompts management
 import { PrayerTypesManager } from './PrayerTypesManager';
@@ -1121,7 +1120,6 @@ export const AdminPortal: React.FC = () => {
                 )}
               </div>
 
-              <BackupStatus />
               <EmailSubscribers />
               <EmailSettings />
               <PromptManager onSuccess={() => {
@@ -1194,7 +1192,7 @@ export const AdminPortal: React.FC = () => {
                 </div>
               </div>
 
-              <BackupRestore />
+              <BackupStatus />
             </div>
           </div>
         )}

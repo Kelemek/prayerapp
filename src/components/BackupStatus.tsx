@@ -87,18 +87,35 @@ export default function BackupStatus() {
 
     setBackingUp(true);
     try {
-      const tables = [
-        'prayers',
-        'prayer_updates',
-        'prayer_prompts',
-        'prayer_types',
-        'email_subscribers',
-        'user_preferences',
-        'status_change_requests',
-        'update_deletion_requests',
-        'admin_settings',
-        'analytics'
-      ];
+      // Auto-discover tables from the database
+      const { data: tableList, error: tableError } = await supabase
+        .from('backup_tables')
+        .select('table_name')
+        .order('table_name');
+
+      let tables: string[];
+      
+      if (tableError) {
+        console.warn('Could not fetch table list, using fallback:', tableError);
+        // Fallback to hardcoded list if view doesn't exist
+        tables = [
+          'admin_settings',
+          'analytics',
+          'backup_logs',
+          'email_subscribers',
+          'prayer_prompts',
+          'prayer_types',
+          'prayer_updates',
+          'prayers',
+          'status_change_requests',
+          'update_deletion_requests',
+          'user_preferences'
+        ];
+      } else {
+        tables = tableList?.map((t: any) => t.table_name) || [];
+      }
+
+      console.log(`Backing up ${tables.length} tables:`, tables);
 
       const startTime = Date.now();
       const backup: any = {
@@ -189,8 +206,12 @@ export default function BackupStatus() {
         throw new Error('Invalid backup file format');
       }
 
-      // Tables in order (respecting foreign key dependencies)
-      const tables = [
+      // Get list of tables to restore (use what's in the backup file)
+      // This ensures we can restore old backups even if table structure changes
+      const tablesInBackup = Object.keys(backup.tables);
+      
+      // Define dependency order for known tables (for proper foreign key handling)
+      const knownOrder = [
         'prayer_types',
         'prayers',
         'prayer_updates',
@@ -200,7 +221,14 @@ export default function BackupStatus() {
         'status_change_requests',
         'update_deletion_requests',
         'admin_settings',
-        'analytics'
+        'analytics',
+        'backup_logs'
+      ];
+      
+      // Sort tables: known tables in dependency order first, then any unknown tables
+      const tables = [
+        ...knownOrder.filter(t => tablesInBackup.includes(t)),
+        ...tablesInBackup.filter(t => !knownOrder.includes(t))
       ];
 
       let totalRestored = 0;

@@ -43,20 +43,35 @@ jobs:
             );
 
             const startTime = Date.now();
-            console.log('Fetching all tables data...');
+            console.log('Discovering tables to backup...');
             
-            const tables = [
-              'prayers',
-              'prayer_updates',
-              'prayer_prompts',
-              'prayer_types',
-              'email_subscribers',
-              'user_preferences',
-              'status_change_requests',
-              'update_deletion_requests',
-              'admin_settings',
-              'analytics'
-            ];
+            // Auto-discover all tables from the database
+            const { data: tableList, error: tableError } = await supabase
+              .from('backup_tables')
+              .select('table_name')
+              .order('table_name');
+
+            if (tableError) {
+              console.error('Error fetching table list:', tableError);
+              // Fallback to hardcoded list if view doesn't exist yet
+              var tables = [
+                'admin_settings',
+                'analytics',
+                'backup_logs',
+                'email_subscribers',
+                'prayer_prompts',
+                'prayer_types',
+                'prayer_updates',
+                'prayers',
+                'status_change_requests',
+                'update_deletion_requests',
+                'user_preferences'
+              ];
+            } else {
+              var tables = tableList.map(t => t.table_name);
+            }
+
+            console.log(`Found ${tables.length} tables to backup:`, tables);
 
             const backup = {
               timestamp: new Date().toISOString(),

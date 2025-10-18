@@ -24,15 +24,39 @@ Go to: **Settings** → **Actions** → **General** → **Workflow permissions**
 
 ## 🎉 That's It!
 
-Your backups will run automatically every day at 2 AM UTC.
+Your backups will run automatically every day at 2 AM CST.
+
+## ✨ Key Features
+
+✅ **Automated Daily Backups** - Runs at 2:00 AM CST  
+✅ **Future-Proof** - Automatically discovers all tables (no code updates needed!)  
+✅ **Manual Backups** - Instant download from Admin Portal  
+✅ **Easy Restore** - Upload backup file in Admin Portal  
+✅ **Keeps DB Active** - Writes to database daily (prevents free tier pausing)  
+✅ **Full History** - View last 30 backups with details  
+✅ **No GitHub Access Needed** - Everything in the app  
+
+## 🤖 Auto-Discovery
+
+The backup system **automatically discovers all tables** in your database.
+
+**This means:**
+- ✅ Add new tables → automatically backed up
+- ✅ Change schema → automatically handled  
+- ✅ No code updates ever needed
+- ✅ Future-proof and maintenance-free
+
+👉 **See [BACKUP_AUTO_DISCOVERY.md](BACKUP_AUTO_DISCOVERY.md) for technical details**
 
 ## 📋 What Gets Backed Up
 
-All data from these tables:
+**All current tables** (auto-discovered):
 - prayers, prayer_updates, prayer_prompts
 - prayer_types, email_subscribers, user_preferences
 - status_change_requests, update_deletion_requests
-- admin_settings, analytics
+- admin_settings, analytics, backup_logs
+
+**Plus any new tables you create in the future!**
 
 ## 🔄 How to Restore
 
