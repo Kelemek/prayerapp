@@ -1,6 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+interface Prayer {
+  id: string;
+  title: string;
+  prayer_for: string;
+  requester: string;
+  email: string;
+  is_anonymous: boolean;
+  created_at: string;
+  last_reminder_sent?: string | null;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -215,7 +226,7 @@ serve(async (req) => {
   }
 })
 
-function generateReminderHTML(prayer: any): string {
+function generateReminderHTML(prayer: Prayer): string {
   const baseUrl = Deno.env.get('APP_URL') || 'http://localhost:5173'
   const appUrl = `${baseUrl}/`
   const requesterName = prayer.is_anonymous ? 'Friend' : prayer.requester
