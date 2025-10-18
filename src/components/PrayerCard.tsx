@@ -655,56 +655,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               </div>
             ))}
           </div>
-          
-          {/* (removed 'Show more' button) */}
-          { /* Removed top-level form - now inline under each update */ }
-          {false && showUpdateDeleteRequest && !isAdmin && (
-            <form onSubmit={handleUpdateDeletionRequest} className="mt-4 mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-3">Request Update Deletion</h4>
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="First name"
-                    value={updateDeleteRequesterFirstName}
-                    onChange={(e) => setUpdateDeleteRequesterFirstName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Last name"
-                    value={updateDeleteRequesterLastName}
-                    onChange={(e) => setUpdateDeleteRequesterLastName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    required
-                  />
-                </div>
-                  <input
-                    type="email"
-                    placeholder="Your email"
-                    value={updateDeleteRequesterEmail}
-                    onChange={(e) => setUpdateDeleteRequesterEmail(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    required
-                  />
-                <textarea
-                  placeholder="Reason for update deletion request..."
-                  value={updateDeleteReason}
-                  onChange={(e) => setUpdateDeleteReason(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 h-20"
-                  required
-                />
-                <div className="flex gap-2">
-                  <button type="submit" disabled={isSubmittingUpdateDelete} className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50">{isSubmittingUpdateDelete ? 'Submitting...' : 'Submit Request'}</button>
-                  <button type="button" onClick={() => setShowUpdateDeleteRequest(null)} className="px-3 py-1 text-sm bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500">Cancel</button>
-                </div>
-                {updateDeleteError && (
-                  <p className="mt-2 text-sm text-red-700 dark:text-red-300">{updateDeleteError}</p>
-                )}
-              </div>
-            </form>
-          )}
         </div>
       )}
     </div>
