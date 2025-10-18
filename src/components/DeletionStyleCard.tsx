@@ -7,7 +7,6 @@ interface DeletionStyleCardProps {
   metaLeft?: React.ReactNode; // e.g., requester + email
   metaRight?: React.ReactNode; // e.g., date
   reason?: string | null;
-  statusLabel?: string;
   actions?: React.ReactNode;
 }
 
@@ -18,7 +17,6 @@ export const DeletionStyleCard: React.FC<DeletionStyleCardProps> = ({
   metaLeft,
   metaRight,
   reason,
-  statusLabel = 'Pending',
   actions
 }) => {
   return (
