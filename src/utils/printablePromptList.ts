@@ -14,26 +14,47 @@ export interface PrayerPrompt {
 export const downloadPrintablePromptList = async (newWindow: Window | null = null) => {
   try {
     // Fetch all prayer prompts
-    const { data: prompts, error } = await supabase
+    const { data: promptsData, error: promptsError } = await supabase
       .from('prayer_prompts')
       .select('*')
-      .order('type', { ascending: true })
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching prompts:', error);
+    if (promptsError) {
+      console.error('Error fetching prompts:', promptsError);
       alert('Failed to fetch prayer prompts. Please try again.');
       if (newWindow) newWindow.close();
       return;
     }
 
-    if (!prompts || prompts.length === 0) {
+    if (!promptsData || promptsData.length === 0) {
       alert('No prayer prompts found.');
       if (newWindow) newWindow.close();
       return;
     }
 
-    const html = generatePrintableHTML(prompts);
+    // Fetch prayer types for ordering
+    const { data: typesData, error: typesError } = await supabase
+      .from('prayer_types')
+      .select('name, display_order')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+
+    if (typesError) {
+      console.error('Error fetching prayer types:', typesError);
+      // Continue with default alphabetical sorting if types fetch fails
+    }
+
+    // Create a map of type name to display_order
+    const typeOrderMap = new Map(typesData?.map(t => [t.name, t.display_order]) || []);
+
+    // Sort prompts by type's display_order
+    const sortedPrompts = promptsData.sort((a, b) => {
+      const orderA = typeOrderMap.get(a.type) ?? 999;
+      const orderB = typeOrderMap.get(b.type) ?? 999;
+      return orderA - orderB;
+    });
+
+    const html = generatePrintableHTML(sortedPrompts);
 
     // Use the pre-opened window if provided (Safari compatible)
     const targetWindow = newWindow || window.open('', '_blank');
