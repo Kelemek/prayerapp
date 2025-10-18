@@ -751,7 +751,7 @@ export const PrayerPresentation: React.FC = () => {
                       setContentType(e.target.value);
                       setCurrentIndex(0); // Reset to first item when switching types
                     }}
-                    className="w-full appearance-none px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10"
+                    className="w-full appearance-none px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
                   >
                     <option value="prayers">Prayers</option>
                     <option value="prompts">Prayer Prompts</option>
@@ -775,7 +775,7 @@ export const PrayerPresentation: React.FC = () => {
                       }}
                       className="sr-only peer"
                     />
-                    <div className="w-14 h-8 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
+                    <div className="w-14 h-8 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
                   </div>
                 </label>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
@@ -791,7 +791,7 @@ export const PrayerPresentation: React.FC = () => {
                     <select
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full appearance-none px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10"
+                      className="w-full appearance-none px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
                     >
                       <option value="all">All Statuses</option>
                       <option value="current">Current</option>
@@ -811,7 +811,7 @@ export const PrayerPresentation: React.FC = () => {
                     <select
                       value={timeFilter}
                       onChange={(e) => setTimeFilter(e.target.value)}
-                      className="w-full appearance-none px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-10"
+                      className="w-full appearance-none px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
                     >
                       <option value="all">All Time</option>
                       <option value="week">Last Week</option>
@@ -840,7 +840,7 @@ export const PrayerPresentation: React.FC = () => {
                       value={prayerTimerMinutes}
                       onChange={(e) => setPrayerTimerMinutes(Math.max(1, parseInt(e.target.value) || 1))}
                       disabled={prayerTimerActive}
-                      className="w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
 
