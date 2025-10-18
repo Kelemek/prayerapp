@@ -57,8 +57,8 @@ describe('PrayerCard Component', () => {
   it('renders prayer content', () => {
     render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
     
-    expect(screen.getByText('Test prayer content')).toBeInTheDocument();
-    expect(screen.getByText(/Prayer for/i)).toBeInTheDocument();
+    expect(screen.getByText('Test prayer content')).toBeDefined();
+    expect(screen.getByText(/Prayer for/i)).toBeDefined();
   });
 
   it('displays requester name when not anonymous', () => {
@@ -74,29 +74,29 @@ describe('PrayerCard Component', () => {
     const anonymousPrayer = { ...mockPrayer, is_anonymous: true };
     render(<PrayerCard prayer={anonymousPrayer} isAdmin={false} {...mockCallbacks} />);
     
-    expect(screen.getByText(/Anonymous/i)).toBeInTheDocument();
-    expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
+    expect(screen.getByText(/Anonymous/i)).toBeDefined();
+    expect(screen.queryByText('John Doe')).toBeNull();
   });
 
   it('shows status badge with correct status', () => {
     render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
     
     // Status is displayed as "current" (lowercase)
-    expect(screen.getByText('current')).toBeInTheDocument();
+    expect(screen.getByText('current')).toBeDefined();
   });
 
-  it('displays answered status correctly', () => {
-    const answeredPrayer = { ...mockPrayer, status: PrayerStatus.ANSWERED };
+  it('displays answered status badge correctly', () => {
+    const answeredPrayer = { ...mockPrayer, status: 'answered' as const };
     render(<PrayerCard prayer={answeredPrayer} isAdmin={false} {...mockCallbacks} />);
     
-    expect(screen.getByText('answered')).toBeInTheDocument();
+    expect(screen.getByText('answered')).toBeDefined();
   });
 
-  it('displays ongoing status correctly', () => {
-    const ongoingPrayer = { ...mockPrayer, status: PrayerStatus.ONGOING };
+    it('displays ongoing status badge correctly', () => {
+    const ongoingPrayer = { ...mockPrayer, status: 'ongoing' as const };
     render(<PrayerCard prayer={ongoingPrayer} isAdmin={false} {...mockCallbacks} />);
     
-    expect(screen.getByText('ongoing')).toBeInTheDocument();
+    expect(screen.getByText('ongoing')).toBeDefined();
   });
 
   it('shows delete button for admin users', () => {
@@ -104,7 +104,7 @@ describe('PrayerCard Component', () => {
     
     // Admin should see delete button with "Delete prayer" title
     const deleteButton = screen.getByTitle(/delete prayer/i);
-    expect(deleteButton).toBeInTheDocument();
+    expect(deleteButton).toBeDefined();
   });
 
   it('shows request delete button for non-admin users', () => {
@@ -112,7 +112,7 @@ describe('PrayerCard Component', () => {
     
     // Non-admin should see request delete button with "Request deletion" title  
     const deleteButton = screen.getByTitle(/request deletion/i);
-    expect(deleteButton).toBeInTheDocument();
+    expect(deleteButton).toBeDefined();
   });
 
   it('admin can delete prayer directly', async () => {
@@ -159,14 +159,14 @@ describe('PrayerCard Component', () => {
     
     render(<PrayerCard prayer={prayerWithUpdates} isAdmin={false} {...mockCallbacks} />);
     
-    expect(screen.getByText('Prayer update content')).toBeInTheDocument();
-    expect(screen.getByText(/Jane Doe/i)).toBeInTheDocument();
+    expect(screen.getByText('Prayer update content')).toBeDefined();
+    expect(screen.getByText(/Jane Doe/i)).toBeDefined();
   });
 
   it('shows "Add Update" button', () => {
     render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
     
-    expect(screen.getByText(/Add Update/i)).toBeInTheDocument();
+    expect(screen.getByText(/Add Update/i)).toBeDefined();
   });
 
   it('opens add update form when clicking Add Update', async () => {
@@ -178,7 +178,7 @@ describe('PrayerCard Component', () => {
     
     await waitFor(() => {
       // Look for form elements instead of placeholder
-      expect(screen.getByText(/Add Prayer Update/i)).toBeInTheDocument();
+      expect(screen.getByText(/Add Prayer Update/i)).toBeDefined();
     });
   });
 
@@ -208,7 +208,7 @@ describe('PrayerCard Component', () => {
     // The component renders successfully with the date - that's what we're testing
     // The date span exists even if the exact format differs across environments
     const container = screen.getByText(/Prayer for/i).closest('div');
-    expect(container).toBeInTheDocument();
+    expect(container).toBeDefined();
   });
 
   it('handles long prayer content gracefully', () => {
@@ -226,7 +226,7 @@ describe('PrayerCard Component', () => {
       const isCorrectElement = (element as HTMLElement)?.tagName.toLowerCase() === 'p';
       return hasText !== undefined && hasText && isCorrectElement;
     });
-    expect(element).toBeInTheDocument();
+    expect(element).toBeDefined();
   });
 
   it('calls registerCloseCallback on mount', () => {
@@ -253,7 +253,7 @@ describe('PrayerCard Component', () => {
     
     render(<PrayerCard prayer={prayerWithAnonymousUpdate} isAdmin={false} {...mockCallbacks} />);
     
-    expect(screen.getByText('Anonymous update')).toBeInTheDocument();
+    expect(screen.getByText('Anonymous update')).toBeDefined();
     // Check for Anonymous text - use getAllByText since it appears multiple times
     const anonymousElements = screen.getAllByText(/Anonymous/i);
     expect(anonymousElements.length).toBeGreaterThan(0);
@@ -286,7 +286,7 @@ describe('PrayerCard Component', () => {
     
     render(<PrayerCard prayer={prayerWithMultipleUpdates} isAdmin={false} {...mockCallbacks} />);
     
-    expect(screen.getByText('First update')).toBeInTheDocument();
-    expect(screen.getByText('Second update')).toBeInTheDocument();
+    expect(screen.getByText('First update')).toBeDefined();
+    expect(screen.getByText('Second update')).toBeDefined();
   });
 });

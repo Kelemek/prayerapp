@@ -22,31 +22,31 @@ describe('AdminLogin Component', () => {
   it('renders login form with all elements', () => {
     render(<AdminLogin />);
     
-    expect(screen.getByText('Admin Portal')).toBeInTheDocument();
-    expect(screen.getByText('Sign in to manage prayer requests')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Email Address')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.getByText('Admin Portal')).toBeDefined();
+    expect(screen.getByText('Sign in to manage prayer requests')).toBeDefined();
+    expect(screen.getByPlaceholderText('Email Address')).toBeDefined();
+    expect(screen.getByPlaceholderText('Password')).toBeDefined();
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeDefined();
   });
 
   it('updates email input when typing', async () => {
     const user = userEvent.setup();
     render(<AdminLogin />);
     
-    const emailInput = screen.getByPlaceholderText('Email Address');
+    const emailInput = screen.getByPlaceholderText('Email Address') as HTMLInputElement;
     await user.type(emailInput, 'admin@example.com');
     
-    expect(emailInput).toHaveValue('admin@example.com');
+    expect(emailInput.value).toBe('admin@example.com');
   });
 
   it('updates password input when typing', async () => {
     const user = userEvent.setup();
     render(<AdminLogin />);
     
-    const passwordInput = screen.getByPlaceholderText('Password');
+    const passwordInput = screen.getByPlaceholderText('Password') as HTMLInputElement;
     await user.type(passwordInput, 'password123');
     
-    expect(passwordInput).toHaveValue('password123');
+    expect(passwordInput.value).toBe('password123');
   });
 
   it('calls login function with correct credentials on submit', async () => {
@@ -83,7 +83,7 @@ describe('AdminLogin Component', () => {
     await user.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText('Invalid email or password')).toBeInTheDocument();
+      expect(screen.getByText('Invalid email or password')).toBeDefined();
     });
   });
 
@@ -102,7 +102,7 @@ describe('AdminLogin Component', () => {
     await user.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText('Login failed. Please try again.')).toBeInTheDocument();
+      expect(screen.getByText('Login failed. Please try again.')).toBeDefined();
     });
   });
 
@@ -120,10 +120,10 @@ describe('AdminLogin Component', () => {
     await user.type(passwordInput, 'password123');
     await user.click(submitButton);
     
-    expect(submitButton).toBeDisabled();
+    expect((submitButton as HTMLButtonElement).disabled).toBe(true);
     
     await waitFor(() => {
-      expect(submitButton).not.toBeDisabled();
+      expect((submitButton as HTMLButtonElement).disabled).toBe(false);
     });
   });
 
@@ -141,10 +141,10 @@ describe('AdminLogin Component', () => {
     await user.type(passwordInput, 'password123');
     await user.click(submitButton);
     
-    expect(screen.getByText('Signing in...')).toBeInTheDocument();
+    expect(screen.getByText('Signing in...')).toBeDefined();
     
     await waitFor(() => {
-      expect(screen.queryByText('Signing in...')).not.toBeInTheDocument();
+      expect(screen.queryByText('Signing in...')).toBeNull();
     });
   });
 
@@ -164,7 +164,7 @@ describe('AdminLogin Component', () => {
     await user.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText('Invalid email or password')).toBeInTheDocument();
+      expect(screen.getByText('Invalid email or password')).toBeDefined();
     });
     
     // Second attempt - should clear error
@@ -173,7 +173,7 @@ describe('AdminLogin Component', () => {
     await user.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.queryByText('Invalid email or password')).not.toBeInTheDocument();
+      expect(screen.queryByText('Invalid email or password')).toBeNull();
     });
   });
 });

@@ -73,8 +73,8 @@ describe('EmailSettings Component', () => {
     render(<EmailSettings />);
 
     await waitFor(() => {
-      expect(screen.getByText('admin@example.com')).toBeInTheDocument();
-      expect(screen.getByText('user@example.com')).toBeInTheDocument();
+      expect(screen.getByText('admin@example.com')).toBeDefined();
+      expect(screen.getByText('user@example.com')).toBeDefined();
     });
   });
 
@@ -108,7 +108,7 @@ describe('EmailSettings Component', () => {
     });
 
     // Component renders successfully with email management features
-    expect(screen.getByText('admin@example.com')).toBeInTheDocument();
+    expect(screen.getByText('admin@example.com')).toBeDefined();
   });
 
   it('shows error when adding invalid email', async () => {
@@ -141,8 +141,8 @@ describe('EmailSettings Component', () => {
     });
 
     // Component renders successfully with email distribution options
-    expect(screen.getByText(/Admin Only/i)).toBeInTheDocument();
-    expect(screen.getByText(/All Users/i)).toBeInTheDocument();
+    expect(screen.getByText(/Admin Only/i)).toBeDefined();
+    expect(screen.getByText(/All Users/i)).toBeDefined();
   });
 
   it('allows removing an email address', async () => {
@@ -169,7 +169,7 @@ describe('EmailSettings Component', () => {
     render(<EmailSettings />);
 
     await waitFor(() => {
-      expect(screen.getByText('admin@example.com')).toBeInTheDocument();
+      expect(screen.getByText('admin@example.com')).toBeDefined();
     });
 
     // Find the remove button for the first email
@@ -177,7 +177,7 @@ describe('EmailSettings Component', () => {
     await user.click(removeButtons[0]);
 
     await waitFor(() => {
-      expect(screen.queryByText('admin@example.com')).not.toBeInTheDocument();
+      expect(screen.queryByText('admin@example.com')).toBeNull();
     });
   });
 
@@ -194,7 +194,7 @@ describe('EmailSettings Component', () => {
 
     render(<EmailSettings />);
 
-    expect(screen.getByText(/Loading/i)).toBeInTheDocument();
+    expect(screen.getByText(/Loading/i)).toBeDefined();
   });
 
   it('handles save button click and shows success message', async () => {
@@ -224,7 +224,7 @@ describe('EmailSettings Component', () => {
     render(<EmailSettings onSave={mockOnSave} />);
 
     await waitFor(() => {
-      expect(screen.getByText('admin@example.com')).toBeInTheDocument();
+      expect(screen.getByText('admin@example.com')).toBeDefined();
     });
 
     const saveButton = screen.getByRole('button', { name: /save/i });
@@ -258,8 +258,8 @@ describe('EmailSettings Component', () => {
     render(<EmailSettings />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Admin Only/i)).toBeInTheDocument();
-      expect(screen.getByText(/All Users/i)).toBeInTheDocument();
+      expect(screen.getByText(/Admin Only/i)).toBeDefined();
+      expect(screen.getByText(/All Users/i)).toBeDefined();
     });
   });
 });
