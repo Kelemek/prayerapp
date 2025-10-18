@@ -152,8 +152,6 @@ export async function cleanupDummyPrayers(): Promise<{ prayersCount: number; upd
     throw new Error('No seed data found in database. Have you run the seed function?');
   }
 
-  const seededIds = seedPrayers.map(p => p.id);
-
   // Delete updates marked as seed data
   const { data: deletedUpdates, error: updateError } = await supabase
     .from('prayer_updates')

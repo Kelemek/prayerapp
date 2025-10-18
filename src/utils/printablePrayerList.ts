@@ -121,20 +121,16 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
 
   // Calculate start date based on time range
   const startDate = new Date();
-  let rangeLabel = '';
   
   switch (timeRange) {
     case 'week':
       startDate.setDate(startDate.getDate() - 7);
-      rangeLabel = 'Last Week';
       break;
     case 'month':
       startDate.setMonth(startDate.getMonth() - 1);
-      rangeLabel = 'Last Month';
       break;
     case 'year':
       startDate.setFullYear(startDate.getFullYear() - 1);
-      rangeLabel = 'Last Year';
       break;
   }
   
