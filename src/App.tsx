@@ -105,8 +105,6 @@ function AppContent() {
       // Create a map of type name to display_order
       const typeOrderMap = new Map(typesData?.map(t => [t.name, t.display_order]) || []);
       
-      console.log('Prayer types order:', typesData); // Debug log
-      
       // Sort prompts by type's display_order
       const sortedPrompts = (promptsData || []).sort((a, b) => {
         const orderA = typeOrderMap.get(a.type) ?? 999;
