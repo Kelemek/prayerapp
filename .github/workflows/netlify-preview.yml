@@ -35,6 +35,11 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
       
+      - name: Trim Netlify credentials (remove whitespace)
+        run: |
+          echo "NETLIFY_SITE_ID_CLEAN=$(echo '${{ secrets.NETLIFY_SITE_ID }}' | xargs)" >> $GITHUB_ENV
+          echo "NETLIFY_AUTH_TOKEN_CLEAN=$(echo '${{ secrets.NETLIFY_AUTH_TOKEN }}' | xargs)" >> $GITHUB_ENV
+      
       - name: Deploy to Netlify Preview
         uses: nwtgck/actions-netlify@v3.0
         with:
@@ -47,8 +52,8 @@ jobs:
           enable-commit-comment: false
           overwrites-pull-request-comment: true
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          NETLIFY_AUTH_TOKEN: ${{ env.NETLIFY_AUTH_TOKEN_CLEAN }}
+          NETLIFY_SITE_ID: ${{ env.NETLIFY_SITE_ID_CLEAN }}
         timeout-minutes: 5
       
       - name: Comment PR with deployment info
