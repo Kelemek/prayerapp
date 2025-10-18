@@ -38,9 +38,9 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
 
       if (error) throw error;
       setTypes(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching prayer types:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -95,9 +95,11 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       
       await fetchTypes();
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving prayer type:', err);
-      const message = err?.message || 'Unknown error';
+      const message = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Unknown error';
       setError(`Failed to save prayer type: ${message}`);
     } finally {
       setSubmitting(false);
@@ -132,9 +134,9 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       
       setSuccess('Prayer type deleted successfully!');
       await fetchTypes();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting prayer type:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     }
   };
 
@@ -152,9 +154,9 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       
       setSuccess(`Prayer type ${!type.is_active ? 'activated' : 'deactivated'} successfully!`);
       await fetchTypes();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error toggling prayer type:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     }
   };
 
@@ -183,9 +185,9 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
         .eq('id', target.id);
       
       await fetchTypes();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error reordering prayer types:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     }
   };
 

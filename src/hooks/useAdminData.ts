@@ -1,10 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
-import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest } from '../types/prayer';
+import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest, UpdateDeletionRequest } from '../types/prayer';
 import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification, sendApprovedStatusChangeNotification, sendDeniedStatusChangeNotification } from '../lib/emailNotifications';
 
 interface AdminData {
-  pendingUpdateDeletionRequests: any[];
+  pendingUpdateDeletionRequests: (UpdateDeletionRequest & {
+    prayer_updates?: {
+      content?: string;
+      author?: string;
+      author_email?: string;
+      prayers?: {
+        title?: string;
+      };
+    };
+  })[];
   pendingPrayers: PrayerRequest[];
   pendingUpdates: (PrayerUpdate & { prayer_title?: string })[];
   pendingDeletionRequests: (DeletionRequest & { prayer_title?: string })[];
@@ -169,35 +178,35 @@ export const useAdminData = () => {
       if (deniedStatusChangeRequestsError && deniedStatusChangeRequestsError.code !== '42P01') throw deniedStatusChangeRequestsError;
 
       // Transform joins
-      const transformedUpdates = (pendingUpdates || []).map((update: any) => ({
+      const transformedUpdates = (pendingUpdates || []).map((update: Record<string, unknown>) => ({
         ...update,
-        prayer_title: update.prayers?.title
-      }));
+        prayer_title: (update.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (PrayerUpdate & { prayer_title?: string })[];
 
-      const transformedDeletionRequests = (pendingDeletionRequests || []).map((request: any) => ({
+      const transformedDeletionRequests = (pendingDeletionRequests || []).map((request: Record<string, unknown>) => ({
         ...request,
-        prayer_title: request.prayers?.title
-      }));
+        prayer_title: (request.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (DeletionRequest & { prayer_title?: string })[];
 
-      const transformedStatusChangeRequests = (pendingStatusChangeRequests || []).map((request: any) => ({
+      const transformedStatusChangeRequests = (pendingStatusChangeRequests || []).map((request: Record<string, unknown>) => ({
         ...request,
-        prayer_title: request.prayers?.title
-      }));
+        prayer_title: (request.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (StatusChangeRequest & { prayer_title?: string })[];
 
-      const transformedApprovedUpdates = (approvedUpdates || []).map((update: any) => ({
+      const transformedApprovedUpdates = (approvedUpdates || []).map((update: Record<string, unknown>) => ({
         ...update,
-        prayer_title: update.prayers?.title
-      }));
+        prayer_title: (update.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (PrayerUpdate & { prayer_title?: string })[];
 
-      const transformedDeniedUpdates = (deniedUpdates || []).map((update: any) => ({
+      const transformedDeniedUpdates = (deniedUpdates || []).map((update: Record<string, unknown>) => ({
         ...update,
-        prayer_title: update.prayers?.title
-      }));
+        prayer_title: (update.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (PrayerUpdate & { prayer_title?: string })[];
 
-      const transformedDeniedStatusChangeRequests = (deniedStatusChangeRequests || []).map((req: any) => ({
+      const transformedDeniedStatusChangeRequests = (deniedStatusChangeRequests || []).map((req: Record<string, unknown>) => ({
         ...req,
-        prayer_title: req.prayers?.title
-      }));
+        prayer_title: (req.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (StatusChangeRequest & { prayer_title?: string })[];
 
       setData({
         pendingPrayers: pendingPrayers || [],
@@ -237,6 +246,7 @@ export const useAdminData = () => {
         .eq('id', requestId)
         .single();
       if (fetchError) throw fetchError;
+      if (!request) throw new Error('Request not found');
 
       // Approve the request
       const { error: approveError } = await supabase
@@ -249,7 +259,7 @@ export const useAdminData = () => {
       const { error: deleteError } = await supabase
         .from('prayer_updates')
         .delete()
-        .eq('id', (request as any).update_id);
+        .eq('id', (request as { update_id: string }).update_id);
       if (deleteError) throw deleteError;
 
       await fetchAdminData();
@@ -383,8 +393,11 @@ export const useAdminData = () => {
       if (error) throw error;
 
       // Send email notification
+      const prayerTitle = update.prayers && typeof update.prayers === 'object' && 'title' in update.prayers
+        ? String(update.prayers.title)
+        : 'Prayer';
       await sendApprovedUpdateNotification({
-        prayerTitle: (update.prayers as any)?.title || 'Prayer',
+        prayerTitle,
         content: update.content,
         author: update.is_anonymous ? 'Anonymous' : (update.author || 'Anonymous')
       });
@@ -418,8 +431,11 @@ export const useAdminData = () => {
 
       // Send email notification to the author
       if (update.author_email) {
+        const prayerTitle = update.prayers && typeof update.prayers === 'object' && 'title' in update.prayers
+          ? String(update.prayers.title)
+          : 'Prayer';
         await sendDeniedUpdateNotification({
-          prayerTitle: (update.prayers as any)?.title || 'Prayer',
+          prayerTitle,
           content: update.content,
           author: update.is_anonymous ? 'Anonymous' : (update.author || 'Anonymous'),
           authorEmail: update.author_email,
@@ -439,7 +455,6 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayer_updates')
-        // @ts-ignore
         .update(updates)
         .eq('id', updateId)
         .eq('approval_status', 'pending'); // only allow editing pending updates
@@ -455,7 +470,6 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('prayers')
-        // @ts-ignore
         .update(updates)
         .eq('id', prayerId)
         .eq('approval_status', 'pending'); // Only allow editing pending prayers
@@ -474,6 +488,8 @@ export const useAdminData = () => {
         .eq('id', requestId)
         .single();
       if (fetchError) throw fetchError;
+      if (!deletionRequest) throw new Error('Deletion request not found');
+      
       const { error: approveError } = await supabase
         .from('deletion_requests')
         .update({ approval_status: 'approved' })
@@ -482,7 +498,7 @@ export const useAdminData = () => {
       const { error: deleteError } = await supabase
         .from('prayers')
         .delete()
-        .eq('id', (deletionRequest as any).prayer_id);
+        .eq('id', (deletionRequest as { prayer_id: string }).prayer_id);
       if (deleteError) throw deleteError;
       await fetchAdminData();
     } catch (error) {
@@ -525,14 +541,21 @@ export const useAdminData = () => {
       // Update status change request to approved
       const { error: approveError } = await supabase
         .from('status_change_requests')
-        .update({ approval_status: 'approved', reviewed_by: 'admin', reviewed_at: new Date().toISOString() } as any)
+        .update({ 
+          approval_status: 'approved', 
+          reviewed_by: 'admin', 
+          reviewed_at: new Date().toISOString() 
+        })
         .eq('id', requestId);
       if (approveError) throw approveError;
       
       // Update prayer status
       const { error: updateError } = await supabase
         .from('prayers')
-        .update({ status: newStatus, date_answered: newStatus === 'answered' ? new Date().toISOString() : null } as any)
+        .update({ 
+          status: newStatus, 
+          date_answered: newStatus === 'answered' ? new Date().toISOString() : null 
+        })
         .eq('id', statusChangeRequest.prayer_id);
       if (updateError) throw updateError;
       
@@ -573,7 +596,12 @@ export const useAdminData = () => {
       // Update status change request to denied
       const { error } = await supabase
         .from('status_change_requests')
-        .update({ approval_status: 'denied', reviewed_by: 'admin', reviewed_at: new Date().toISOString(), denial_reason: reason } as any)
+        .update({ 
+          approval_status: 'denied', 
+          reviewed_by: 'admin', 
+          reviewed_at: new Date().toISOString(), 
+          denial_reason: reason 
+        })
         .eq('id', requestId);
       if (error) throw error;
       

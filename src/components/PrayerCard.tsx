@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, ChevronDown } from 'lucide-react';
-import { useToast } from './Toast';
+import { useToast } from '../hooks/useToast';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';
@@ -13,7 +13,7 @@ interface PrayerCardProps {
   onRequestDelete: (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
   onRequestStatusChange: (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
   onDeleteUpdate: (updateId: string) => Promise<void>;
-  onRequestUpdateDelete: (updateId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<any>;
+  onRequestUpdateDelete: (updateId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<unknown>;
   registerCloseCallback: (callback: () => void) => () => void;
   onFormOpen: () => void;
   isAdmin: boolean;
@@ -203,16 +203,16 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     try {
       setIsSubmittingUpdateDelete(true);
       setUpdateDeleteError(null);
-      const res: any = await onRequestUpdateDelete(showUpdateDeleteRequest, updateDeleteReason, fullName, updateDeleteRequesterEmail);
-      if (!res || res.ok === false) {
+      const res = await onRequestUpdateDelete(showUpdateDeleteRequest, updateDeleteReason, fullName, updateDeleteRequesterEmail);
+      if (!res || (res as { ok?: boolean }).ok === false) {
         // Handle common Supabase errors more gracefully
-        let errMsg = (res && res.error) ? res.error : 'Failed to submit update deletion request';
-        if (typeof errMsg === 'object' && errMsg.message) errMsg = errMsg.message;
+        let errMsg = (res && (res as { error?: unknown }).error) ? (res as { error?: unknown }).error : 'Failed to submit update deletion request';
+        if (typeof errMsg === 'object' && errMsg !== null && 'message' in errMsg) errMsg = (errMsg as { message: string }).message;
         // Detect missing table error message patterns
         if (typeof errMsg === 'string' && errMsg.toLowerCase().includes('relation') && errMsg.toLowerCase().includes('does not exist')) {
           errMsg = 'Server schema missing: update_deletion_requests table not found. Please run the migration.';
         }
-        setUpdateDeleteError(errMsg);
+        setUpdateDeleteError(errMsg as string);
         console.error('Failed to submit update deletion request', errMsg);
         setIsSubmittingUpdateDelete(false);
         return;
@@ -655,56 +655,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               </div>
             ))}
           </div>
-          
-          {/* (removed 'Show more' button) */}
-          { /* Removed top-level form - now inline under each update */ }
-          {false && showUpdateDeleteRequest && !isAdmin && (
-            <form onSubmit={handleUpdateDeletionRequest} className="mt-4 mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-3">Request Update Deletion</h4>
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    placeholder="First name"
-                    value={updateDeleteRequesterFirstName}
-                    onChange={(e) => setUpdateDeleteRequesterFirstName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Last name"
-                    value={updateDeleteRequesterLastName}
-                    onChange={(e) => setUpdateDeleteRequesterLastName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    required
-                  />
-                </div>
-                  <input
-                    type="email"
-                    placeholder="Your email"
-                    value={updateDeleteRequesterEmail}
-                    onChange={(e) => setUpdateDeleteRequesterEmail(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    required
-                  />
-                <textarea
-                  placeholder="Reason for update deletion request..."
-                  value={updateDeleteReason}
-                  onChange={(e) => setUpdateDeleteReason(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 h-20"
-                  required
-                />
-                <div className="flex gap-2">
-                  <button type="submit" disabled={isSubmittingUpdateDelete} className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50">{isSubmittingUpdateDelete ? 'Submitting...' : 'Submit Request'}</button>
-                  <button type="button" onClick={() => setShowUpdateDeleteRequest(null)} className="px-3 py-1 text-sm bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500">Cancel</button>
-                </div>
-                {updateDeleteError && (
-                  <p className="mt-2 text-sm text-red-700 dark:text-red-300">{updateDeleteError}</p>
-                )}
-              </div>
-            </form>
-          )}
         </div>
       )}
     </div>

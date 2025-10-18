@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, Lock, User, AlertCircle } from 'lucide-react';
-import { useAdminAuth } from '../hooks/useAdminAuth';
+import { useAdminAuth } from '../hooks/useAdminAuthHook';
 
 export const AdminLogin: React.FC = () => {
   const [email, setEmail] = useState('');

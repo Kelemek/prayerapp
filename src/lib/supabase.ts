@@ -19,7 +19,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const supabaseClient = supabase;
 
 // Helper function to handle Supabase errors
-export const handleSupabaseError = (error: any) => {
+export const handleSupabaseError = (error: unknown) => {
   console.error('Supabase error:', error);
-  throw new Error(error.message || 'An unexpected error occurred');
+  const message = error && typeof error === 'object' && 'message' in error 
+    ? (error as { message: string }).message 
+    : 'An unexpected error occurred';
+  throw new Error(message);
 };

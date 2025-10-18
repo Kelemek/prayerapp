@@ -5,8 +5,8 @@ import { PrayerCard } from './PrayerCard';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 
-// Mock Toast context
-vi.mock('./Toast', () => ({
+// Mock Toast hook
+vi.mock('../hooks/useToast', () => ({
   useToast: () => ({
     showToast: vi.fn(),
   }),

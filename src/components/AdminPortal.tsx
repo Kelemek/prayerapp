@@ -14,7 +14,7 @@ import BackupStatus from './BackupStatus';
 import { PromptManager } from './PromptManager'; // Prayer prompts management
 import { PrayerTypesManager } from './PrayerTypesManager';
 import { useAdminData } from '../hooks/useAdminData';
-import { useAdminAuth } from '../hooks/useAdminAuth';
+import { useAdminAuth } from '../hooks/useAdminAuthHook';
 import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
 import { supabase } from '../lib/supabase';
 import { sendApprovedPreferenceChangeNotification, sendDeniedPreferenceChangeNotification } from '../lib/emailNotifications';
@@ -71,7 +71,14 @@ export const AdminPortal: React.FC = () => {
   });
 
   // Pending preference changes
-  const [pendingPreferenceChanges, setPendingPreferenceChanges] = useState<any[]>([]);
+  interface PendingPreferenceChange {
+    id: string;
+    name: string;
+    email: string;
+    receive_new_prayer_notifications: boolean;
+    created_at: string;
+  }
+  const [pendingPreferenceChanges, setPendingPreferenceChanges] = useState<PendingPreferenceChange[]>([]);
   const [loadingPreferenceChanges, setLoadingPreferenceChanges] = useState(true);
 
   // Fetch analytics stats
@@ -1151,9 +1158,12 @@ export const AdminPortal: React.FC = () => {
                         alert(`Successfully inserted:\n• Prayers: ${result.prayersCount}\n• Updates: ${result.updatesCount}`);
                         // Reload to show new data
                         window.location.reload();
-                      } catch (err: any) {
+                      } catch (err: unknown) {
                         console.error('Seed error:', err);
-                        alert(`Error seeding data: ${err?.message || err}`);
+                        const errorMessage = err && typeof err === 'object' && 'message' in err 
+                          ? String(err.message)
+                          : String(err);
+                        alert(`Error seeding data: ${errorMessage}`);
                       } finally {
                         setSeedLoading(false);
                       }
@@ -1176,9 +1186,12 @@ export const AdminPortal: React.FC = () => {
                         alert(`Successfully deleted:\n• Prayers: ${result.prayersCount}\n• Updates: ${result.updatesCount}`);
                         // Reload to show changes
                         window.location.reload();
-                      } catch (err: any) {
+                      } catch (err: unknown) {
                         console.error('Cleanup error:', err);
-                        alert(`Error cleaning up data: ${err?.message || err}`);
+                        const errorMessage = err && typeof err === 'object' && 'message' in err 
+                          ? String(err.message)
+                          : String(err);
+                        alert(`Error cleaning up data: ${errorMessage}`);
                       } finally {
                         setCleanupLoading(false);
                       }

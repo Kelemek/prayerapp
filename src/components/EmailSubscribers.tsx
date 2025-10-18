@@ -56,9 +56,9 @@ export const EmailSubscribers: React.FC = () => {
 
       if (error) throw error;
       setSubscribers(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error searching subscribers:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     } finally {
       setSearching(false);
     }
@@ -102,12 +102,16 @@ export const EmailSubscribers: React.FC = () => {
       if (searchQuery.trim()) {
         await handleSearch();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error adding subscriber:', err);
-      if (err.code === '23505') {
+      const errorCode = err && typeof err === 'object' && 'code' in err ? String(err.code) : '';
+      if (errorCode === '23505') {
         setError('This email address is already subscribed');
       } else {
-        setError(err.message);
+        const errorMessage = err && typeof err === 'object' && 'message' in err 
+          ? String(err.message) 
+          : 'An error occurred'; 
+        setError(errorMessage);
       }
     } finally {
       setSubmitting(false);
@@ -127,9 +131,9 @@ export const EmailSubscribers: React.FC = () => {
       if (searchQuery.trim()) {
         await handleSearch();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error toggling subscriber status:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     }
   };
 
@@ -227,9 +231,9 @@ export const EmailSubscribers: React.FC = () => {
           await handleSearch();
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error uploading CSV:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     } finally {
       setUploadingCSV(false);
     }
@@ -252,9 +256,9 @@ export const EmailSubscribers: React.FC = () => {
       if (searchQuery.trim()) {
         await handleSearch();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting subscriber:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
     }
   };
 

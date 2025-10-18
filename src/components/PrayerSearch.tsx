@@ -39,9 +39,12 @@ export const PrayerSearch: React.FC = () => {
       if (error) throw error;
 
       setSearchResults(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error searching prayers:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Failed to search prayers';
+      setError(errorMessage);
     } finally {
       setSearching(false);
     }
@@ -94,9 +97,12 @@ export const PrayerSearch: React.FC = () => {
         newSet.delete(prayerId);
         return newSet;
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting prayer:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Failed to delete prayer';
+      setError(errorMessage);
     } finally {
       setDeleting(false);
     }
@@ -123,9 +129,12 @@ export const PrayerSearch: React.FC = () => {
       // Remove deleted prayers from results
       setSearchResults(searchResults.filter(p => !selectedPrayers.has(p.id)));
       setSelectedPrayers(new Set());
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting prayers:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Failed to delete selected prayers';
+      setError(errorMessage);
     } finally {
       setDeleting(false);
     }

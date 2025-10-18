@@ -40,6 +40,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
   // Fetch prayer types on mount
   useEffect(() => {
     fetchPrayerTypes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchPrayerTypes = async () => {
@@ -56,7 +57,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       if (data && data.length > 0 && !type) {
         setType(data[0].name);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching prayer types:', err);
     }
   };
@@ -88,9 +89,12 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
 
       if (error) throw error;
       setPrompts(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error searching prompts:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Failed to search prompts';
+      setError(errorMessage);
     } finally {
       setSearching(false);
     }
@@ -150,9 +154,11 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       }
       
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving prompt:', err);
-      const message = err?.message || 'Unknown error';
+      const message = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Unknown error';
       setError(`Failed to save prayer prompt: ${message}`);
     } finally {
       setSubmitting(false);
@@ -194,9 +200,12 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       if (searchQuery.trim()) {
         await handleSearch();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting prompt:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Failed to delete prompt';
+      setError(errorMessage);
     }
   };
 
@@ -264,7 +273,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       }
 
       setCSVData(rows);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error reading CSV:', err);
       setError('Failed to read CSV file. Please check the format.');
     }
@@ -309,9 +318,12 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       }
       
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error uploading CSV:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Failed to upload CSV';
+      setError(errorMessage);
     } finally {
       setUploadingCSV(false);
     }

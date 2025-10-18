@@ -1,25 +1,7 @@
-import { useState, createContext, useContext, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
-
-interface AdminAuthContextType {
-  isAdmin: boolean;
-  user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
-  changePassword: (newPassword: string) => Promise<boolean>;
-  loading: boolean;
-}
-
-const AdminAuthContext = createContext<AdminAuthContextType | null>(null);
-
-export const useAdminAuth = () => {
-  const context = useContext(AdminAuthContext);
-  if (!context) {
-    throw new Error('useAdminAuth must be used within AdminAuthProvider');
-  }
-  return context;
-};
+import { AdminAuthContext } from '../contexts/AdminAuthContext';
 
 interface AdminAuthProviderProps {
   children: React.ReactNode;
@@ -135,9 +117,12 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       if (error && error.message !== 'Auth session missing!') {
         console.error('Logout error:', error);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Ignore session missing errors
-      if (error?.message !== 'Auth session missing!') {
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : '';
+      if (errorMessage !== 'Auth session missing!') {
         console.error('Logout error:', error);
       }
     }

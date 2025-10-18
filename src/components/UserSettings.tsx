@@ -87,6 +87,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
       // Reset flag after a short delay
       setTimeout(() => setIsInitialLoad(false), 100);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // Auto-load preferences when email changes (with debounce)
@@ -105,6 +106,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
     }, 800); // Wait 800ms after user stops typing
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email, isInitialLoad]);
 
   const loadPreferencesAutomatically = async (emailToLoad?: string, currentName?: string) => {
@@ -161,7 +163,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         }
         setReceiveNotifications(true);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading preferences:', err);
     }
   };
@@ -230,9 +232,12 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         '✅ Your preference change has been submitted for approval! ' +
         'You will receive an email once approved. After approval, your preferences will be automatically updated the next time you open this settings panel.'
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error saving preferences:', err);
-      setError(err.message);
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Failed to save preferences';
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }

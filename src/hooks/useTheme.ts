@@ -65,7 +65,7 @@ export const useTheme = () => {
     // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
-    const handleChange = (e: MediaQueryListEvent) => {
+    const handleChange = () => {
       // Only update if user is using system theme
       const savedTheme = localStorage.getItem('theme');
       if (savedTheme === 'system' || !savedTheme) {

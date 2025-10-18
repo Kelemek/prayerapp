@@ -105,7 +105,7 @@ export const downloadPrintablePrayerList = async (timeRange: TimeRange = 'month'
 /**
  * Generate printable HTML for prayer list
  */
-function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): string {
+function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'): string {
   const now = new Date();
   const today = now.toLocaleDateString('en-US', { 
     year: 'numeric', 
@@ -170,8 +170,8 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
       const col1 = statusPrayers.slice(0, mid);
       const col2 = statusPrayers.slice(mid);
 
-      const col1HTML = col1.map((prayer, idx) => generatePrayerHTML(prayer, idx + 1)).join('');
-      const col2HTML = col2.map((prayer, idx) => generatePrayerHTML(prayer, mid + idx + 1)).join('');
+      const col1HTML = col1.map(prayer => generatePrayerHTML(prayer)).join('');
+      const col2HTML = col2.map(prayer => generatePrayerHTML(prayer)).join('');
 
       prayerSectionsHTML += `
         <div class="status-section">
@@ -435,7 +435,7 @@ function generatePrintableHTML(prayers: any[], timeRange: TimeRange = 'month'): 
 /**
  * Generate HTML for a single prayer
  */
-function generatePrayerHTML(prayer: any, number: number): string {
+function generatePrayerHTML(prayer: Prayer): string {
   const createdDate = new Date(prayer.created_at).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
