@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { Plus, Heart, Shield, LogOut, Settings } from 'lucide-react';
 import { PrayerForm } from './components/PrayerForm';
 import { PrayerCard } from './components/PrayerCard';
+import { PromptCard } from './components/PromptCard';
 import { PrayerFiltersComponent } from './components/PrayerFilters';
 import { PrayerPresentation } from './components/PrayerPresentation';
 import { MobilePresentation } from './components/MobilePresentation';
@@ -10,7 +11,7 @@ import { AdminPortal } from './components/AdminPortal';
 import { AdminLogin } from './components/AdminLogin';
 import { UserSettings } from './components/UserSettings';
 import { AdminAuthProvider, useAdminAuth } from './hooks/useAdminAuth';
-import type { PrayerStatus } from './types/prayer';
+import type { PrayerStatus, PrayerPrompt } from './types/prayer';
 import { usePrayerManager } from './hooks/usePrayerManager';
 import { useTheme } from './hooks/useTheme';
 import { supabase } from './lib/supabase';
@@ -40,6 +41,10 @@ function AppContent() {
   const [showForm, setShowForm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [filters, setFilters] = useState<PrayerFilters>({status: 'current'});
+  const [showPrompts, setShowPrompts] = useState(false);
+  const [prompts, setPrompts] = useState<PrayerPrompt[]>([]);
+  const [promptsLoading, setPromptsLoading] = useState(false);
+  const [selectedPromptTypes, setSelectedPromptTypes] = useState<string[]>([]);
   
   // Track which form is open across all cards
   const closeAllFormsCallbacks = useRef<Set<() => void>>(new Set());
@@ -75,6 +80,56 @@ function AppContent() {
     
     trackPageView();
   }, []);
+
+  // Fetch prayer prompts
+  const fetchPrompts = async () => {
+    setPromptsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('prayer_prompts')
+        .select('*')
+        .order('type', { ascending: true })
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setPrompts(data || []);
+    } catch (error) {
+      console.error('Error fetching prompts:', error);
+    } finally {
+      setPromptsLoading(false);
+    }
+  };
+
+  // Delete prompt (admin only)
+  const deletePrompt = async (id: string) => {
+    if (!isAdmin) return;
+    
+    try {
+      const { error } = await supabase
+        .from('prayer_prompts')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Refresh prompts list
+      await fetchPrompts();
+    } catch (error) {
+      console.error('Error deleting prompt:', error);
+      throw error;
+    }
+  };
+
+  // Fetch prompts on initial load and when showing prompts
+  useEffect(() => {
+    fetchPrompts();
+  }, []);
+
+  useEffect(() => {
+    if (showPrompts) {
+      fetchPrompts();
+    }
+  }, [showPrompts]);
 
   const filteredPrayers = useMemo(() => {
     return getFilteredPrayers(filters.status, filters.searchTerm);
@@ -258,11 +313,11 @@ function AppContent() {
         />
 
         {/* Stats - Clickable Filters */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <button
-            onClick={() => setFilters({...filters, status: 'current'})}
+            onClick={() => { setShowPrompts(false); setFilters({...filters, status: 'current'}); }}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              filters.status === 'current' ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-600'
+              !showPrompts && filters.status === 'current' ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-600'
             }`}
           >
             <div className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -271,9 +326,9 @@ function AppContent() {
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Current</div>
           </button>
           <button
-            onClick={() => setFilters({...filters, status: 'ongoing'})}
+            onClick={() => { setShowPrompts(false); setFilters({...filters, status: 'ongoing'}); }}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              filters.status === 'ongoing' ? 'ring-2 ring-orange-500 border-orange-500' : 'hover:border-orange-300 dark:hover:border-orange-600'
+              !showPrompts && filters.status === 'ongoing' ? 'ring-2 ring-orange-500 border-orange-500' : 'hover:border-orange-300 dark:hover:border-orange-600'
             }`}
           >
             <div className="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">
@@ -282,9 +337,9 @@ function AppContent() {
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Ongoing</div>
           </button>
           <button
-            onClick={() => setFilters({...filters, status: 'answered'})}
+            onClick={() => { setShowPrompts(false); setFilters({...filters, status: 'answered'}); }}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              filters.status === 'answered' ? 'ring-2 ring-green-500 border-green-500' : 'hover:border-green-300 dark:hover:border-green-600'
+              !showPrompts && filters.status === 'answered' ? 'ring-2 ring-green-500 border-green-500' : 'hover:border-green-300 dark:hover:border-green-600'
             }`}
           >
             <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
@@ -293,19 +348,117 @@ function AppContent() {
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Answered</div>
           </button>
           <button
-            onClick={() => setFilters({})}
+            onClick={() => { setShowPrompts(false); setFilters({}); }}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              !filters.status ? 'ring-2 ring-purple-500 border-purple-500' : 'hover:border-purple-300 dark:hover:border-purple-600'
+              !showPrompts && !filters.status ? 'ring-2 ring-purple-500 border-purple-500' : 'hover:border-purple-300 dark:hover:border-purple-600'
             }`}
           >
             <div className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{prayers.length || 0}</div>
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Total Prayers</div>
           </button>
+          <button
+            onClick={() => { 
+              setShowPrompts(true); 
+              setFilters({}); 
+              setSelectedPromptTypes([]); // Reset type filter when opening prompts
+            }}
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+              showPrompts ? 'ring-2 ring-yellow-500 border-yellow-500' : 'hover:border-yellow-300 dark:hover:border-yellow-600'
+            }`}
+          >
+            <div className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+              {prompts.length}
+            </div>
+            <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">Prompts</div>
+          </button>
         </div>
 
-        {/* Prayer List */}
+        {/* Prayer List or Prompts */}
         <div className="space-y-4">
-          {filteredPrayers.length === 0 ? (
+          {showPrompts ? (
+            // Show Prayer Prompts
+            <>
+              {/* Prompt Type Filters */}
+              {prompts.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {/* All Types Button */}
+                  <button
+                    onClick={() => setSelectedPromptTypes([])}
+                    className={`flex-1 whitespace-nowrap px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                      selectedPromptTypes.length === 0
+                        ? 'bg-yellow-500 text-white shadow-md'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-yellow-400 dark:hover:border-yellow-500'
+                    }`}
+                  >
+                    All Types ({prompts.length})
+                  </button>
+                  
+                  {/* Individual Type Buttons */}
+                  {Array.from(new Set(prompts.map(p => p.type))).sort().map(type => {
+                    const count = prompts.filter(p => p.type === type).length;
+                    const isSelected = selectedPromptTypes.includes(type);
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedPromptTypes(selectedPromptTypes.filter(t => t !== type));
+                          } else {
+                            setSelectedPromptTypes([...selectedPromptTypes, type]);
+                          }
+                        }}
+                        className={`flex-1 whitespace-nowrap px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                          isSelected
+                            ? 'bg-yellow-500 text-white shadow-md'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-yellow-400 dark:hover:border-yellow-500'
+                        }`}
+                      >
+                        {type} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {promptsLoading ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
+                <p className="text-gray-500 dark:text-gray-400">Loading prayer prompts...</p>
+              </div>
+            ) : prompts.length === 0 ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  No prayer prompts yet
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400">
+                  {isAdmin 
+                    ? "Add prayer prompts from the Admin Portal to inspire prayer in your community."
+                    : "Check back later for prayer prompts from your church leaders."
+                  }
+                </p>
+              </div>
+            ) : (
+              (selectedPromptTypes.length > 0
+                ? prompts.filter(p => selectedPromptTypes.includes(p.type))
+                : prompts
+              ).map((prompt) => (
+                <PromptCard
+                  key={prompt.id}
+                  prompt={prompt}
+                  isAdmin={isAdmin}
+                  onDelete={isAdmin ? deletePrompt : undefined}
+                  isTypeSelected={selectedPromptTypes.includes(prompt.type)}
+                  onTypeClick={(type) => {
+                    if (selectedPromptTypes.includes(type)) {
+                      setSelectedPromptTypes(selectedPromptTypes.filter(t => t !== type));
+                    } else {
+                      setSelectedPromptTypes([...selectedPromptTypes, type]);
+                    }
+                  }}
+                />
+              ))
+            )}
+            </>
+          ) : filteredPrayers.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
                 {prayers.length === 0 ? "No prayer requests yet" : "No prayers match your filters"}

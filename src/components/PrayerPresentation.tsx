@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Settings, Play, Pause, Timer, Bell, X, ChevronLeft, ChevronRight, Sun, Moon, Monitor } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -18,8 +18,17 @@ interface Prayer {
   }>;
 }
 
+interface PrayerPrompt {
+  id: string;
+  title: string;
+  type: string;
+  description: string;
+  created_at: string;
+}
+
 export const PrayerPresentation: React.FC = () => {
   const [prayers, setPrayers] = useState<Prayer[]>([]);
+  const [prompts, setPrompts] = useState<PrayerPrompt[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [displayDuration, setDisplayDuration] = useState(10); // seconds
@@ -27,9 +36,11 @@ export const PrayerPresentation: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showControls, setShowControls] = useState(true);
+  const [contentType, setContentType] = useState<string>('prayers');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+  const [randomize, setRandomize] = useState(false);
   
   // Prayer Timer states
   const [prayerTimerMinutes, setPrayerTimerMinutes] = useState(10);
@@ -82,11 +93,25 @@ export const PrayerPresentation: React.FC = () => {
 
   // Fetch prayers
   useEffect(() => {
-    fetchPrayers();
-  }, [statusFilter, timeFilter]);
+    const fetchData = async () => {
+      setLoading(true);
+      
+      if (contentType === 'prayers') {
+        await fetchPrayers();
+      } else if (contentType === 'prompts') {
+        await fetchPrompts();
+      } else if (contentType === 'both') {
+        // Fetch both prayers and prompts in parallel
+        await Promise.all([fetchPrayers(), fetchPrompts()]);
+      }
+      
+      setLoading(false);
+    };
+    
+    fetchData();
+  }, [statusFilter, timeFilter, contentType]);
 
   const fetchPrayers = async () => {
-    setLoading(true);
     let query = supabase
       .from('prayers')
       .select(`
@@ -96,13 +121,13 @@ export const PrayerPresentation: React.FC = () => {
       .eq('approval_status', 'approved')
       .neq('status', 'closed');
 
-    // Apply status filter
-    if (statusFilter !== 'all') {
+    // Apply status filter only when viewing prayers alone
+    if (contentType === 'prayers' && statusFilter !== 'all') {
       query = query.eq('status', statusFilter);
     }
 
-    // Apply time filter
-    if (timeFilter !== 'all') {
+    // Apply time filter only when viewing prayers alone
+    if (contentType === 'prayers' && timeFilter !== 'all') {
       const now = new Date();
       let dateThreshold: Date;
       
@@ -132,7 +157,22 @@ export const PrayerPresentation: React.FC = () => {
     } else {
       setPrayers(data || []);
     }
-    setLoading(false);
+  };
+
+  const fetchPrompts = async () => {
+    let query = supabase
+      .from('prayer_prompts')
+      .select('*')
+      .order('type', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching prompts:', error);
+    } else {
+      setPrompts(data || []);
+    }
   };
 
   // Calculate smart display duration based on content length
@@ -163,18 +203,19 @@ export const PrayerPresentation: React.FC = () => {
 
   // Auto-advance timer
   useEffect(() => {
-    if (!isPlaying || prayers.length === 0) return;
+    const items = contentType === 'prayers' ? prayers : prompts;
+    if (!isPlaying || items.length === 0) return;
 
-    const currentDuration = smartMode && prayers[currentIndex] 
+    const currentDuration = smartMode && contentType === 'prayers' && prayers[currentIndex] 
       ? calculateSmartDuration(prayers[currentIndex])
       : displayDuration;
 
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % prayers.length);
+      setCurrentIndex((prev) => (prev + 1) % items.length);
     }, currentDuration * 1000);
 
     return () => clearInterval(timer);
-  }, [isPlaying, displayDuration, smartMode, prayers.length, currentIndex]);
+  }, [isPlaying, displayDuration, smartMode, prayers.length, prompts.length, currentIndex, contentType]);
 
   // Show/hide controls based on mouse position
   useEffect(() => {
@@ -198,16 +239,17 @@ export const PrayerPresentation: React.FC = () => {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (prayers.length === 0) return;
+      const items = contentType === 'prayers' ? prayers : prompts;
+      if (items.length === 0) return;
       
       switch(e.key) {
         case 'ArrowLeft':
           e.preventDefault();
-          setCurrentIndex((prev) => (prev - 1 + prayers.length) % prayers.length);
+          setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
           break;
         case 'ArrowRight':
           e.preventDefault();
-          setCurrentIndex((prev) => (prev + 1) % prayers.length);
+          setCurrentIndex((prev) => (prev + 1) % items.length);
           break;
         case ' ':
           e.preventDefault();
@@ -222,7 +264,7 @@ export const PrayerPresentation: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [prayers.length]);
+  }, [prayers.length, prompts.length, contentType]);
 
   // Prayer Timer
   useEffect(() => {
@@ -295,11 +337,13 @@ export const PrayerPresentation: React.FC = () => {
   };
 
   const goToPrevious = () => {
-    setCurrentIndex((currentIndex - 1 + prayers.length) % prayers.length);
+    const items = contentType === 'prayers' ? prayers : prompts;
+    setCurrentIndex((currentIndex - 1 + items.length) % items.length);
   };
 
   const goToNext = () => {
-    setCurrentIndex((currentIndex + 1) % prayers.length);
+    const items = contentType === 'prayers' ? prayers : prompts;
+    setCurrentIndex((currentIndex + 1) % items.length);
   };
 
   // Get status badge colors matching the main PrayerCard component
@@ -318,22 +362,58 @@ export const PrayerPresentation: React.FC = () => {
     }
   };
 
-  const currentPrayer = prayers[currentIndex];
+  // Shuffle function for randomizing items
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // Get current items based on content type and randomize setting
+  const currentItems = useMemo(() => {
+    let items: (Prayer | PrayerPrompt)[] = [];
+    
+    if (contentType === 'prayers') {
+      items = prayers;
+    } else if (contentType === 'prompts') {
+      items = prompts;
+    } else if (contentType === 'both') {
+      // Combine both prayers and prompts
+      items = [...prayers, ...prompts];
+    }
+    
+    return randomize ? shuffleArray(items) : items;
+  }, [prayers, prompts, contentType, randomize]);
+
+  const currentItem = currentItems[currentIndex];
+  const currentPrayer = currentItem && 'prayer_for' in currentItem ? currentItem as Prayer : null;
+  const currentPrompt = currentItem && 'type' in currentItem && !('prayer_for' in currentItem) ? currentItem as PrayerPrompt : null;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-900 dark:text-white text-3xl">Loading prayers...</div>
+        <div className="text-gray-900 dark:text-white text-3xl">
+          Loading {contentType === 'prayers' ? 'prayers' : contentType === 'prompts' ? 'prompts' : 'prayers and prompts'}...
+        </div>
       </div>
     );
   }
 
-  if (prayers.length === 0) {
+  if (currentItems.length === 0) {
+    const displayText = contentType === 'prayers' 
+      ? 'Prayers' 
+      : contentType === 'prompts' 
+      ? 'Prayer Prompts' 
+      : 'Prayers or Prayer Prompts';
+    
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-gray-900 dark:text-white text-center">
-          <h1 className="text-4xl font-bold mb-4">No Prayers Available</h1>
-          <p className="text-xl">Please add some prayers to display.</p>
+          <h1 className="text-4xl font-bold mb-4">No {displayText} Available</h1>
+          <p className="text-xl">Please add some {displayText.toLowerCase()} to display.</p>
         </div>
       </div>
     );
@@ -409,6 +489,27 @@ export const PrayerPresentation: React.FC = () => {
     </div>
   );
 
+  const renderPromptCard = (prompt: PrayerPrompt) => (
+    <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-h-full overflow-y-auto">
+      {/* Type Badge */}
+      <div className="mb-6">
+        <span className="inline-block px-5 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full text-xl font-semibold border border-yellow-300 dark:border-yellow-700">
+          {prompt.type}
+        </span>
+      </div>
+
+      {/* Title */}
+      <div className="mb-6">
+        <div className="text-5xl font-bold leading-tight text-gray-900 dark:text-white">{prompt.title}</div>
+      </div>
+
+      {/* Description */}
+      <div className="mb-6">
+        <div className="text-3xl leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{prompt.description}</div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white relative">
       {/* Main Prayer Display */}
@@ -418,7 +519,12 @@ export const PrayerPresentation: React.FC = () => {
         {/* Card Container */}
         <div className="max-w-6xl mx-auto w-full h-full">
           <div className="h-full overflow-y-auto flex items-center px-2">
-            {renderPrayerCard(currentPrayer, sortedUpdates)}
+            {currentPrayer 
+              ? renderPrayerCard(currentPrayer, sortedUpdates)
+              : currentPrompt
+              ? renderPromptCard(currentPrompt)
+              : null
+            }
           </div>
         </div>
       </div>
@@ -632,12 +738,15 @@ export const PrayerPresentation: React.FC = () => {
                 </div>
               )}
 
-              {/* Status Filter */}
+              {/* Content Type Filter */}
               <div>
-                <label className="block text-xl mb-3 text-gray-900 dark:text-white">Prayer Status</label>
+                <label className="block text-xl mb-3 text-gray-900 dark:text-white">Content Type</label>
                 <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  value={contentType}
+                  onChange={(e) => {
+                    setContentType(e.target.value);
+                    setCurrentIndex(0); // Reset to first item when switching types
+                  }}
                   className="w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
                   style={{
                     backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
@@ -647,25 +756,71 @@ export const PrayerPresentation: React.FC = () => {
                     paddingRight: '2.5rem'
                   }}
                 >
-                  <option value="all">All Statuses</option>
-                  <option value="current">Current</option>
-                  <option value="ongoing">Ongoing</option>
-                  <option value="answered">Answered</option>
+                  <option value="prayers">Prayers</option>
+                  <option value="prompts">Prayer Prompts</option>
+                  <option value="both">Both</option>
                 </select>
               </div>
 
-              {/* Time Filter */}
+              {/* Randomize Toggle */}
               <div>
-                <label className="block text-xl mb-3 text-gray-900 dark:text-white">Time Period</label>
-                <select
-                  value={timeFilter}
-                  onChange={(e) => setTimeFilter(e.target.value)}
-                  className="w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                    backgroundPosition: 'right 0.5rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.5em 1.5em',
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-xl text-gray-900 dark:text-white">Randomize Order</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={randomize}
+                      onChange={(e) => {
+                        setRandomize(e.target.checked);
+                        setCurrentIndex(0); // Reset to first item when toggling randomize
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-14 h-8 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
+                  </div>
+                </label>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  Shuffle the display order randomly
+                </p>
+              </div>
+
+              {/* Status Filter - Only show for prayers */}
+              {contentType === 'prayers' && (
+                <div>
+                  <label className="block text-xl mb-3 text-gray-900 dark:text-white">Prayer Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                      backgroundPosition: 'right 0.5rem center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '1.5em 1.5em',
+                      paddingRight: '2.5rem'
+                    }}
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="current">Current</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="answered">Answered</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Time Filter - Only show for prayers */}
+              {contentType === 'prayers' && (
+                <div>
+                  <label className="block text-xl mb-3 text-gray-900 dark:text-white">Time Period</label>
+                  <select
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value)}
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23666' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                      backgroundPosition: 'right 0.5rem center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '1.5em 1.5em',
                     paddingRight: '2.5rem'
                   }}
                 >
@@ -675,6 +830,7 @@ export const PrayerPresentation: React.FC = () => {
                   <option value="year">Last Year</option>
                 </select>
               </div>
+              )}
 
               {/* Prayer Timer */}
               <div className="border-t border-gray-300 dark:border-gray-600 pt-6 mt-6">

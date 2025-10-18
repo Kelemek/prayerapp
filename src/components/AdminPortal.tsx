@@ -11,6 +11,8 @@ import { EmailSettings } from './EmailSettings';
 import { EmailSubscribers } from './EmailSubscribers';
 import { PrayerSearch } from './PrayerSearch';
 import { BackupRestore } from './BackupRestore';
+import { PromptManager } from './PromptManager'; // Prayer prompts management
+import { PrayerTypesManager } from './PrayerTypesManager';
 import { useAdminData } from '../hooks/useAdminData';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
@@ -1120,6 +1122,12 @@ export const AdminPortal: React.FC = () => {
 
               <EmailSubscribers />
               <EmailSettings />
+              <PromptManager onSuccess={() => {
+                // Success message is shown within the component
+              }} />
+              <PrayerTypesManager onSuccess={() => {
+                // Success message is shown within the component
+              }} />
               <PasswordChange onPasswordChange={changePassword} />
               <PrayerSearch />
 

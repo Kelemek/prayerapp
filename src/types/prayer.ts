@@ -86,6 +86,38 @@ export const PrayerStatus = {
 
 export type PrayerStatus = typeof PrayerStatus[keyof typeof PrayerStatus];
 
+export const PrayerType = {
+  HEALING: 'Healing',
+  GUIDANCE: 'Guidance',
+  THANKSGIVING: 'Thanksgiving',
+  PROTECTION: 'Protection',
+  FAMILY: 'Family',
+  FINANCES: 'Finances',
+  SALVATION: 'Salvation',
+  MISSIONS: 'Missions',
+  OTHER: 'Other'
+} as const;
+
+export type PrayerType = typeof PrayerType[keyof typeof PrayerType];
+
+export interface PrayerTypeRecord {
+  id: string;
+  name: string;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PrayerPrompt {
+  id: string;
+  title: string;
+  type: PrayerType;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PrayerFilters {
   status?: PrayerStatus;
   searchTerm?: string;
