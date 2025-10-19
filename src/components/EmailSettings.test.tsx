@@ -263,4 +263,141 @@ describe('EmailSettings Component', () => {
       expect(screen.getByText(/All Users/i)).toBeDefined();
     });
   });
+
+  describe('Individual Section Save Buttons', () => {
+    it('has separate save button for email distribution settings', async () => {
+      const mockSelect = vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              notification_emails: [],
+              email_distribution: 'admin_only',
+              days_before_ongoing: 30,
+              reminder_interval_days: 7,
+            },
+            error: null,
+          }),
+        })),
+      }));
+
+      (supabase.from as typeof supabase.from).mockReturnValue({
+        select: mockSelect,
+      });
+
+      render(<EmailSettings />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /save distribution settings/i })).toBeDefined();
+      });
+    });
+
+    it('has separate save button for auto-transition settings', async () => {
+      const mockSelect = vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              notification_emails: [],
+              email_distribution: 'admin_only',
+              days_before_ongoing: 30,
+              reminder_interval_days: 7,
+            },
+            error: null,
+          }),
+        })),
+      }));
+
+      (supabase.from as typeof supabase.from).mockReturnValue({
+        select: mockSelect,
+      });
+
+      render(<EmailSettings />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /save transition settings/i })).toBeDefined();
+      });
+    });
+
+    it('has separate save button for reminder settings', async () => {
+      const mockSelect = vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              notification_emails: [],
+              email_distribution: 'admin_only',
+              days_before_ongoing: 30,
+              reminder_interval_days: 7,
+            },
+            error: null,
+          }),
+        })),
+      }));
+
+      (supabase.from as typeof supabase.from).mockReturnValue({
+        select: mockSelect,
+      });
+
+      render(<EmailSettings />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /save reminder settings/i })).toBeDefined();
+      });
+    });
+
+    it('has separate save button for email list', async () => {
+      const mockSelect = vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              notification_emails: ['admin@example.com'],
+              email_distribution: 'admin_only',
+              days_before_ongoing: 30,
+              reminder_interval_days: 7,
+            },
+            error: null,
+          }),
+        })),
+      }));
+
+      (supabase.from as typeof supabase.from).mockReturnValue({
+        select: mockSelect,
+      });
+
+      render(<EmailSettings />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /save email list/i })).toBeDefined();
+      });
+    });
+  });
+
+  describe('Section Headers', () => {
+    it('displays all four section headers', async () => {
+      const mockSelect = vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              notification_emails: [],
+              email_distribution: 'admin_only',
+              days_before_ongoing: 30,
+              reminder_interval_days: 7,
+            },
+            error: null,
+          }),
+        })),
+      }));
+
+      (supabase.from as typeof supabase.from).mockReturnValue({
+        select: mockSelect,
+      });
+
+      render(<EmailSettings />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Email Distribution/i)).toBeDefined();
+        expect(screen.getByText(/Auto-Transition to Ongoing/i)).toBeDefined();
+        expect(screen.getByText(/Prayer Update Reminders/i)).toBeDefined();
+        expect(screen.getByText(/Admin Email List/i)).toBeDefined();
+      });
+    });
+  });
 });
