@@ -4,6 +4,7 @@ import { DeletionStyleCard } from './DeletionStyleCard';
 import { PendingPrayerCard } from './PendingPrayerCard';
 import { PendingUpdateCard } from './PendingUpdateCard';
 import { PendingDeletionCard } from './PendingDeletionCard';
+import { PendingUpdateDeletionCard } from './PendingUpdateDeletionCard';
 import { PendingStatusChangeCard } from './PendingStatusChangeCard';
 import { PendingPreferenceChangeCard } from './PendingPreferenceChangeCard';
 import { PasswordChange } from './PasswordChange';
@@ -13,7 +14,7 @@ import { PrayerSearch } from './PrayerSearch';
 import BackupStatus from './BackupStatus';
 import { PromptManager } from './PromptManager'; // Prayer prompts management
 import { PrayerTypesManager } from './PrayerTypesManager';
-import { useAdminData } from '../hooks/useAdminData';
+import { useAdminData, type PendingPreferenceChange } from '../hooks/useAdminData';
 import { useAdminAuth } from '../hooks/useAdminAuthHook';
 import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
 import { supabase } from '../lib/supabase';
@@ -36,6 +37,7 @@ export const AdminPortal: React.FC = () => {
   deniedStatusChangeRequests,
     deniedDeletionRequests,
     deniedUpdateDeletionRequests,
+    deniedPreferenceChanges,
     approvedPrayersCount,
     approvedUpdatesCount,
     deniedPrayersCount,
@@ -72,18 +74,8 @@ export const AdminPortal: React.FC = () => {
     loading: true
   });
 
-  // Pending preference changes
-  interface PendingPreferenceChange {
-    id: string;
-    name: string;
-    email: string;
-    receive_new_prayer_notifications: boolean;
-    created_at: string;
-    denial_reason?: string;
-    reviewed_at?: string;
-  }
+  // Pending preference changes (local state only for pending, denied comes from useAdminData)
   const [pendingPreferenceChanges, setPendingPreferenceChanges] = useState<PendingPreferenceChange[]>([]);
-  const [deniedPreferenceChanges, setDeniedPreferenceChanges] = useState<PendingPreferenceChange[]>([]);
   const [loadingPreferenceChanges, setLoadingPreferenceChanges] = useState(true);
 
   // Calculate total denied count (all 6 types)
@@ -178,23 +170,7 @@ export const AdminPortal: React.FC = () => {
       }
     };
 
-    const fetchDeniedPreferenceChanges = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('pending_preference_changes')
-          .select('*')
-          .eq('approval_status', 'denied')
-          .order('reviewed_at', { ascending: false });
-
-        if (error) throw error;
-        setDeniedPreferenceChanges(data || []);
-      } catch (error) {
-        console.error('Error fetching denied preference changes:', error);
-      }
-    };
-
     fetchPendingPreferenceChanges();
-    fetchDeniedPreferenceChanges();
   }, []);
 
   // Auto-switch to next tab with pending items when current tab becomes empty
@@ -371,16 +347,7 @@ export const AdminPortal: React.FC = () => {
       // Remove from pending list
       setPendingPreferenceChanges(prev => prev.filter(p => p.id !== id));
       
-      // Refresh denied preference changes
-      const { data: deniedData } = await supabase
-        .from('pending_preference_changes')
-        .select('*')
-        .eq('approval_status', 'denied')
-        .order('reviewed_at', { ascending: false });
-      
-      if (deniedData) {
-        setDeniedPreferenceChanges(deniedData);
-      }
+      // Denied preferences will automatically refresh via useAdminData hook
     } catch (error) {
       console.error('Error denying preference change:', error);
       alert('Failed to deny preference change');
@@ -703,61 +670,14 @@ export const AdminPortal: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {pendingUpdateDeletionRequests.map((request) => {
-                      const metaLeft = (
-                        <div>
-                          <div className="flex items-center gap-1">
-                            <User size={14} />
-                            <span>Requested by: {request.requested_by}</span>
-                          </div>
-                          {request.requested_email && (
-                            <div className="flex items-center gap-1 mt-2">
-                              <MessageSquare size={14} />
-                              <span className="break-words">Email: {request.requested_email}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-
-                      const metaRight = (
-                        <div className="flex items-center gap-1">
-                          <Calendar size={14} />
-                          <span>{new Date(request.created_at).toLocaleString()}</span>
-                        </div>
-                      );
-
-                      const contentNode = (
-                        <>
-                          <p className="font-medium">{request.prayer_updates?.prayers?.title ?? 'Unknown Prayer'}</p>
-                          <p className="mt-3">{request.prayer_updates?.content}</p>
-                          {request.prayer_updates?.author && (
-                            <p className="text-sm mt-2">By: {request.prayer_updates?.author}{request.prayer_updates?.author_email ? ` — ${request.prayer_updates?.author_email}` : ''}</p>
-                          )}
-                        </>
-                      );
-
-                      const actions = (
-                        <div className="flex flex-col items-end">
-                          <div className="flex gap-2">
-                            <button onClick={() => approveUpdateDeletionRequest(request.id)} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"><CheckCircle size={16} />Approve & Delete</button>
-                            <button onClick={() => { const reason = prompt('Reason for denial (required):'); if (reason && reason.trim()) denyUpdateDeletionRequest(request.id, reason); }} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"><X size={16} />Deny</button>
-                          </div>
-                        </div>
-                      );
-
-                      return (
-                        <DeletionStyleCard
-                          key={request.id}
-                          title="Update Deletion Request"
-                          subtitle="Update for:"
-                          content={contentNode}
-                          metaLeft={metaLeft}
-                          metaRight={metaRight}
-                          reason={request.reason}
-                          actions={actions}
-                        />
-                      );
-                    })}
+                    {pendingUpdateDeletionRequests.map((request) => (
+                      <PendingUpdateDeletionCard
+                        key={request.id}
+                        deletionRequest={request}
+                        onApprove={(id: string) => approveUpdateDeletionRequest(id)}
+                        onDeny={(id: string, reason: string) => denyUpdateDeletionRequest(id, reason)}
+                      />
+                    ))}
                   </div>
                 )}
               </div>

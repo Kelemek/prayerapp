@@ -3,6 +3,16 @@ import { supabase, handleSupabaseError } from '../lib/supabase';
 import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest, UpdateDeletionRequest } from '../types/prayer';
 import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification, sendApprovedStatusChangeNotification, sendDeniedStatusChangeNotification } from '../lib/emailNotifications';
 
+export interface PendingPreferenceChange {
+  id: string;
+  name: string;
+  email: string;
+  receive_new_prayer_notifications: boolean;
+  created_at: string;
+  denial_reason?: string;
+  reviewed_at?: string;
+}
+
 interface AdminData {
   pendingUpdateDeletionRequests: (UpdateDeletionRequest & {
     prayer_updates?: {
@@ -30,6 +40,7 @@ interface AdminData {
   pendingStatusChangeRequests: (StatusChangeRequest & { prayer_title?: string })[];
   deniedStatusChangeRequests: (StatusChangeRequest & { prayer_title?: string })[];
   deniedDeletionRequests: (DeletionRequest & { prayer_title?: string })[];
+  deniedPreferenceChanges: PendingPreferenceChange[];
   approvedPrayers: PrayerRequest[];
   approvedUpdates: (PrayerUpdate & { prayer_title?: string })[];
   deniedPrayers: PrayerRequest[];
@@ -56,6 +67,7 @@ export const useAdminData = () => {
     deniedUpdates: [],
   deniedStatusChangeRequests: [],
     deniedDeletionRequests: [],
+    deniedPreferenceChanges: [],
     approvedPrayersCount: 0,
     approvedUpdatesCount: 0,
     deniedPrayersCount: 0,
@@ -215,6 +227,14 @@ export const useAdminData = () => {
         .order('reviewed_at', { ascending: false });
       if (deniedUpdateDeletionError && deniedUpdateDeletionError.code !== '42P01') throw deniedUpdateDeletionError;
 
+      // Fetch denied preference changes
+      const { data: deniedPreferenceChanges, error: deniedPreferenceChangesError } = await supabase
+        .from('pending_preference_changes')
+        .select('*')
+        .eq('approval_status', 'denied')
+        .order('reviewed_at', { ascending: false });
+      if (deniedPreferenceChangesError) throw deniedPreferenceChangesError;
+
       // Transform joins
       const transformedUpdates = (pendingUpdates || []).map((update: Record<string, unknown>) => ({
         ...update,
@@ -262,6 +282,7 @@ export const useAdminData = () => {
         deniedUpdates: transformedDeniedUpdates,
   deniedStatusChangeRequests: transformedDeniedStatusChangeRequests,
         deniedDeletionRequests: transformedDeniedDeletionRequests,
+        deniedPreferenceChanges: deniedPreferenceChanges || [],
         approvedPrayersCount: approvedPrayersCount || 0,
         approvedUpdatesCount: approvedUpdatesCount || 0,
         deniedPrayersCount: deniedPrayersCount || 0,
