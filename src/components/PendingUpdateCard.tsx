@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Calendar, User, CheckCircle, XCircle, MessageCircle, Edit2, Save, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, User, CheckCircle, XCircle, MessageCircle, Edit2, Save, X, Check } from 'lucide-react';
 import type { PrayerUpdate } from '../types/prayer';
+import { lookupPersonByEmail, formatPersonName, type PlanningCenterPerson } from '../lib/planningcenter';
 
 interface PendingUpdateCardProps {
   update: PrayerUpdate & { prayer_title?: string };
@@ -21,6 +22,35 @@ export const PendingUpdateCard: React.FC<PendingUpdateCardProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(update.content);
   const [editAuthor, setEditAuthor] = useState(update.author);
+  const [pcPerson, setPcPerson] = useState<PlanningCenterPerson | null>(null);
+  const [pcLoading, setPcLoading] = useState(false);
+  const [pcError, setPcError] = useState(false);
+
+  // Lookup email in Planning Center when component mounts
+  useEffect(() => {
+    const lookupEmail = async () => {
+      if (!update.author_email) return;
+
+      setPcLoading(true);
+      setPcError(false);
+      
+      try {
+        const result = await lookupPersonByEmail(update.author_email);
+        if (result.people && result.people.length > 0) {
+          setPcPerson(result.people[0]);
+        } else {
+          setPcPerson(null);
+        }
+      } catch (error) {
+        console.error('Error looking up Planning Center person:', error);
+        setPcError(true);
+      } finally {
+        setPcLoading(false);
+      }
+    };
+
+    lookupEmail();
+  }, [update.author_email]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -93,9 +123,33 @@ export const PendingUpdateCard: React.FC<PendingUpdateCardProps> = ({
                 <span>By {update.author}</span>
               </div>
               {update.author_email && (
-                <div className="flex items-center gap-1">
-                  <MessageCircle size={14} />
-                  <span className="break-words">Email: {update.author_email}</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <MessageCircle size={14} />
+                    <span className="break-words">Email: {update.author_email}</span>
+                  </div>
+                  {pcLoading && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                      Checking Planning Center...
+                    </span>
+                  )}
+                  {!pcLoading && pcPerson && (
+                    <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
+                      <Check size={12} />
+                      <span>Planning Center: {formatPersonName(pcPerson)}</span>
+                    </div>
+                  )}
+                  {!pcLoading && !pcPerson && !pcError && update.author_email && (
+                    <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-medium">
+                      <XCircle size={12} />
+                      <span>Not in Planning Center</span>
+                    </div>
+                  )}
+                  {pcError && (
+                    <span className="text-xs text-red-500 dark:text-red-400 italic">
+                      (PC lookup failed)
+                    </span>
+                  )}
                 </div>
               )}
               <div className="flex items-center gap-1">

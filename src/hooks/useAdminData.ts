@@ -14,11 +14,22 @@ interface AdminData {
       };
     };
   })[];
+  deniedUpdateDeletionRequests: (UpdateDeletionRequest & {
+    prayer_updates?: {
+      content?: string;
+      author?: string;
+      author_email?: string;
+      prayers?: {
+        title?: string;
+      };
+    };
+  })[];
   pendingPrayers: PrayerRequest[];
   pendingUpdates: (PrayerUpdate & { prayer_title?: string })[];
   pendingDeletionRequests: (DeletionRequest & { prayer_title?: string })[];
   pendingStatusChangeRequests: (StatusChangeRequest & { prayer_title?: string })[];
   deniedStatusChangeRequests: (StatusChangeRequest & { prayer_title?: string })[];
+  deniedDeletionRequests: (DeletionRequest & { prayer_title?: string })[];
   approvedPrayers: PrayerRequest[];
   approvedUpdates: (PrayerUpdate & { prayer_title?: string })[];
   deniedPrayers: PrayerRequest[];
@@ -38,11 +49,13 @@ export const useAdminData = () => {
     pendingDeletionRequests: [],
     pendingStatusChangeRequests: [],
     pendingUpdateDeletionRequests: [],
+    deniedUpdateDeletionRequests: [],
     approvedPrayers: [],
     approvedUpdates: [],
     deniedPrayers: [],
     deniedUpdates: [],
   deniedStatusChangeRequests: [],
+    deniedDeletionRequests: [],
     approvedPrayersCount: 0,
     approvedUpdatesCount: 0,
     deniedPrayersCount: 0,
@@ -177,6 +190,31 @@ export const useAdminData = () => {
         .order('reviewed_at', { ascending: false });
       if (deniedStatusChangeRequestsError && deniedStatusChangeRequestsError.code !== '42P01') throw deniedStatusChangeRequestsError;
 
+      // Fetch denied deletion requests with prayer titles
+      const { data: deniedDeletionRequests, error: deniedDeletionRequestsError } = await supabase
+        .from('deletion_requests')
+        .select(`
+          *,
+          prayers!inner(title)
+        `)
+        .eq('approval_status', 'denied')
+        .order('reviewed_at', { ascending: false });
+      if (deniedDeletionRequestsError) throw deniedDeletionRequestsError;
+
+      // Fetch denied update deletion requests with update and prayer info
+      const { data: deniedUpdateDeletionRequests, error: deniedUpdateDeletionError } = await supabase
+        .from('update_deletion_requests')
+        .select(`
+          *,
+          prayer_updates (
+            *,
+            prayers (prayer_for, title)
+          )
+        `)
+        .eq('approval_status', 'denied')
+        .order('reviewed_at', { ascending: false });
+      if (deniedUpdateDeletionError && deniedUpdateDeletionError.code !== '42P01') throw deniedUpdateDeletionError;
+
       // Transform joins
       const transformedUpdates = (pendingUpdates || []).map((update: Record<string, unknown>) => ({
         ...update,
@@ -208,6 +246,11 @@ export const useAdminData = () => {
         prayer_title: (req.prayers as Record<string, unknown> | undefined)?.title as string | undefined
       })) as (StatusChangeRequest & { prayer_title?: string })[];
 
+      const transformedDeniedDeletionRequests = (deniedDeletionRequests || []).map((req: Record<string, unknown>) => ({
+        ...req,
+        prayer_title: (req.prayers as Record<string, unknown> | undefined)?.title as string | undefined
+      })) as (DeletionRequest & { prayer_title?: string })[];
+
       setData({
         pendingPrayers: pendingPrayers || [],
         pendingUpdates: transformedUpdates,
@@ -218,13 +261,15 @@ export const useAdminData = () => {
         deniedPrayers: deniedPrayers || [],
         deniedUpdates: transformedDeniedUpdates,
   deniedStatusChangeRequests: transformedDeniedStatusChangeRequests,
+        deniedDeletionRequests: transformedDeniedDeletionRequests,
         approvedPrayersCount: approvedPrayersCount || 0,
         approvedUpdatesCount: approvedUpdatesCount || 0,
         deniedPrayersCount: deniedPrayersCount || 0,
         deniedUpdatesCount: deniedUpdatesCount || 0,
         loading: false,
         error: null,
-        pendingUpdateDeletionRequests: pendingUpdateDeletionRequests || []
+        pendingUpdateDeletionRequests: pendingUpdateDeletionRequests || [],
+        deniedUpdateDeletionRequests: deniedUpdateDeletionRequests || []
       });
     } catch (error) {
       console.error('Error fetching admin data:', error);

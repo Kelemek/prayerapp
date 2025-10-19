@@ -616,9 +616,11 @@ function AdminWrapper() {
       } else if (window.location.hash === '#mobile-presentation') {
         setCurrentView('mobile-presentation');
       } else if (window.location.hash === '#admin') {
-        if (isAdmin) {
+        // If already logged in (session valid), go straight to portal
+        // Otherwise, show login page
+        if (isAdmin && !loading) {
           setCurrentView('admin-portal');
-        } else {
+        } else if (!loading) {
           setCurrentView('admin-login');
         }
       } else {
@@ -626,8 +628,10 @@ function AdminWrapper() {
       }
     };
 
-    // Check initial hash
-    handleHashChange();
+    // Only handle hash changes after loading is complete
+    if (!loading) {
+      handleHashChange();
+    }
     
     // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
@@ -635,7 +639,7 @@ function AdminWrapper() {
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
-  }, [isAdmin]);
+  }, [isAdmin, loading]);
 
   // Auto-redirect to admin portal after login
   useEffect(() => {

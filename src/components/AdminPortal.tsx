@@ -34,6 +34,8 @@ export const AdminPortal: React.FC = () => {
     deniedPrayers,
     deniedUpdates,
   deniedStatusChangeRequests,
+    deniedDeletionRequests,
+    deniedUpdateDeletionRequests,
     approvedPrayersCount,
     approvedUpdatesCount,
     deniedPrayersCount,
@@ -77,9 +79,20 @@ export const AdminPortal: React.FC = () => {
     email: string;
     receive_new_prayer_notifications: boolean;
     created_at: string;
+    denial_reason?: string;
+    reviewed_at?: string;
   }
   const [pendingPreferenceChanges, setPendingPreferenceChanges] = useState<PendingPreferenceChange[]>([]);
+  const [deniedPreferenceChanges, setDeniedPreferenceChanges] = useState<PendingPreferenceChange[]>([]);
   const [loadingPreferenceChanges, setLoadingPreferenceChanges] = useState(true);
+
+  // Calculate total denied count (all 6 types)
+  const deniedCount = (deniedPrayers?.length || 0) + 
+                      (deniedUpdates?.length || 0) + 
+                      (deniedStatusChangeRequests?.length || 0) + 
+                      (deniedDeletionRequests?.length || 0) + 
+                      (deniedUpdateDeletionRequests?.length || 0) + 
+                      (deniedPreferenceChanges?.length || 0);
 
   // Fetch analytics stats
   useEffect(() => {
@@ -165,7 +178,23 @@ export const AdminPortal: React.FC = () => {
       }
     };
 
+    const fetchDeniedPreferenceChanges = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('pending_preference_changes')
+          .select('*')
+          .eq('approval_status', 'denied')
+          .order('reviewed_at', { ascending: false });
+
+        if (error) throw error;
+        setDeniedPreferenceChanges(data || []);
+      } catch (error) {
+        console.error('Error fetching denied preference changes:', error);
+      }
+    };
+
     fetchPendingPreferenceChanges();
+    fetchDeniedPreferenceChanges();
   }, []);
 
   // Auto-switch to next tab with pending items when current tab becomes empty
@@ -303,8 +332,6 @@ export const AdminPortal: React.FC = () => {
       
       // Remove from pending list
       setPendingPreferenceChanges(prev => prev.filter(p => p.id !== id));
-      
-      alert(`✅ Preference approved for ${change.email}. Check the Email Settings tab to see the subscriber.`);
     } catch (error) {
       console.error('❌ Error approving preference change:', error);
       alert('Failed to approve preference change: ' + (error as Error).message);
@@ -343,6 +370,17 @@ export const AdminPortal: React.FC = () => {
 
       // Remove from pending list
       setPendingPreferenceChanges(prev => prev.filter(p => p.id !== id));
+      
+      // Refresh denied preference changes
+      const { data: deniedData } = await supabase
+        .from('pending_preference_changes')
+        .select('*')
+        .eq('approval_status', 'denied')
+        .order('reviewed_at', { ascending: false });
+      
+      if (deniedData) {
+        setDeniedPreferenceChanges(deniedData);
+      }
     } catch (error) {
       console.error('Error denying preference change:', error);
       alert('Failed to deny preference change');
@@ -529,7 +567,7 @@ export const AdminPortal: React.FC = () => {
               <XCircle className="text-red-500" size={20} />
               <div className="text-center">
                 <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                  {deniedPrayersCount + deniedUpdatesCount + (deniedStatusChangeRequests?.length || 0)}
+                  {deniedCount}
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-300">Denied</div>
               </div>
@@ -554,13 +592,14 @@ export const AdminPortal: React.FC = () => {
           </button>
         </div>
 
-        {/* Alerts */}
-        {(pendingPrayers.length > 0 || pendingUpdates.length > 0 || pendingDeletionRequests.length > 0 || pendingUpdateDeletionRequests.length > 0 || pendingStatusChangeRequests.length > 0) && (
+        {/* Alerts - Only show on pending tabs */}
+        {(activeTab === 'prayers' || activeTab === 'updates' || activeTab === 'deletions' || activeTab === 'status-changes' || activeTab === 'preferences') && 
+         (pendingPrayers.length > 0 || pendingUpdates.length > 0 || pendingDeletionRequests.length > 0 || pendingUpdateDeletionRequests.length > 0 || pendingStatusChangeRequests.length > 0 || pendingPreferenceChanges.length > 0) && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
             <div className="flex items-center gap-2">
               <AlertTriangle className="text-yellow-600 dark:text-yellow-400" size={20} />
               <p className="text-yellow-800 dark:text-yellow-200">
-                You have {pendingPrayers.length + pendingUpdates.length + pendingDeletionRequests.length + pendingUpdateDeletionRequests.length + pendingStatusChangeRequests.length} items pending approval.
+                You have {pendingPrayers.length + pendingUpdates.length + pendingDeletionRequests.length + pendingUpdateDeletionRequests.length + pendingStatusChangeRequests.length + pendingPreferenceChanges.length} items pending approval.
               </p>
             </div>
           </div>
@@ -907,17 +946,17 @@ export const AdminPortal: React.FC = () => {
         {activeTab === 'denied' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
-              Denied Items ({deniedPrayers.length + deniedUpdates.length + (deniedStatusChangeRequests?.length || 0)})
+              Denied Items ({deniedCount})
             </h2>
             
-            {deniedPrayers.length === 0 && deniedUpdates.length === 0 && (!deniedStatusChangeRequests || deniedStatusChangeRequests.length === 0) ? (
+            {deniedCount === 0 ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
                 <XCircle className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
                   No denied items yet
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400">
-                  Denied prayers and updates will appear here.
+                  Denied prayers, updates, status changes, deletions, and preference changes will appear here.
                 </p>
               </div>
             ) : (
@@ -1019,6 +1058,122 @@ export const AdminPortal: React.FC = () => {
                                 <p>Requested by: {req.requested_by}</p>
                                 {req.denial_reason && (
                                   <p className="text-red-600 dark:text-red-400 mt-2">Denial reason: {req.denial_reason}</p>
+                                )}
+                              </div>
+                            </div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                              Denied
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Denied Deletion Requests */}
+                {deniedDeletionRequests && deniedDeletionRequests.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">
+                      Denied Deletion Requests ({deniedDeletionRequests.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {deniedDeletionRequests.map((req) => (
+                        <div key={req.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <Trash2 size={14} />
+                                <span>Deletion request for: {req.prayer_title}</span>
+                              </div>
+                              {req.reason && (
+                                <p className="text-gray-700 dark:text-gray-300 mb-2">
+                                  Requested reason: {req.reason}
+                                </p>
+                              )}
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                <p>Requested by: {req.requested_by}</p>
+                                {req.denial_reason && (
+                                  <p className="text-red-600 dark:text-red-400 mt-2">Denial reason: {req.denial_reason}</p>
+                                )}
+                              </div>
+                            </div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                              Denied
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Denied Update Deletion Requests */}
+                {deniedUpdateDeletionRequests && deniedUpdateDeletionRequests.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">
+                      Denied Update Deletion Requests ({deniedUpdateDeletionRequests.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {deniedUpdateDeletionRequests.map((req) => (
+                        <div key={req.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <Trash2 size={14} />
+                                <span>Update deletion request for: {req.prayer_updates?.prayers?.title || 'Unknown Prayer'}</span>
+                              </div>
+                              {req.prayer_updates && (
+                                <p className="text-gray-700 dark:text-gray-300 mb-2">
+                                  Update content: {req.prayer_updates.content}
+                                </p>
+                              )}
+                              {req.reason && (
+                                <p className="text-gray-700 dark:text-gray-300 mb-2">
+                                  Requested reason: {req.reason}
+                                </p>
+                              )}
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                <p>Requested by: {req.requested_by}</p>
+                                {req.denial_reason && (
+                                  <p className="text-red-600 dark:text-red-400 mt-2">Denial reason: {req.denial_reason}</p>
+                                )}
+                              </div>
+                            </div>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                              Denied
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Denied Preference Changes */}
+                {deniedPreferenceChanges && deniedPreferenceChanges.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">
+                      Denied Preference Changes ({deniedPreferenceChanges.length})
+                    </h3>
+                    <div className="space-y-4">
+                      {deniedPreferenceChanges.map((change) => (
+                        <div key={change.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <User size={14} />
+                                <span>{change.name}</span>
+                              </div>
+                              <p className="text-gray-700 dark:text-gray-300 mb-2">
+                                Email: {change.email}
+                              </p>
+                              <p className="text-gray-700 dark:text-gray-300 mb-2">
+                                Requested preference: {change.receive_new_prayer_notifications ? 'Opt-in to notifications' : 'Opt-out of notifications'}
+                              </p>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {change.denial_reason && (
+                                  <p className="text-red-600 dark:text-red-400 mt-2">Denial reason: {change.denial_reason}</p>
                                 )}
                               </div>
                             </div>

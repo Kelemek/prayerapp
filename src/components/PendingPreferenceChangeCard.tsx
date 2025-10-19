@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { CheckCircle, XCircle, Mail, User, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, XCircle, Mail, User, Clock, Check } from 'lucide-react';
+import { lookupPersonByEmail, formatPersonName, type PlanningCenterPerson } from '../lib/planningcenter';
 
 interface PendingPreferenceChange {
   id: string;
@@ -23,6 +24,35 @@ export const PendingPreferenceChangeCard: React.FC<PendingPreferenceChangeCardPr
   const [showDenyForm, setShowDenyForm] = useState(false);
   const [denialReason, setDenialReason] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [pcPerson, setPcPerson] = useState<PlanningCenterPerson | null>(null);
+  const [pcLoading, setPcLoading] = useState(false);
+  const [pcError, setPcError] = useState(false);
+
+  // Lookup email in Planning Center when component mounts
+  useEffect(() => {
+    const lookupEmail = async () => {
+      if (!change.email) return;
+
+      setPcLoading(true);
+      setPcError(false);
+      
+      try {
+        const result = await lookupPersonByEmail(change.email);
+        if (result.people && result.people.length > 0) {
+          setPcPerson(result.people[0]);
+        } else {
+          setPcPerson(null);
+        }
+      } catch (error) {
+        console.error('Error looking up Planning Center person:', error);
+        setPcError(true);
+      } finally {
+        setPcLoading(false);
+      }
+    };
+
+    lookupEmail();
+  }, [change.email]);
 
   const handleApprove = async () => {
     setProcessing(true);
@@ -68,6 +98,28 @@ export const PendingPreferenceChangeCard: React.FC<PendingPreferenceChangeCardPr
               <div className="flex items-center gap-1">
                 <Mail size={14} />
                 <span className="break-words">{change.email}</span>
+                {pcLoading && (
+                  <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
+                    Checking Planning Center...
+                  </span>
+                )}
+                {!pcLoading && pcPerson && (
+                  <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                    <Check size={12} />
+                    Planning Center: {formatPersonName(pcPerson)}
+                  </span>
+                )}
+                {!pcLoading && !pcPerson && !pcError && (
+                  <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">
+                    <XCircle size={12} />
+                    Not in Planning Center
+                  </span>
+                )}
+                {!pcLoading && pcError && (
+                  <span className="ml-2 text-xs text-red-500 dark:text-red-400">
+                    Error checking PC
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1">
                 <Clock size={14} />

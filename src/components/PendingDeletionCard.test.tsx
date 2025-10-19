@@ -205,7 +205,7 @@ describe('PendingDeletionCard', () => {
       const denyButton = screen.getByText('Deny');
       fireEvent.click(denyButton);
 
-      expect(screen.getByText('Reason for denial:')).toBeDefined();
+      expect(screen.getByText('Reason for denial (required):')).toBeDefined();
       expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined();
     });
 
@@ -222,11 +222,11 @@ describe('PendingDeletionCard', () => {
       
       // Show form
       fireEvent.click(denyButton);
-      expect(screen.getByText('Reason for denial:')).toBeDefined();
+      expect(screen.getByText('Reason for denial (required):')).toBeDefined();
       
       // Hide form
       fireEvent.click(denyButton);
-      expect(screen.queryByText('Reason for denial:')).toBeNull();
+      expect(screen.queryByText('Reason for denial (required):')).toBeNull();
     });
 
     it('can input denial reason', () => {
@@ -329,7 +329,7 @@ describe('PendingDeletionCard', () => {
       const confirmButton = screen.getByText('Confirm Denial');
       fireEvent.click(confirmButton);
 
-      expect(screen.queryByText('Reason for denial:')).toBeNull();
+      expect(screen.queryByText('Reason for denial (required):')).toBeNull();
     });
 
     it('can cancel denial form', () => {
@@ -350,7 +350,7 @@ describe('PendingDeletionCard', () => {
       const cancelButton = screen.getByText('Cancel');
       fireEvent.click(cancelButton);
 
-      expect(screen.queryByText('Reason for denial:')).toBeNull();
+      expect(screen.queryByText('Reason for denial (required):')).toBeNull();
       expect(mockOnDeny).not.toHaveBeenCalled();
     });
 

@@ -11,6 +11,10 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [lastActivity, setLastActivity] = useState(Date.now());
+  
+  // Inactivity timeout: 30 minutes
+  const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
 
   // Check if the current user is an admin
   const checkAdminStatus = (currentUser: User | null) => {
@@ -60,6 +64,30 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     };
   }, []);
 
+  // Auto-logout on inactivity
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    // Track user activity
+    const updateActivity = () => setLastActivity(Date.now());
+    
+    const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
+    events.forEach(event => window.addEventListener(event, updateActivity));
+
+    // Check for inactivity every minute
+    const interval = setInterval(() => {
+      if (Date.now() - lastActivity > INACTIVITY_TIMEOUT) {
+        console.log('Auto-logout due to inactivity');
+        logout();
+      }
+    }, 60000); // Check every minute
+
+    return () => {
+      events.forEach(event => window.removeEventListener(event, updateActivity));
+      clearInterval(interval);
+    };
+  }, [isAdmin, lastActivity]);
+
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
@@ -74,6 +102,8 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       }
 
       if (data.user) {
+        // Reset activity timer on login
+        setLastActivity(Date.now());
         return true;
       }
 

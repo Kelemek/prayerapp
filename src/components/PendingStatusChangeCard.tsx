@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { RefreshCw, CheckCircle, XCircle, User, Calendar, MessageSquare, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, CheckCircle, XCircle, User, Calendar, MessageSquare, ArrowRight, Check } from 'lucide-react';
 import type { StatusChangeRequest } from '../types/prayer';
+import { lookupPersonByEmail, formatPersonName, type PlanningCenterPerson } from '../lib/planningcenter';
 
 interface PendingStatusChangeCardProps {
   statusChangeRequest: StatusChangeRequest & { prayer_title?: string };
@@ -15,6 +16,35 @@ export const PendingStatusChangeCard: React.FC<PendingStatusChangeCardProps> = (
 }) => {
   const [showDenyForm, setShowDenyForm] = useState(false);
   const [denialReason, setDenialReason] = useState('');
+  const [pcPerson, setPcPerson] = useState<PlanningCenterPerson | null>(null);
+  const [pcLoading, setPcLoading] = useState(false);
+  const [pcError, setPcError] = useState(false);
+
+  // Lookup email in Planning Center when component mounts
+  useEffect(() => {
+    const lookupEmail = async () => {
+      if (!statusChangeRequest.requested_email) return;
+
+      setPcLoading(true);
+      setPcError(false);
+      
+      try {
+        const result = await lookupPersonByEmail(statusChangeRequest.requested_email);
+        if (result.people && result.people.length > 0) {
+          setPcPerson(result.people[0]);
+        } else {
+          setPcPerson(null);
+        }
+      } catch (error) {
+        console.error('Error looking up Planning Center person:', error);
+        setPcError(true);
+      } finally {
+        setPcLoading(false);
+      }
+    };
+
+    lookupEmail();
+  }, [statusChangeRequest.requested_email]);
 
   const handleApprove = () => {
     onApprove(statusChangeRequest.id);
@@ -99,9 +129,33 @@ export const PendingStatusChangeCard: React.FC<PendingStatusChangeCardProps> = (
               <span>Requested by: {statusChangeRequest.requested_by}</span>
             </div>
             {statusChangeRequest.requested_email && (
-              <div className="flex items-center gap-1">
-                <MessageSquare size={14} />
-                <span className="break-words">Email: {statusChangeRequest.requested_email}</span>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <MessageSquare size={14} />
+                  <span className="break-words">Email: {statusChangeRequest.requested_email}</span>
+                </div>
+                {pcLoading && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                    Checking Planning Center...
+                  </span>
+                )}
+                {!pcLoading && pcPerson && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
+                    <Check size={12} />
+                    <span>Planning Center: {formatPersonName(pcPerson)}</span>
+                  </div>
+                )}
+                {!pcLoading && !pcPerson && !pcError && statusChangeRequest.requested_email && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-medium">
+                    <XCircle size={12} />
+                    <span>Not in Planning Center</span>
+                  </div>
+                )}
+                {pcError && (
+                  <span className="text-xs text-red-500 dark:text-red-400 italic">
+                    (PC lookup failed)
+                  </span>
+                )}
               </div>
             )}
             <div className="flex items-center gap-1">

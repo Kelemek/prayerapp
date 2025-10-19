@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Calendar, User, CheckCircle, XCircle, MessageCircle, Edit2, Save, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, User, CheckCircle, XCircle, MessageCircle, Edit2, Save, X, Check } from 'lucide-react';
 import type { PrayerRequest } from '../types/prayer';
+import { lookupPersonByEmail, formatPersonName, type PlanningCenterPerson } from '../lib/planningcenter';
 
 interface PendingPrayerCardProps {
   prayer: PrayerRequest;
@@ -26,6 +27,36 @@ export const PendingPrayerCard: React.FC<PendingPrayerCardProps> = ({
     prayer_for: prayer.prayer_for || '',
     email: prayer.email || ''
   });
+  const [pcPerson, setPcPerson] = useState<PlanningCenterPerson | null>(null);
+  const [pcLoading, setPcLoading] = useState(false);
+  const [pcError, setPcError] = useState(false);
+
+  // Lookup email in Planning Center when component mounts
+  useEffect(() => {
+    const lookupEmail = async () => {
+      if (!prayer.email) return;
+
+      setPcLoading(true);
+      setPcError(false);
+      
+      try {
+        const result = await lookupPersonByEmail(prayer.email);
+        if (result.people && result.people.length > 0) {
+          // Use the first match
+          setPcPerson(result.people[0]);
+        } else {
+          setPcPerson(null);
+        }
+      } catch (error) {
+        console.error('Error looking up Planning Center person:', error);
+        setPcError(true);
+      } finally {
+        setPcLoading(false);
+      }
+    };
+
+    lookupEmail();
+  }, [prayer.email]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -195,9 +226,33 @@ export const PendingPrayerCard: React.FC<PendingPrayerCardProps> = ({
                   <span>{prayer.requester} {prayer.is_anonymous && <span className="text-orange-600 dark:text-orange-400 font-medium">(Anonymous Request)</span>}</span>
                 </div>
                 {prayer.email && (
-                  <div className="flex items-center gap-1">
-                    <MessageCircle size={14} />
-                    <span>Email: {prayer.email}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <MessageCircle size={14} />
+                      <span>Email: {prayer.email}</span>
+                    </div>
+                    {pcLoading && (
+                      <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                        Checking Planning Center...
+                      </span>
+                    )}
+                    {!pcLoading && pcPerson && (
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
+                        <Check size={12} />
+                        <span>Planning Center: {formatPersonName(pcPerson)}</span>
+                      </div>
+                    )}
+                    {!pcLoading && !pcPerson && !pcError && prayer.email && (
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-medium">
+                        <XCircle size={12} />
+                        <span>Not in Planning Center</span>
+                      </div>
+                    )}
+                    {pcError && (
+                      <span className="text-xs text-red-500 dark:text-red-400 italic">
+                        (PC lookup failed)
+                      </span>
+                    )}
                   </div>
                 )}
                 <div className="flex items-center gap-1">
