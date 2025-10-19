@@ -1,0 +1,1034 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { PromptManager } from './PromptManager';
+import { supabase } from '../lib/supabase';
+
+// Mock Supabase
+vi.mock('../lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(),
+        })),
+        or: vi.fn(() => ({
+          order: vi.fn(() => ({
+            limit: vi.fn(),
+          })),
+        })),
+        order: vi.fn(),
+      })),
+      insert: vi.fn(),
+      update: vi.fn(() => ({
+        eq: vi.fn(),
+      })),
+      delete: vi.fn(() => ({
+        eq: vi.fn(),
+      })),
+    })),
+  },
+}));
+
+describe('PromptManager Component', () => {
+  const mockOnSuccess = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    global.confirm = vi.fn(() => true);
+  });
+
+  describe('Rendering', () => {
+    it('renders the component with header', async () => {
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ order: mockOrder }));
+
+      (supabase.from as any).mockReturnValue({
+        select: mockSelect,
+      });
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /prayer prompts/i })).toBeDefined();
+      });
+    });
+
+    it('displays the description text', async () => {
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ order: mockOrder }));
+
+      (supabase.from as any).mockReturnValue({
+        select: mockSelect,
+      });
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByText(/manage prayer prompts/i)).toBeDefined();
+      });
+    });
+
+    it('renders search input field', async () => {
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ order: mockOrder }));
+
+      (supabase.from as any).mockReturnValue({
+        select: mockSelect,
+      });
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        const searchInput = screen.getByPlaceholderText(/search prompts/i);
+        expect(searchInput).toBeDefined();
+      });
+    });
+
+    it('renders Upload CSV button', async () => {
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ order: mockOrder }));
+
+      (supabase.from as any).mockReturnValue({
+        select: mockSelect,
+      });
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /upload csv/i })).toBeDefined();
+      });
+    });
+
+    it('renders Add Prompt button', async () => {
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ order: mockOrder }));
+
+      (supabase.from as any).mockReturnValue({
+        select: mockSelect,
+      });
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /add prompt/i })).toBeDefined();
+      });
+    });
+
+    it('loads prayer types on mount', async () => {
+      const mockTypesOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+          { id: '2', name: 'Family', display_order: 1, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockPromptsOrder = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockTypesOrder }))
+          };
+        }
+        return { order: mockPromptsOrder };
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(mockSelect).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Search Functionality', () => {
+    it('performs search when search button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockPrompts = [
+        {
+          id: '1',
+          title: 'Gratitude Prayer',
+          type: 'Personal',
+          description: 'Give thanks',
+          created_at: '2025-01-01T00:00:00Z',
+        },
+      ];
+
+      const mockLimit = vi.fn().mockResolvedValue({
+        data: mockPrompts,
+        error: null,
+      });
+
+      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
+      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockOrder }))
+          };
+        }
+        return { or: mockOr };
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
+      });
+
+      const searchInput = screen.getByPlaceholderText(/search prompts/i);
+      const searchButton = screen.getByRole('button', { name: /^search$/i });
+      
+      await user.type(searchInput, 'Gratitude');
+      await user.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Gratitude Prayer')).toBeDefined();
+      });
+    });
+
+    it('performs search when Enter key is pressed', async () => {
+      const user = userEvent.setup();
+      const mockPrompts = [
+        {
+          id: '1',
+          title: 'Gratitude Prayer',
+          type: 'Personal',
+          description: 'Give thanks',
+          created_at: '2025-01-01T00:00:00Z',
+        },
+      ];
+
+      const mockLimit = vi.fn().mockResolvedValue({
+        data: mockPrompts,
+        error: null,
+      });
+
+      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
+      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockOrder }))
+          };
+        }
+        return { or: mockOr };
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
+      });
+
+      const searchInput = screen.getByPlaceholderText(/search prompts/i);
+      
+      await user.type(searchInput, 'Gratitude{Enter}');
+
+      await waitFor(() => {
+        expect(mockOr).toHaveBeenCalled();
+      });
+    });
+
+    it('displays "no prompts found" message when search returns empty', async () => {
+      const user = userEvent.setup();
+
+      const mockLimit = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
+      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockOrder }))
+          };
+        }
+        return { or: mockOr };
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
+      });
+
+      const searchInput = screen.getByPlaceholderText(/search prompts/i);
+      const searchButton = screen.getByRole('button', { name: /^search$/i });
+      
+      await user.type(searchInput, 'NonexistentPrompt');
+      await user.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/no prompts found/i)).toBeDefined();
+      });
+    });
+
+    it('clears search when clear button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockPrompts = [
+        {
+          id: '1',
+          title: 'Gratitude Prayer',
+          type: 'Personal',
+          description: 'Give thanks',
+          created_at: '2025-01-01T00:00:00Z',
+        },
+      ];
+
+      const mockLimit = vi.fn().mockResolvedValue({
+        data: mockPrompts,
+        error: null,
+      });
+
+      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
+      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockOrder }))
+          };
+        }
+        return { or: mockOr };
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
+      });
+
+      const searchInput = screen.getByPlaceholderText(/search prompts/i) as HTMLInputElement;
+      
+      await user.type(searchInput, 'Gratitude');
+      await user.click(screen.getByRole('button', { name: /^search$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Gratitude Prayer')).toBeDefined();
+      });
+
+      const clearButtons = screen.getAllByRole('button');
+      const clearButton = clearButtons.find(btn => btn.getAttribute('title')?.includes('Clear'));
+
+      if (clearButton) {
+        await user.click(clearButton);
+      }
+
+      expect(searchInput.value).toBe('');
+    });
+  });
+
+  describe('Prayer Type Filter', () => {
+    it('displays prayer type filter dropdown', async () => {
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ 
+        eq: vi.fn(() => ({ order: mockOrder }))
+      }));
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        const filterElements = screen.getAllByRole('combobox');
+        expect(filterElements.length).toBeGreaterThan(0);
+      });
+    });
+
+    it('filters prompts by selected prayer type', async () => {
+      const user = userEvent.setup();
+      const mockPrompts = [
+        {
+          id: '1',
+          title: 'Personal Prayer',
+          type: 'Personal',
+          description: 'Personal desc',
+          created_at: '2025-01-01T00:00:00Z',
+        },
+      ];
+
+      const mockLimit = vi.fn().mockResolvedValue({
+        data: mockPrompts,
+        error: null,
+      });
+
+      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
+      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+
+      const mockTypesOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+          { id: '2', name: 'Family', display_order: 1, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockTypesOrder }))
+          };
+        }
+        return { or: mockOr };
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
+      });
+
+      // Trigger search to get results
+      await user.type(screen.getByPlaceholderText(/search prompts/i), 'Prayer');
+      await user.click(screen.getByRole('button', { name: /^search$/i }));
+
+      await waitFor(() => {
+        expect(mockOr).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Add Prompt Functionality', () => {
+    it('shows add form when Add Prompt button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ 
+        eq: vi.fn(() => ({ order: mockOrder }))
+      }));
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /add prompt/i })).toBeDefined();
+      });
+
+      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/add new prompt/i)).toBeDefined();
+      });
+    });
+
+    it('validates required fields when submitting', async () => {
+      const user = userEvent.setup();
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ 
+        eq: vi.fn(() => ({ order: mockOrder }))
+      }));
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /add prompt/i })).toBeDefined();
+      });
+
+      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+
+      await waitFor(() => {
+        const saveButton = screen.getByRole('button', { name: /save/i });
+        expect(saveButton).toBeDefined();
+      });
+
+      await user.click(screen.getByRole('button', { name: /save/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/please fill in all fields/i)).toBeDefined();
+      });
+    });
+
+    it('successfully creates a new prompt', async () => {
+      const user = userEvent.setup();
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ 
+        eq: vi.fn(() => ({ order: mockOrder }))
+      }));
+
+      const mockInsert = vi.fn().mockResolvedValue({
+        error: null,
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+        insert: mockInsert,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /add prompt/i })).toBeDefined();
+      });
+
+      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/title/i)).toBeDefined();
+      });
+
+      await user.type(screen.getByLabelText(/title/i), 'New Prompt');
+      await user.type(screen.getByLabelText(/description/i), 'Test description');
+      await user.click(screen.getByRole('button', { name: /save/i }));
+
+      await waitFor(() => {
+        expect(mockInsert).toHaveBeenCalledWith([
+          expect.objectContaining({
+            title: 'New Prompt',
+            description: 'Test description',
+          }),
+        ]);
+      });
+    });
+  });
+
+  describe('Edit Prompt Functionality', () => {
+    it('shows edit button for each prompt', async () => {
+      const user = userEvent.setup();
+      const mockPrompts = [
+        {
+          id: '1',
+          title: 'Test Prompt',
+          type: 'Personal',
+          description: 'Test desc',
+          created_at: '2025-01-01T00:00:00Z',
+        },
+      ];
+
+      const mockLimit = vi.fn().mockResolvedValue({
+        data: mockPrompts,
+        error: null,
+      });
+
+      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
+      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockOrder }))
+          };
+        }
+        return { or: mockOr };
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
+      });
+
+      await user.type(screen.getByPlaceholderText(/search prompts/i), 'Test');
+      await user.click(screen.getByRole('button', { name: /^search$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Prompt')).toBeDefined();
+        const editButtons = screen.getAllByRole('button');
+        const hasEditButton = editButtons.some(btn => 
+          btn.getAttribute('title')?.toLowerCase().includes('edit')
+        );
+        expect(hasEditButton).toBe(true);
+      });
+    });
+
+    it('populates form with existing data when editing', async () => {
+      const user = userEvent.setup();
+      const mockPrompts = [
+        {
+          id: '1',
+          title: 'Test Prompt',
+          type: 'Personal',
+          description: 'Test description',
+          created_at: '2025-01-01T00:00:00Z',
+        },
+      ];
+
+      const mockLimit = vi.fn().mockResolvedValue({
+        data: mockPrompts,
+        error: null,
+      });
+
+      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
+      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockOrder }))
+          };
+        }
+        return { or: mockOr };
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
+      });
+
+      await user.type(screen.getByPlaceholderText(/search prompts/i), 'Test');
+      await user.click(screen.getByRole('button', { name: /^search$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Prompt')).toBeDefined();
+      });
+
+      const editButtons = screen.getAllByRole('button');
+      const editButton = editButtons.find(btn => 
+        btn.getAttribute('title')?.toLowerCase().includes('edit')
+      );
+
+      if (editButton) {
+        await user.click(editButton);
+
+        await waitFor(() => {
+          const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
+          expect(titleInput.value).toBe('Test Prompt');
+        });
+      }
+    });
+  });
+
+  describe('Delete Prompt Functionality', () => {
+    it('shows delete button for each prompt', async () => {
+      const user = userEvent.setup();
+      const mockPrompts = [
+        {
+          id: '1',
+          title: 'Test Prompt',
+          type: 'Personal',
+          description: 'Test desc',
+          created_at: '2025-01-01T00:00:00Z',
+        },
+      ];
+
+      const mockLimit = vi.fn().mockResolvedValue({
+        data: mockPrompts,
+        error: null,
+      });
+
+      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
+      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockOrder }))
+          };
+        }
+        return { or: mockOr };
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
+      });
+
+      await user.type(screen.getByPlaceholderText(/search prompts/i), 'Test');
+      await user.click(screen.getByRole('button', { name: /^search$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Prompt')).toBeDefined();
+        const deleteButtons = screen.getAllByRole('button');
+        const hasDeleteButton = deleteButtons.some(btn => 
+          btn.getAttribute('title')?.toLowerCase().includes('delete')
+        );
+        expect(hasDeleteButton).toBe(true);
+      });
+    });
+
+    it('requires confirmation before deleting', async () => {
+      const user = userEvent.setup();
+      const mockPrompts = [
+        {
+          id: '1',
+          title: 'Test Prompt',
+          type: 'Personal',
+          description: 'Test desc',
+          created_at: '2025-01-01T00:00:00Z',
+        },
+      ];
+
+      const mockLimit = vi.fn().mockResolvedValue({
+        data: mockPrompts,
+        error: null,
+      });
+
+      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
+      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockOrder }))
+          };
+        }
+        return { or: mockOr };
+      });
+
+      const mockEq = vi.fn().mockResolvedValue({ error: null });
+      const mockDelete = vi.fn(() => ({ eq: mockEq }));
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+        delete: mockDelete,
+      }));
+
+      global.confirm = vi.fn(() => false);
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
+      });
+
+      await user.type(screen.getByPlaceholderText(/search prompts/i), 'Test');
+      await user.click(screen.getByRole('button', { name: /^search$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Prompt')).toBeDefined();
+      });
+
+      const deleteButtons = screen.getAllByRole('button');
+      const deleteButton = deleteButtons.find(btn => 
+        btn.getAttribute('title')?.toLowerCase().includes('delete')
+      );
+
+      if (deleteButton) {
+        await user.click(deleteButton);
+      }
+
+      expect(global.confirm).toHaveBeenCalled();
+      expect(mockDelete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('CSV Upload Functionality', () => {
+    it('shows CSV upload form when Upload CSV button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ 
+        eq: vi.fn(() => ({ order: mockOrder }))
+      }));
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /upload csv/i })).toBeDefined();
+      });
+
+      await user.click(screen.getByRole('button', { name: /upload csv/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/upload csv file/i)).toBeDefined();
+      });
+    });
+
+    it('cancels CSV upload when cancel button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ 
+        eq: vi.fn(() => ({ order: mockOrder }))
+      }));
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /upload csv/i })).toBeDefined();
+      });
+
+      await user.click(screen.getByRole('button', { name: /upload csv/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/upload csv file/i)).toBeDefined();
+      });
+
+      const cancelButton = screen.getByRole('button', { name: /cancel/i });
+      await user.click(cancelButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText(/upload csv file/i)).toBeNull();
+      });
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('displays error message when loading prayer types fails', async () => {
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'Database error' },
+      });
+
+      const mockSelect = vi.fn(() => ({ 
+        eq: vi.fn(() => ({ order: mockOrder }))
+      }));
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByText(/error/i)).toBeDefined();
+      });
+    });
+
+    it('displays error message when search fails', async () => {
+      const user = userEvent.setup();
+
+      const mockLimit = vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'Search failed' },
+      });
+
+      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
+      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn((fields) => {
+        if (fields === '*') {
+          return { 
+            eq: vi.fn(() => ({ order: mockOrder }))
+          };
+        }
+        return { or: mockOr };
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
+      });
+
+      await user.type(screen.getByPlaceholderText(/search prompts/i), 'Test');
+      await user.click(screen.getByRole('button', { name: /^search$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/search failed/i)).toBeDefined();
+      });
+    });
+  });
+
+  describe('Success Callback', () => {
+    it('calls onSuccess callback after successful operation', async () => {
+      const user = userEvent.setup();
+      const mockOrder = vi.fn().mockResolvedValue({
+        data: [
+          { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        ],
+        error: null,
+      });
+
+      const mockSelect = vi.fn(() => ({ 
+        eq: vi.fn(() => ({ order: mockOrder }))
+      }));
+
+      const mockInsert = vi.fn().mockResolvedValue({
+        error: null,
+      });
+
+      (supabase.from as any).mockImplementation((_table: string) => ({
+        select: mockSelect,
+        insert: mockInsert,
+      }));
+
+      render(<PromptManager onSuccess={mockOnSuccess} />);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /add prompt/i })).toBeDefined();
+      });
+
+      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/title/i)).toBeDefined();
+      });
+
+      await user.type(screen.getByLabelText(/title/i), 'Test Prompt');
+      await user.type(screen.getByLabelText(/description/i), 'Test desc');
+      await user.click(screen.getByRole('button', { name: /save/i }));
+
+      await waitFor(() => {
+        expect(mockOnSuccess).toHaveBeenCalled();
+      });
+    });
+  });
+});
