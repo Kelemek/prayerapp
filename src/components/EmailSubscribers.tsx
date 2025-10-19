@@ -34,11 +34,6 @@ export const EmailSubscribers: React.FC = () => {
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
-    if (!searchQuery.trim()) {
-      setError('Please enter a search term (name or email)');
-      return;
-    }
 
     try {
       setSearching(true);
@@ -47,10 +42,16 @@ export const EmailSubscribers: React.FC = () => {
 
       const query = searchQuery.trim().toLowerCase();
       
-      const { data, error } = await supabase
+      let dbQuery = supabase
         .from('email_subscribers')
-        .select('*')
-        .or(`name.ilike.%${query}%,email.ilike.%${query}%`)
+        .select('*');
+      
+      // If search query is provided, filter by it; otherwise return all
+      if (query) {
+        dbQuery = dbQuery.or(`name.ilike.%${query}%,email.ilike.%${query}%`);
+      }
+      
+      const { data, error } = await dbQuery
         .order('created_at', { ascending: false })
         .limit(50);
 

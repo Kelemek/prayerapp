@@ -65,11 +65,6 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
   // Search prompts
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
-    if (!searchQuery.trim()) {
-      setError('Please enter a search term (title, type, or description)');
-      return;
-    }
 
     try {
       setSearching(true);
@@ -79,10 +74,16 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
 
       const query = searchQuery.trim().toLowerCase();
       
-      const { data, error } = await supabase
+      let dbQuery = supabase
         .from('prayer_prompts')
-        .select('*')
-        .or(`title.ilike.%${query}%,type.ilike.%${query}%,description.ilike.%${query}%`)
+        .select('*');
+      
+      // If search query is provided, filter by it; otherwise return all
+      if (query) {
+        dbQuery = dbQuery.or(`title.ilike.%${query}%,type.ilike.%${query}%,description.ilike.%${query}%`);
+      }
+      
+      const { data, error } = await dbQuery
         .order('type', { ascending: true })
         .order('created_at', { ascending: false })
         .limit(500);
