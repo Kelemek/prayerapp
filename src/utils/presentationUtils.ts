@@ -44,6 +44,14 @@ export const calculateSmartDurationPrayer = (
   let totalChars = 0;
   totalChars += prayer.description?.length || 0;
   
+  console.log('[Utils] Calculating prayer duration:', {
+    prayerId: prayer.id,
+    title: prayer.title,
+    descriptionLength: prayer.description?.length || 0,
+    hasUpdates: !!prayer.prayer_updates,
+    updatesLength: prayer.prayer_updates?.length || 0
+  });
+  
   // Add update text length (up to 3 most recent)
   if (prayer.prayer_updates && prayer.prayer_updates.length > 0) {
     const recentUpdates = prayer.prayer_updates
@@ -51,13 +59,25 @@ export const calculateSmartDurationPrayer = (
       .slice(0, 3);
     
     recentUpdates.forEach(update => {
-      totalChars += update.content?.length || 0;
+      const updateLength = update.content?.length || 0;
+      totalChars += updateLength;
+      console.log('[Utils] Adding update:', {
+        updateId: update.id,
+        length: updateLength,
+        runningTotal: totalChars
+      });
     });
   }
   
   // Calculate duration: ~120 chars per 10 seconds
   // Minimum 10 seconds, maximum 120 seconds
   const calculatedDuration = Math.max(10, Math.min(120, Math.ceil(totalChars / 12)));
+  
+  console.log('[Utils] Final calculation:', {
+    totalChars,
+    rawDuration: Math.ceil(totalChars / 12),
+    finalDuration: calculatedDuration
+  });
   
   return calculatedDuration;
 };

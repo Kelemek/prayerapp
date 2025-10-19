@@ -163,6 +163,17 @@ export const MobilePresentation: React.FC = () => {
   useEffect(() => {
     const itemsLength = getItemsLength();
     
+    console.log('[Mobile] Auto-advance timer effect:', {
+      isPlaying,
+      itemsLength,
+      currentIndex,
+      contentType,
+      smartMode,
+      displayDuration,
+      prayersLength: prayers.length,
+      promptsLength: prompts.length
+    });
+    
     if (!isPlaying || itemsLength === 0) return;
 
     // Calculate duration based on content type and smart mode
@@ -170,22 +181,45 @@ export const MobilePresentation: React.FC = () => {
     if (smartMode) {
       if (contentType === 'prayers' && prayers[currentIndex]) {
         currentDuration = calculateSmartDurationPrayer(prayers[currentIndex], smartMode, displayDuration);
+        console.log('[Mobile] Smart duration for prayer:', {
+          prayerId: prayers[currentIndex].id,
+          title: prayers[currentIndex].title,
+          descriptionLength: prayers[currentIndex].description?.length || 0,
+          updatesCount: prayers[currentIndex].prayer_updates?.length || 0,
+          calculatedDuration: currentDuration
+        });
       } else if (contentType === 'prompts' && prompts[currentIndex]) {
         currentDuration = calculateSmartDurationPrompt(prompts[currentIndex], smartMode, displayDuration);
+        console.log('[Mobile] Smart duration for prompt:', {
+          promptId: prompts[currentIndex].id,
+          title: prompts[currentIndex].title,
+          descriptionLength: prompts[currentIndex].description?.length || 0,
+          calculatedDuration: currentDuration
+        });
       } else if (contentType === 'both') {
         // For 'both', check which type of content we're showing
         const currentPrayer = prayers[currentIndex];
         if (currentPrayer) {
           currentDuration = calculateSmartDurationPrayer(currentPrayer, smartMode, displayDuration);
+          console.log('[Mobile] Smart duration for both (prayer):', {
+            prayerId: currentPrayer.id,
+            calculatedDuration: currentDuration
+          });
         }
       }
     }
 
+    console.log('[Mobile] Setting timer for', currentDuration, 'seconds');
+
     const timer = setTimeout(() => {
+      console.log('[Mobile] Timer fired, advancing to next item');
       setCurrentIndex((prev) => (prev + 1) % itemsLength);
     }, currentDuration * 1000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      console.log('[Mobile] Cleaning up timer');
+      clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, displayDuration, smartMode, prayers.length, prompts.length, currentIndex, contentType]);
 
