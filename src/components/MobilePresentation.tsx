@@ -162,14 +162,6 @@ export const MobilePresentation: React.FC = () => {
   // Auto-advance timer
   useEffect(() => {
     const itemsLength = getItemsLength();
-    console.log('Mobile Auto-advance useEffect triggered:', {
-      isPlaying,
-      itemsLength,
-      contentType,
-      prayersLength: prayers.length,
-      promptsLength: prompts.length,
-      currentIndex
-    });
     
     if (!isPlaying || itemsLength === 0) return;
 
@@ -188,15 +180,6 @@ export const MobilePresentation: React.FC = () => {
         }
       }
     }
-
-    console.log('Mobile Setting timer:', {
-      currentIndex,
-      contentType,
-      smartMode,
-      currentDuration,
-      displayDuration,
-      hasItem: !!currentItem
-    });
 
     const timer = setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % itemsLength);
