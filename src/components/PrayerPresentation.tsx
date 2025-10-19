@@ -43,6 +43,8 @@ export const PrayerPresentation: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   const [randomize, setRandomize] = useState(false);
   const [showSmartModeDetails, setShowSmartModeDetails] = useState(false);
+  const [countdownRemaining, setCountdownRemaining] = useState(0);
+  const [currentDuration, setCurrentDuration] = useState(10);
   
   // Prayer Timer states
   const [prayerTimerMinutes, setPrayerTimerMinutes] = useState(10);
@@ -137,7 +139,15 @@ export const PrayerPresentation: React.FC = () => {
     if (error) {
       console.error('Error fetching prayers:', error);
     } else {
-      setPrayers(data || []);
+      // Filter to only include approved updates
+      const prayersWithApprovedUpdates = data?.map(prayer => ({
+        ...prayer,
+        prayer_updates: prayer.prayer_updates?.filter((update: any) => 
+          update.approval_status === 'approved'
+        ) || []
+      })) || [];
+      
+      setPrayers(prayersWithApprovedUpdates);
     }
   };
 
@@ -161,25 +171,43 @@ export const PrayerPresentation: React.FC = () => {
   useEffect(() => {
     const items = contentType === 'prayers' ? prayers : prompts;
     
-    if (!isPlaying || items.length === 0) return;
+    if (!isPlaying || items.length === 0) {
+      setCountdownRemaining(0);
+      return;
+    }
 
     // Calculate duration based on content type and smart mode
-    let currentDuration = displayDuration;
+    let calculatedDuration = displayDuration;
     if (smartMode) {
       if (contentType === 'prayers' && prayers[currentIndex]) {
-        currentDuration = calculateSmartDurationPrayer(prayers[currentIndex], smartMode, displayDuration);
+        calculatedDuration = calculateSmartDurationPrayer(prayers[currentIndex], smartMode, displayDuration);
       } else if (contentType === 'prompts' && prompts[currentIndex]) {
-        currentDuration = calculateSmartDurationPrompt(prompts[currentIndex], smartMode, displayDuration);
+        calculatedDuration = calculateSmartDurationPrompt(prompts[currentIndex], smartMode, displayDuration);
       }
     }
 
+    // Set the current duration and countdown
+    setCurrentDuration(calculatedDuration);
+    setCountdownRemaining(calculatedDuration);
+
     const timer = setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % items.length);
-    }, currentDuration * 1000);
+    }, calculatedDuration * 1000);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, displayDuration, smartMode, prayers.length, prompts.length, currentIndex, contentType]);
+
+  // Countdown timer for visual display
+  useEffect(() => {
+    if (!isPlaying || countdownRemaining <= 0) return;
+
+    const interval = setInterval(() => {
+      setCountdownRemaining((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, countdownRemaining]);
 
   // Show/hide controls based on mouse position
   useEffect(() => {
@@ -517,6 +545,17 @@ export const PrayerPresentation: React.FC = () => {
             >
               <ChevronRight size={32} />
             </button>
+            {isPlaying && (
+              <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg ml-2">
+                <Timer size={20} className="text-blue-600 dark:text-blue-400" />
+                <span className="text-lg font-mono font-semibold text-blue-900 dark:text-blue-100">
+                  {countdownRemaining}s
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  / {currentDuration}s
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Status */}

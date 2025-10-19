@@ -48,6 +48,8 @@ export const MobilePresentation: React.FC = () => {
   const [prayerTimerActive, setPrayerTimerActive] = useState(false);
   const [prayerTimerRemaining, setPrayerTimerRemaining] = useState(0);
   const [showTimerNotification, setShowTimerNotification] = useState(false);
+  const [countdownRemaining, setCountdownRemaining] = useState(0);
+  const [currentDuration, setCurrentDuration] = useState(10);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
@@ -139,7 +141,30 @@ export const MobilePresentation: React.FC = () => {
     if (error) {
       console.error('Error fetching prayers:', error);
     } else {
-      setPrayers(data || []);
+      // Filter to only include approved updates
+      const prayersWithApprovedUpdates = data?.map(prayer => ({
+        ...prayer,
+        prayer_updates: prayer.prayer_updates?.filter((update: any) => 
+          update.approval_status === 'approved'
+        ) || []
+      })) || [];
+      
+      console.log('[Mobile] Fetched prayers:', {
+        count: prayersWithApprovedUpdates.length,
+        prayers: prayersWithApprovedUpdates.map(p => ({
+          id: p.id,
+          title: p.title,
+          descriptionLength: p.description?.length || 0,
+          totalUpdates: data?.find(d => d.id === p.id)?.prayer_updates?.length || 0,
+          approvedUpdatesCount: p.prayer_updates?.length || 0,
+          updates: p.prayer_updates?.map(u => ({
+            id: u.id,
+            contentLength: u.content?.length || 0,
+            approval_status: (u as any).approval_status
+          }))
+        }))
+      });
+      setPrayers(prayersWithApprovedUpdates);
     }
   };
 
@@ -174,33 +199,36 @@ export const MobilePresentation: React.FC = () => {
       promptsLength: prompts.length
     });
     
-    if (!isPlaying || itemsLength === 0) return;
+    if (!isPlaying || itemsLength === 0) {
+      setCountdownRemaining(0);
+      return;
+    }
 
     // Calculate duration based on content type and smart mode
-    let currentDuration = displayDuration;
+    let calculatedDuration = displayDuration;
     if (smartMode) {
       if (contentType === 'prayers' && prayers[currentIndex]) {
-        currentDuration = calculateSmartDurationPrayer(prayers[currentIndex], smartMode, displayDuration);
+        calculatedDuration = calculateSmartDurationPrayer(prayers[currentIndex], smartMode, displayDuration);
         console.log('[Mobile] Smart duration for prayer:', {
           prayerId: prayers[currentIndex].id,
           title: prayers[currentIndex].title,
           descriptionLength: prayers[currentIndex].description?.length || 0,
           updatesCount: prayers[currentIndex].prayer_updates?.length || 0,
-          calculatedDuration: currentDuration
+          calculatedDuration: calculatedDuration
         });
       } else if (contentType === 'prompts' && prompts[currentIndex]) {
-        currentDuration = calculateSmartDurationPrompt(prompts[currentIndex], smartMode, displayDuration);
+        calculatedDuration = calculateSmartDurationPrompt(prompts[currentIndex], smartMode, displayDuration);
         console.log('[Mobile] Smart duration for prompt:', {
           promptId: prompts[currentIndex].id,
           title: prompts[currentIndex].title,
           descriptionLength: prompts[currentIndex].description?.length || 0,
-          calculatedDuration: currentDuration
+          calculatedDuration: calculatedDuration
         });
       } else if (contentType === 'both') {
         // For 'both', check which type of content we're showing
         const currentPrayer = prayers[currentIndex];
         if (currentPrayer) {
-          currentDuration = calculateSmartDurationPrayer(currentPrayer, smartMode, displayDuration);
+          calculatedDuration = calculateSmartDurationPrayer(currentPrayer, smartMode, displayDuration);
           console.log('[Mobile] Smart duration for both (prayer):', {
             prayerId: currentPrayer.id,
             calculatedDuration: currentDuration
@@ -209,12 +237,16 @@ export const MobilePresentation: React.FC = () => {
       }
     }
 
-    console.log('[Mobile] Setting timer for', currentDuration, 'seconds');
+    console.log('[Mobile] Setting timer for', calculatedDuration, 'seconds');
+
+    // Set the current duration and countdown
+    setCurrentDuration(calculatedDuration);
+    setCountdownRemaining(calculatedDuration);
 
     const timer = setTimeout(() => {
       console.log('[Mobile] Timer fired, advancing to next item');
       setCurrentIndex((prev) => (prev + 1) % itemsLength);
-    }, currentDuration * 1000);
+    }, calculatedDuration * 1000);
 
     return () => {
       console.log('[Mobile] Cleaning up timer');
@@ -222,6 +254,17 @@ export const MobilePresentation: React.FC = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, displayDuration, smartMode, prayers.length, prompts.length, currentIndex, contentType]);
+
+  // Countdown timer for visual display
+  useEffect(() => {
+    if (!isPlaying || countdownRemaining <= 0) return;
+
+    const interval = setInterval(() => {
+      setCountdownRemaining((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, countdownRemaining]);
 
   // Prayer timer countdown
   useEffect(() => {
@@ -505,6 +548,17 @@ export const MobilePresentation: React.FC = () => {
               >
                 {isPlaying ? <Pause size={24} /> : <Play size={24} />}
               </button>
+              {isPlaying && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <Timer size={16} className="text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-mono font-semibold text-blue-900 dark:text-blue-100">
+                    {countdownRemaining}s
+                  </span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                    / {currentDuration}s
+                  </span>
+                </div>
+              )}
             </div>
             
             <div className="flex items-center gap-3">
