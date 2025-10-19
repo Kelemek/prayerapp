@@ -188,25 +188,25 @@ describe('PromptManager Component', () => {
         error: null,
       });
 
-      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+      // Chain: .or() -> .order() -> .order() -> .limit()
+      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
+      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
+      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
 
-      const mockOrder = vi.fn().mockResolvedValue({
+      const mockTypesOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
       });
 
-      const mockSelect = vi.fn((fields) => {
-        if (fields === '*') {
-          return { 
-            eq: vi.fn(() => ({ order: mockOrder }))
-          };
-        }
-        return { or: mockOr };
-      });
-
-      (supabase.from as any).mockImplementation((_table: string) => ({
-        select: mockSelect,
+      (supabase.from as any).mockImplementation((table: string) => ({
+        select: vi.fn(() => {
+          if (table === 'prayer_types') {
+            return { 
+              eq: vi.fn(() => ({ order: mockTypesOrder }))
+            };
+          }
+          return { or: mockOr };
+        }),
       }));
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
@@ -243,10 +243,12 @@ describe('PromptManager Component', () => {
         error: null,
       });
 
-      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+      // Chain: .or() -> .order() -> .order() -> .limit()
+      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
+      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
+      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
 
-      const mockOrder = vi.fn().mockResolvedValue({
+      const mockTypesOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
       });
@@ -254,7 +256,7 @@ describe('PromptManager Component', () => {
       const mockSelect = vi.fn((fields) => {
         if (fields === '*') {
           return { 
-            eq: vi.fn(() => ({ order: mockOrder }))
+            eq: vi.fn(() => ({ order: mockTypesOrder }))
           };
         }
         return { or: mockOr };
@@ -287,10 +289,12 @@ describe('PromptManager Component', () => {
         error: null,
       });
 
-      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+      // Chain: .or() -> .order() -> .order() -> .limit()
+      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
+      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
+      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
 
-      const mockOrder = vi.fn().mockResolvedValue({
+      const mockTypesOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
       });
@@ -298,7 +302,7 @@ describe('PromptManager Component', () => {
       const mockSelect = vi.fn((fields) => {
         if (fields === '*') {
           return { 
-            eq: vi.fn(() => ({ order: mockOrder }))
+            eq: vi.fn(() => ({ order: mockTypesOrder }))
           };
         }
         return { or: mockOr };
@@ -342,10 +346,12 @@ describe('PromptManager Component', () => {
         error: null,
       });
 
-      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+      // Chain: .or() -> .order() -> .order() -> .limit()
+      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
+      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
+      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
 
-      const mockOrder = vi.fn().mockResolvedValue({
+      const mockTypesOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
       });
@@ -353,7 +359,7 @@ describe('PromptManager Component', () => {
       const mockSelect = vi.fn((fields) => {
         if (fields === '*') {
           return { 
-            eq: vi.fn(() => ({ order: mockOrder }))
+            eq: vi.fn(() => ({ order: mockTypesOrder }))
           };
         }
         return { or: mockOr };
@@ -399,7 +405,7 @@ describe('PromptManager Component', () => {
       });
 
       const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockOrder }))
+        eq: vi.fn(() => ({ order: mockTypesOrder }))
       }));
 
       (supabase.from as any).mockImplementation((_table: string) => ({
@@ -431,8 +437,10 @@ describe('PromptManager Component', () => {
         error: null,
       });
 
-      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+      // Chain: .or() -> .order() -> .order() -> .limit()
+      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
+      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
+      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
 
       const mockTypesOrder = vi.fn().mockResolvedValue({
         data: [
@@ -482,7 +490,7 @@ describe('PromptManager Component', () => {
       });
 
       const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockOrder }))
+        eq: vi.fn(() => ({ order: mockTypesOrder }))
       }));
 
       (supabase.from as any).mockImplementation((_table: string) => ({
@@ -495,10 +503,12 @@ describe('PromptManager Component', () => {
         expect(screen.getByRole('button', { name: /add prompt/i })).toBeDefined();
       });
 
-      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+      // Click the top Add Prompt button (not the submit button)
+      const addButtons = screen.getAllByRole('button', { name: /add prompt/i });
+      await user.click(addButtons[0]);
 
       await waitFor(() => {
-        expect(screen.getByText(/add new prompt/i)).toBeDefined();
+        expect(screen.getByText(/add new prayer prompt/i)).toBeDefined();
       });
     });
 
@@ -512,7 +522,7 @@ describe('PromptManager Component', () => {
       });
 
       const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockOrder }))
+        eq: vi.fn(() => ({ order: mockTypesOrder }))
       }));
 
       (supabase.from as any).mockImplementation((_table: string) => ({
@@ -525,14 +535,19 @@ describe('PromptManager Component', () => {
         expect(screen.getByRole('button', { name: /add prompt/i })).toBeDefined();
       });
 
-      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+      // Click the top Add Prompt button
+      const addButtons1 = screen.getAllByRole('button', { name: /add prompt/i });
+      await user.click(addButtons1[0]);
 
       await waitFor(() => {
         const saveButton = screen.getByRole('button', { name: /add prompt/i });
         expect(saveButton).toBeDefined();
       });
 
-      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+      // Click the submit button in the form
+      const addButtons2 = screen.getAllByRole('button', { name: /add prompt/i });
+      const submitBtn = addButtons2.find(btn => btn.getAttribute('type') === 'submit');
+      if (submitBtn) await user.click(submitBtn);
 
       await waitFor(() => {
         expect(screen.getByText(/please fill in all fields/i)).toBeDefined();
@@ -549,7 +564,7 @@ describe('PromptManager Component', () => {
       });
 
       const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockOrder }))
+        eq: vi.fn(() => ({ order: mockTypesOrder }))
       }));
 
       const mockInsert = vi.fn().mockResolvedValue({
@@ -567,7 +582,9 @@ describe('PromptManager Component', () => {
         expect(screen.getByRole('button', { name: /add prompt/i })).toBeDefined();
       });
 
-      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+      // Click the top Add Prompt button
+      const addButtons1 = screen.getAllByRole('button', { name: /add prompt/i });
+      await user.click(addButtons1[0]);
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText(/pray for those in need/i)).toBeDefined();
@@ -575,7 +592,11 @@ describe('PromptManager Component', () => {
 
       await user.type(screen.getByPlaceholderText(/pray for those in need/i), 'New Prompt');
       await user.type(screen.getByPlaceholderText(/write a prayer or meditation prompt/i), 'Test description');
-      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+      
+      // Click the submit button in the form
+      const addButtons2 = screen.getAllByRole('button', { name: /add prompt/i });
+      const submitBtn = addButtons2.find(btn => btn.getAttribute('type') === 'submit');
+      if (submitBtn) await user.click(submitBtn);
 
       await waitFor(() => {
         expect(mockInsert).toHaveBeenCalledWith([
@@ -606,10 +627,12 @@ describe('PromptManager Component', () => {
         error: null,
       });
 
-      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+      // Chain: .or() -> .order() -> .order() -> .limit()
+      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
+      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
+      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
 
-      const mockOrder = vi.fn().mockResolvedValue({
+      const mockTypesOrder = vi.fn().mockResolvedValue({
         data: [
           { id: '1', name: 'Personal', display_order: 0, is_active: true },
         ],
@@ -619,7 +642,7 @@ describe('PromptManager Component', () => {
       const mockSelect = vi.fn((fields) => {
         if (fields === '*') {
           return { 
-            eq: vi.fn(() => ({ order: mockOrder }))
+            eq: vi.fn(() => ({ order: mockTypesOrder }))
           };
         }
         return { or: mockOr };
@@ -665,10 +688,12 @@ describe('PromptManager Component', () => {
         error: null,
       });
 
-      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+      // Chain: .or() -> .order() -> .order() -> .limit()
+      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
+      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
+      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
 
-      const mockOrder = vi.fn().mockResolvedValue({
+      const mockTypesOrder = vi.fn().mockResolvedValue({
         data: [
           { id: '1', name: 'Personal', display_order: 0, is_active: true },
         ],
@@ -678,7 +703,7 @@ describe('PromptManager Component', () => {
       const mockSelect = vi.fn((fields) => {
         if (fields === '*') {
           return { 
-            eq: vi.fn(() => ({ order: mockOrder }))
+            eq: vi.fn(() => ({ order: mockTypesOrder }))
           };
         }
         return { or: mockOr };
@@ -735,10 +760,12 @@ describe('PromptManager Component', () => {
         error: null,
       });
 
-      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+      // Chain: .or() -> .order() -> .order() -> .limit()
+      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
+      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
+      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
 
-      const mockOrder = vi.fn().mockResolvedValue({
+      const mockTypesOrder = vi.fn().mockResolvedValue({
         data: [
           { id: '1', name: 'Personal', display_order: 0, is_active: true },
         ],
@@ -748,7 +775,7 @@ describe('PromptManager Component', () => {
       const mockSelect = vi.fn((fields) => {
         if (fields === '*') {
           return { 
-            eq: vi.fn(() => ({ order: mockOrder }))
+            eq: vi.fn(() => ({ order: mockTypesOrder }))
           };
         }
         return { or: mockOr };
@@ -794,10 +821,12 @@ describe('PromptManager Component', () => {
         error: null,
       });
 
-      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+      // Chain: .or() -> .order() -> .order() -> .limit()
+      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
+      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
+      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
 
-      const mockOrder = vi.fn().mockResolvedValue({
+      const mockTypesOrder = vi.fn().mockResolvedValue({
         data: [
           { id: '1', name: 'Personal', display_order: 0, is_active: true },
         ],
@@ -807,7 +836,7 @@ describe('PromptManager Component', () => {
       const mockSelect = vi.fn((fields) => {
         if (fields === '*') {
           return { 
-            eq: vi.fn(() => ({ order: mockOrder }))
+            eq: vi.fn(() => ({ order: mockTypesOrder }))
           };
         }
         return { or: mockOr };
@@ -861,7 +890,7 @@ describe('PromptManager Component', () => {
       });
 
       const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockOrder }))
+        eq: vi.fn(() => ({ order: mockTypesOrder }))
       }));
 
       (supabase.from as any).mockImplementation((_table: string) => ({
@@ -891,7 +920,7 @@ describe('PromptManager Component', () => {
       });
 
       const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockOrder }))
+        eq: vi.fn(() => ({ order: mockTypesOrder }))
       }));
 
       (supabase.from as any).mockImplementation((_table: string) => ({
@@ -927,7 +956,7 @@ describe('PromptManager Component', () => {
       });
 
       const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockOrder }))
+        eq: vi.fn(() => ({ order: mockTypesOrder }))
       }));
 
       (supabase.from as any).mockImplementation((_table: string) => ({
@@ -949,10 +978,12 @@ describe('PromptManager Component', () => {
         error: { message: 'Search failed' },
       });
 
-      const mockOrderSearch = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrderSearch }));
+      // Chain: .or() -> .order() -> .order() -> .limit()
+      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
+      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
+      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
 
-      const mockOrder = vi.fn().mockResolvedValue({
+      const mockTypesOrder = vi.fn().mockResolvedValue({
         data: [
           { id: '1', name: 'Personal', display_order: 0, is_active: true },
         ],
@@ -962,7 +993,7 @@ describe('PromptManager Component', () => {
       const mockSelect = vi.fn((fields) => {
         if (fields === '*') {
           return { 
-            eq: vi.fn(() => ({ order: mockOrder }))
+            eq: vi.fn(() => ({ order: mockTypesOrder }))
           };
         }
         return { or: mockOr };
@@ -998,7 +1029,7 @@ describe('PromptManager Component', () => {
       });
 
       const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockOrder }))
+        eq: vi.fn(() => ({ order: mockTypesOrder }))
       }));
 
       const mockInsert = vi.fn().mockResolvedValue({
@@ -1016,7 +1047,9 @@ describe('PromptManager Component', () => {
         expect(screen.getByRole('button', { name: /add prompt/i })).toBeDefined();
       });
 
-      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+      // Click the top Add Prompt button
+      const addButtons1 = screen.getAllByRole('button', { name: /add prompt/i });
+      await user.click(addButtons1[0]);
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText(/pray for those in need/i)).toBeDefined();
@@ -1024,7 +1057,11 @@ describe('PromptManager Component', () => {
 
       await user.type(screen.getByPlaceholderText(/pray for those in need/i), 'Test Prompt');
       await user.type(screen.getByPlaceholderText(/write a prayer or meditation prompt/i), 'Test desc');
-      await user.click(screen.getByRole('button', { name: /add prompt/i }));
+      
+      // Click the submit button in the form
+      const addButtons2 = screen.getAllByRole('button', { name: /add prompt/i });
+      const submitBtn = addButtons2.find(btn => btn.getAttribute('type') === 'submit');
+      if (submitBtn) await user.click(submitBtn);
 
       await waitFor(() => {
         expect(mockOnSuccess).toHaveBeenCalled();
