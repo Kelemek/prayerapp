@@ -182,11 +182,11 @@ describe('PrayerTypesManager Component', () => {
       await user.click(screen.getByRole('button', { name: /add type/i }));
 
       await waitFor(() => {
-        const saveButton = screen.getByRole('button', { name: /save/i });
+        const saveButton = screen.getByRole('button', { name: /add type/i });
         expect(saveButton).toBeDefined();
       });
 
-      await user.click(screen.getByRole('button', { name: /save/i }));
+      await user.click(screen.getByRole('button', { name: /add type/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/please enter a type name/i)).toBeDefined();
@@ -220,11 +220,11 @@ describe('PrayerTypesManager Component', () => {
       await user.click(screen.getByRole('button', { name: /add type/i }));
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/type name/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/e.g., healing, guidance, thanksgiving/i)).toBeDefined();
       });
 
-      await user.type(screen.getByLabelText(/type name/i), 'Thanksgiving');
-      await user.click(screen.getByRole('button', { name: /save/i }));
+      await user.type(screen.getByPlaceholderText(/e.g., healing, guidance, thanksgiving/i), 'Thanksgiving');
+      await user.click(screen.getByRole('button', { name: /add type/i }));
 
       await waitFor(() => {
         expect(mockInsert).toHaveBeenCalledWith([
@@ -298,7 +298,7 @@ describe('PrayerTypesManager Component', () => {
         await user.click(editButton);
 
         await waitFor(() => {
-          const nameInput = screen.getByLabelText(/type name/i) as HTMLInputElement;
+          const nameInput = screen.getByPlaceholderText(/e.g., healing, guidance, thanksgiving/i) as HTMLInputElement;
           expect(nameInput.value).toBe('Personal');
         });
       }
@@ -507,11 +507,11 @@ describe('PrayerTypesManager Component', () => {
       await user.click(screen.getByRole('button', { name: /add type/i }));
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/type name/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/e.g., healing, guidance, thanksgiving/i)).toBeDefined();
       });
 
-      await user.type(screen.getByLabelText(/type name/i), 'Test Type');
-      await user.click(screen.getByRole('button', { name: /save/i }));
+      await user.type(screen.getByPlaceholderText(/e.g., healing, guidance, thanksgiving/i), 'Test Type');
+      await user.click(screen.getByRole('button', { name: /add type/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/insert failed/i)).toBeDefined();
@@ -547,11 +547,11 @@ describe('PrayerTypesManager Component', () => {
       await user.click(screen.getByRole('button', { name: /add type/i }));
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/type name/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/e.g., healing, guidance, thanksgiving/i)).toBeDefined();
       });
 
-      await user.type(screen.getByLabelText(/type name/i), 'Test Type');
-      await user.click(screen.getByRole('button', { name: /save/i }));
+      await user.type(screen.getByPlaceholderText(/e.g., healing, guidance, thanksgiving/i), 'Test Type');
+      await user.click(screen.getByRole('button', { name: /add type/i }));
 
       await waitFor(() => {
         expect(mockOnSuccess).toHaveBeenCalled();

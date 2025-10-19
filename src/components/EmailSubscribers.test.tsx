@@ -242,8 +242,8 @@ describe('EmailSubscribers Component', () => {
       await user.click(addButton);
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/name/i)).toBeDefined();
-        expect(screen.getByLabelText(/email/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/john doe/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/john@example.com/i)).toBeDefined();
       });
     });
 
@@ -257,7 +257,7 @@ describe('EmailSubscribers Component', () => {
         expect(screen.getByText(/add new subscriber/i)).toBeDefined();
       });
 
-      const submitButton = screen.getByRole('button', { name: /^add$/i });
+      const submitButton = screen.getByRole('button', { name: /add subscriber/i });
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -272,16 +272,16 @@ describe('EmailSubscribers Component', () => {
       await user.click(screen.getByRole('button', { name: /add subscriber/i }));
 
       await waitFor(() => {
-        const nameInput = screen.getByLabelText(/name/i);
-        const emailInput = screen.getByLabelText(/email/i);
+        const nameInput = screen.getByPlaceholderText(/john doe/i);
+        const emailInput = screen.getByPlaceholderText(/john@example.com/i);
         expect(nameInput).toBeDefined();
         expect(emailInput).toBeDefined();
       });
 
-      await user.type(screen.getByLabelText(/name/i), 'John Doe');
-      await user.type(screen.getByLabelText(/email/i), 'invalid-email');
+      await user.type(screen.getByPlaceholderText(/john doe/i), 'John Doe');
+      await user.type(screen.getByPlaceholderText(/john@example.com/i), 'invalid-email');
 
-      const submitButton = screen.getByRole('button', { name: /^add$/i });
+      const submitButton = screen.getByRole('button', { name: /add subscriber/i });
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -305,13 +305,13 @@ describe('EmailSubscribers Component', () => {
       await user.click(screen.getByRole('button', { name: /add subscriber/i }));
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/name/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/john doe/i)).toBeDefined();
       });
 
-      await user.type(screen.getByLabelText(/name/i), 'John Doe');
-      await user.type(screen.getByLabelText(/email/i), 'john@example.com');
+      await user.type(screen.getByPlaceholderText(/john doe/i), 'John Doe');
+      await user.type(screen.getByPlaceholderText(/john@example.com/i), 'john@example.com');
 
-      const submitButton = screen.getByRole('button', { name: /^add$/i });
+      const submitButton = screen.getByRole('button', { name: /add subscriber/i });
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -341,16 +341,16 @@ describe('EmailSubscribers Component', () => {
       await user.click(screen.getByRole('button', { name: /add subscriber/i }));
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/name/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/john doe/i)).toBeDefined();
       });
 
-      const nameInput = screen.getByLabelText(/name/i) as HTMLInputElement;
-      const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement;
+      const nameInput = screen.getByPlaceholderText(/john doe/i) as HTMLInputElement;
+      const emailInput = screen.getByPlaceholderText(/john@example.com/i) as HTMLInputElement;
 
       await user.type(nameInput, 'John Doe');
       await user.type(emailInput, 'john@example.com');
 
-      await user.click(screen.getByRole('button', { name: /^add$/i }));
+      await user.click(screen.getByRole('button', { name: /add subscriber/i }));
 
       await waitFor(() => {
         expect(mockInsert).toHaveBeenCalled();
@@ -403,10 +403,10 @@ describe('EmailSubscribers Component', () => {
 
       await waitFor(() => {
         const removeButtons = screen.getAllByRole('button');
-        const hasRemoveButton = removeButtons.some(btn => 
-          btn.textContent?.toLowerCase().includes('remove')
+        const hasDeleteButton = removeButtons.some(btn => 
+          btn.getAttribute('title')?.toLowerCase().includes('delete')
         );
-        expect(hasRemoveButton).toBe(true);
+        expect(hasDeleteButton).toBe(true);
       });
     });
 
@@ -445,12 +445,12 @@ describe('EmailSubscribers Component', () => {
       });
 
       const removeButtons = screen.getAllByRole('button');
-      const removeButton = removeButtons.find(btn => 
-        btn.textContent?.toLowerCase().includes('remove')
+      const deleteButton = removeButtons.find(btn => 
+        btn.getAttribute('title')?.toLowerCase().includes('delete')
       );
 
-      if (removeButton) {
-        await user.click(removeButton);
+      if (deleteButton) {
+        await user.click(deleteButton);
       }
 
       expect(global.confirm).toHaveBeenCalled();
@@ -492,12 +492,12 @@ describe('EmailSubscribers Component', () => {
       });
 
       const removeButtons = screen.getAllByRole('button');
-      const removeButton = removeButtons.find(btn => 
-        btn.textContent?.toLowerCase().includes('remove')
+      const deleteButton = removeButtons.find(btn => 
+        btn.getAttribute('title')?.toLowerCase().includes('delete')
       );
 
-      if (removeButton) {
-        await user.click(removeButton);
+      if (deleteButton) {
+        await user.click(deleteButton);
       }
 
       await waitFor(() => {
@@ -577,7 +577,8 @@ describe('EmailSubscribers Component', () => {
       await user.click(screen.getByRole('button', { name: /^search$/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/active/i)).toBeDefined();
+        const activeBadges = screen.getAllByText(/active/i);
+        expect(activeBadges.length).toBeGreaterThan(0);
       });
     });
 
@@ -654,12 +655,17 @@ describe('EmailSubscribers Component', () => {
       await user.click(screen.getByRole('button', { name: /add subscriber/i }));
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/name/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/john doe/i)).toBeDefined();
       });
 
-      await user.type(screen.getByLabelText(/name/i), 'John Doe');
-      await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.click(screen.getByRole('button', { name: /^add$/i }));
+      await user.type(screen.getByPlaceholderText(/john doe/i), 'John Doe');
+      await user.type(screen.getByPlaceholderText(/john@example.com/i), 'john@example.com');
+      
+      const addButtons = screen.getAllByRole('button', { name: /add subscriber/i });
+      const submitButton = addButtons.find(btn => btn.getAttribute('type') === 'submit');
+      if (submitButton) {
+        await user.click(submitButton);
+      }
 
       await waitFor(() => {
         expect(screen.getByText(/insert failed/i)).toBeDefined();

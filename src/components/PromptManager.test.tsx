@@ -570,11 +570,11 @@ describe('PromptManager Component', () => {
       await user.click(screen.getByRole('button', { name: /add prompt/i }));
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/title/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/pray for those in need/i)).toBeDefined();
       });
 
-      await user.type(screen.getByLabelText(/title/i), 'New Prompt');
-      await user.type(screen.getByLabelText(/description/i), 'Test description');
+      await user.type(screen.getByPlaceholderText(/pray for those in need/i), 'New Prompt');
+      await user.type(screen.getByPlaceholderText(/write a prayer or meditation prompt/i), 'Test description');
       await user.click(screen.getByRole('button', { name: /save/i }));
 
       await waitFor(() => {
@@ -710,7 +710,7 @@ describe('PromptManager Component', () => {
         await user.click(editButton);
 
         await waitFor(() => {
-          const titleInput = screen.getByLabelText(/title/i) as HTMLInputElement;
+          const titleInput = screen.getByPlaceholderText(/pray for those in need/i) as HTMLInputElement;
           expect(titleInput.value).toBe('Test Prompt');
         });
       }
@@ -1019,11 +1019,11 @@ describe('PromptManager Component', () => {
       await user.click(screen.getByRole('button', { name: /add prompt/i }));
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/title/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/pray for those in need/i)).toBeDefined();
       });
 
-      await user.type(screen.getByLabelText(/title/i), 'Test Prompt');
-      await user.type(screen.getByLabelText(/description/i), 'Test desc');
+      await user.type(screen.getByPlaceholderText(/pray for those in need/i), 'Test Prompt');
+      await user.type(screen.getByPlaceholderText(/write a prayer or meditation prompt/i), 'Test desc');
       await user.click(screen.getByRole('button', { name: /save/i }));
 
       await waitFor(() => {
