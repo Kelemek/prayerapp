@@ -1,0 +1,36 @@
+name: Auto Transition Prayers
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  transition-prayers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Auto-Transition Edge Function
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            'https://eqiafsygvfaifhoaewxi.supabase.co/functions/v1/auto-transition-prayers' \
+            -H 'Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}' \
+            -H 'Content-Type: application/json')
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "Error: Auto-transition failed with status $HTTP_CODE"
+            exit 1
+          fi
+          
+          echo "Auto-transition completed successfully"
+          
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "::warning::Auto-transition prayer function failed. Check logs for details."
