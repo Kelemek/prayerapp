@@ -38,7 +38,7 @@ describe('EmailSettings Component', () => {
       })),
     }));
 
-    (supabase.from as typeof supabase.from).mockReturnValue({
+    (supabase.from as any).mockReturnValue({
       select: mockSelect,
     });
 
@@ -66,7 +66,7 @@ describe('EmailSettings Component', () => {
       })),
     }));
 
-    (supabase.from as typeof supabase.from).mockReturnValue({
+    (supabase.from as any).mockReturnValue({
       select: mockSelect,
     });
 
@@ -95,7 +95,7 @@ describe('EmailSettings Component', () => {
 
     const mockUpsert = vi.fn().mockResolvedValue({ data: null, error: null });
 
-    (supabase.from as typeof supabase.from).mockReturnValue({
+    (supabase.from as any).mockReturnValue({
       select: mockSelect,
       upsert: mockUpsert,
     });
@@ -128,7 +128,7 @@ describe('EmailSettings Component', () => {
 
     const mockUpsert = vi.fn().mockResolvedValue({ data: null, error: null });
 
-    (supabase.from as typeof supabase.from).mockReturnValue({
+    (supabase.from as any).mockReturnValue({
       select: mockSelect,
       upsert: mockUpsert,
     });
@@ -162,7 +162,7 @@ describe('EmailSettings Component', () => {
       })),
     }));
 
-    (supabase.from as typeof supabase.from).mockReturnValue({
+    (supabase.from as any).mockReturnValue({
       select: mockSelect,
     });
 
@@ -188,7 +188,7 @@ describe('EmailSettings Component', () => {
       })),
     }));
 
-    (supabase.from as typeof supabase.from).mockReturnValue({
+    (supabase.from as any).mockReturnValue({
       select: mockSelect,
     });
 
@@ -216,7 +216,7 @@ describe('EmailSettings Component', () => {
 
     const mockUpsert = vi.fn().mockResolvedValue({ error: null });
 
-    (supabase.from as typeof supabase.from).mockReturnValue({
+    (supabase.from as any).mockReturnValue({
       select: mockSelect,
       upsert: mockUpsert,
     });
@@ -252,7 +252,7 @@ describe('EmailSettings Component', () => {
       })),
     }));
 
-    (supabase.from as typeof supabase.from).mockReturnValue({
+    (supabase.from as any).mockReturnValue({
       select: mockSelect,
     });
 
@@ -280,7 +280,7 @@ describe('EmailSettings Component', () => {
         })),
       }));
 
-      (supabase.from as typeof supabase.from).mockReturnValue({
+      (supabase.from as any).mockReturnValue({
         select: mockSelect,
       });
 
@@ -306,7 +306,7 @@ describe('EmailSettings Component', () => {
         })),
       }));
 
-      (supabase.from as typeof supabase.from).mockReturnValue({
+      (supabase.from as any).mockReturnValue({
         select: mockSelect,
       });
 
@@ -332,7 +332,7 @@ describe('EmailSettings Component', () => {
         })),
       }));
 
-      (supabase.from as typeof supabase.from).mockReturnValue({
+      (supabase.from as any).mockReturnValue({
         select: mockSelect,
       });
 
@@ -358,7 +358,7 @@ describe('EmailSettings Component', () => {
         })),
       }));
 
-      (supabase.from as typeof supabase.from).mockReturnValue({
+      (supabase.from as any).mockReturnValue({
         select: mockSelect,
       });
 
@@ -386,7 +386,7 @@ describe('EmailSettings Component', () => {
         })),
       }));
 
-      (supabase.from as typeof supabase.from).mockReturnValue({
+      (supabase.from as any).mockReturnValue({
         select: mockSelect,
       });
 
