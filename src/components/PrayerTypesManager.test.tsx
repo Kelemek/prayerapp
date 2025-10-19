@@ -128,7 +128,7 @@ describe('PrayerTypesManager Component', () => {
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
       await waitFor(() => {
-        expect(screen.getByText(/no prayer types yet/i)).toBeDefined();
+        expect(screen.getByText(/no prayer types found/i)).toBeDefined();
       });
     });
   });
