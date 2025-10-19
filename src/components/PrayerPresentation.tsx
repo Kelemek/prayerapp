@@ -160,14 +160,6 @@ export const PrayerPresentation: React.FC = () => {
   // Auto-advance timer
   useEffect(() => {
     const items = contentType === 'prayers' ? prayers : prompts;
-    console.log('Auto-advance useEffect triggered:', {
-      isPlaying,
-      itemsLength: items.length,
-      contentType,
-      prayersLength: prayers.length,
-      promptsLength: prompts.length,
-      currentIndex
-    });
     
     if (!isPlaying || items.length === 0) return;
 
@@ -180,15 +172,6 @@ export const PrayerPresentation: React.FC = () => {
         currentDuration = calculateSmartDurationPrompt(prompts[currentIndex], smartMode, displayDuration);
       }
     }
-
-    console.log('Setting timer:', {
-      currentIndex,
-      contentType,
-      smartMode,
-      currentDuration,
-      displayDuration,
-      hasContent: contentType === 'prayers' ? !!prayers[currentIndex] : !!prompts[currentIndex]
-    });
 
     const timer = setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % items.length);
