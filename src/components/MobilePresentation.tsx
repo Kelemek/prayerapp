@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Play, Pause, Settings, X, Timer, Bell, Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { calculateSmartDurationPrayer, calculateSmartDurationPrompt, formatTime, applyTheme, handleThemeChange as handleThemeChangeUtil } from '../utils/presentationUtils';
 
 interface Prayer {
   id: string;
@@ -42,6 +43,7 @@ export const MobilePresentation: React.FC = () => {
   const [timeFilter, setTimeFilter] = useState<string>('all');
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
   const [randomize, setRandomize] = useState(false);
+  const [showSmartModeDetails, setShowSmartModeDetails] = useState(false);
   const [prayerTimerMinutes, setPrayerTimerMinutes] = useState(10);
   const [prayerTimerActive, setPrayerTimerActive] = useState(false);
   const [prayerTimerRemaining, setPrayerTimerRemaining] = useState(0);
@@ -58,34 +60,13 @@ export const MobilePresentation: React.FC = () => {
 
   // Apply theme
   useEffect(() => {
-    const applyTheme = () => {
-      const root = document.documentElement;
-      
-      let effectiveTheme: 'light' | 'dark';
-      
-      if (theme === 'system') {
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        effectiveTheme = systemPrefersDark ? 'dark' : 'light';
-      } else {
-        effectiveTheme = theme as 'light' | 'dark';
-      }
-      
-      if (effectiveTheme === 'dark') {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-      
-      localStorage.setItem('theme', theme);
-    };
-
-    applyTheme();
+    applyTheme(theme);
 
     // Listen for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
       if (theme === 'system') {
-        applyTheme();
+        applyTheme(theme);
       }
     };
 
@@ -178,50 +159,50 @@ export const MobilePresentation: React.FC = () => {
     }
   };
 
-  // Calculate smart display duration based on content length
-  const calculateSmartDuration = (prayer: Prayer): number => {
-    if (!smartMode) return displayDuration;
-    
-    // Count total characters
-    let totalChars = 0;
-    totalChars += prayer.prayer_for?.length || 0;
-    totalChars += prayer.description?.length || 0;
-    
-    // Add update text length
-    if (prayer.prayer_updates && prayer.prayer_updates.length > 0) {
-      const recentUpdates = prayer.prayer_updates
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 3);
-      
-      recentUpdates.forEach(update => {
-        totalChars += update.content?.length || 0;
-      });
-    }
-    
-    // Calculate duration: ~120 chars per 10 seconds (slower, more comfortable reading)
-    // Minimum 10 seconds, maximum 90 seconds
-    const calculatedDuration = Math.max(10, Math.min(90, Math.ceil(totalChars / 12)));
-    return calculatedDuration;
-  };
-
   // Auto-advance timer
   useEffect(() => {
     const itemsLength = getItemsLength();
+    console.log('Mobile Auto-advance useEffect triggered:', {
+      isPlaying,
+      itemsLength,
+      contentType,
+      prayersLength: prayers.length,
+      promptsLength: prompts.length,
+      currentIndex
+    });
+    
     if (!isPlaying || itemsLength === 0) return;
 
-    const currentItem = contentType === 'prayers' || contentType === 'both' 
-      ? prayers[currentIndex] 
-      : null;
-    
-    const currentDuration = smartMode && currentItem 
-      ? calculateSmartDuration(currentItem)
-      : displayDuration;
+    // Calculate duration based on content type and smart mode
+    let currentDuration = displayDuration;
+    if (smartMode) {
+      if (contentType === 'prayers' && prayers[currentIndex]) {
+        currentDuration = calculateSmartDurationPrayer(prayers[currentIndex], smartMode, displayDuration);
+      } else if (contentType === 'prompts' && prompts[currentIndex]) {
+        currentDuration = calculateSmartDurationPrompt(prompts[currentIndex], smartMode, displayDuration);
+      } else if (contentType === 'both') {
+        // For 'both', check which type of content we're showing
+        const currentPrayer = prayers[currentIndex];
+        if (currentPrayer) {
+          currentDuration = calculateSmartDurationPrayer(currentPrayer, smartMode, displayDuration);
+        }
+      }
+    }
 
-    const timer = setInterval(() => {
+    console.log('Mobile Setting timer:', {
+      currentIndex,
+      contentType,
+      smartMode,
+      currentDuration,
+      displayDuration,
+      hasItem: !!currentItem
+    });
+
+    const timer = setTimeout(() => {
       setCurrentIndex((prev) => (prev + 1) % itemsLength);
     }, currentDuration * 1000);
 
-    return () => clearInterval(timer);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, displayDuration, smartMode, prayers.length, prompts.length, currentIndex, contentType]);
 
@@ -268,31 +249,6 @@ export const MobilePresentation: React.FC = () => {
   const stopPrayerTimer = () => {
     setPrayerTimerActive(false);
     setPrayerTimerRemaining(0);
-  };
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    
-    // Apply theme immediately
-    if (newTheme === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (prefersDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    } else if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
   };
 
   // Get current items length based on content type
@@ -594,7 +550,7 @@ export const MobilePresentation: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-3 gap-1.5">
                       <button
-                        onClick={() => handleThemeChange('light')}
+                        onClick={() => handleThemeChangeUtil('light', setTheme)}
                         className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all ${
                           theme === 'light'
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
@@ -605,7 +561,7 @@ export const MobilePresentation: React.FC = () => {
                         <span className="text-xs font-medium text-gray-800 dark:text-gray-100">Light</span>
                       </button>
                       <button
-                        onClick={() => handleThemeChange('dark')}
+                        onClick={() => handleThemeChangeUtil('dark', setTheme)}
                         className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all ${
                           theme === 'dark'
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
@@ -616,7 +572,7 @@ export const MobilePresentation: React.FC = () => {
                         <span className="text-xs font-medium text-gray-800 dark:text-gray-100">Dark</span>
                       </button>
                       <button
-                        onClick={() => handleThemeChange('system')}
+                        onClick={() => handleThemeChangeUtil('system', setTheme)}
                         className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all ${
                           theme === 'system'
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
@@ -687,9 +643,29 @@ export const MobilePresentation: React.FC = () => {
 
               {smartMode && (
                 <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg p-3">
-                  <p className="text-sm text-gray-800 dark:text-gray-200">
-                    Smart mode automatically adjusts display time (10-90s) based on the amount of text in each prayer.
+                  <p className="text-sm text-gray-800 dark:text-gray-200 mb-2">
+                    Smart mode automatically adjusts display time based on prayer length, giving you more time to read longer prayers and updates.
                   </p>
+                  <button
+                    onClick={() => setShowSmartModeDetails(!showSmartModeDetails)}
+                    className="text-blue-600 dark:text-blue-400 hover:underline text-xs font-medium flex items-center gap-1"
+                  >
+                    {showSmartModeDetails ? '− Hide details' : '+ Show details'}
+                  </button>
+                  {showSmartModeDetails && (
+                    <div className="mt-2 pt-2 border-t border-blue-300 dark:border-blue-700 text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
+                      <p><strong>How it works:</strong></p>
+                      <ul className="list-disc list-inside space-y-0.5 ml-1 text-xs">
+                        <li>Counts characters in prayer description and up to 3 recent updates</li>
+                        <li>Reading pace: ~120 characters per 10 seconds</li>
+                        <li>Minimum time: 10 seconds per prayer</li>
+                        <li>Maximum time: 120 seconds (2 minutes) per prayer</li>
+                      </ul>
+                      <p className="text-xs italic mt-1.5">
+                        Example: A prayer with 240 characters will display for about 20 seconds
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
