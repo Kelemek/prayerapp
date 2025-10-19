@@ -50,9 +50,13 @@ export const MobilePresentation: React.FC = () => {
   const [showTimerNotification, setShowTimerNotification] = useState(false);
   const [countdownRemaining, setCountdownRemaining] = useState(0);
   const [currentDuration, setCurrentDuration] = useState(10);
+  const [showControls, setShowControls] = useState(true);
+  const [lastTap, setLastTap] = useState<number>(0);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
+  // Double-tap threshold (in ms)
+  const doubleTapThreshold = 300;
 
   // Initialize theme
   useEffect(() => {
@@ -305,6 +309,16 @@ export const MobilePresentation: React.FC = () => {
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null); // reset
     setTouchStart(e.targetTouches[0].clientX);
+    
+    // Handle double-tap to toggle controls
+    const now = Date.now();
+    if (now - lastTap < doubleTapThreshold) {
+      // Double tap detected
+      setShowControls(prev => !prev);
+      setLastTap(0); // reset to prevent triple-tap triggering
+    } else {
+      setLastTap(now);
+    }
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
@@ -488,8 +502,19 @@ export const MobilePresentation: React.FC = () => {
         </div>
       </div>
 
+      {/* Controls hidden hint */}
+      {!showControls && (
+        <div className="fixed bottom-4 left-0 right-0 flex justify-center pointer-events-none">
+          <div className="bg-gray-900/80 dark:bg-gray-100/80 text-white dark:text-gray-900 px-4 py-2 rounded-full text-sm backdrop-blur-sm">
+            Double-tap to show controls
+          </div>
+        </div>
+      )}
+
       {/* Fixed Controls Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-4 border-t border-gray-200 dark:border-gray-700">
+      <div className={`fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-4 border-t border-gray-200 dark:border-gray-700 transition-transform duration-300 ${
+        showControls ? 'translate-y-0' : 'translate-y-full'
+      }`}>
         <div className="max-w-2xl mx-auto">
           {/* Top Row: Play/Pause and Close */}
           <div className="flex items-center justify-between mb-3">
@@ -539,7 +564,7 @@ export const MobilePresentation: React.FC = () => {
                 ? 'Auto-advancing (Smart Mode)' 
                 : `Auto-advancing every ${displayDuration}s`
               : 'Paused'
-            } • {currentIndex + 1} of {currentItems.length} • Swipe to navigate
+            } • {currentIndex + 1} of {currentItems.length} • Swipe to navigate • Double-tap to hide
             {(statusFilter !== 'all' || timeFilter !== 'all') && contentType === 'prayers' && (
               <div className="text-xs mt-1 text-gray-600 dark:text-gray-400">
                 Filtered: {statusFilter !== 'all' ? statusFilter : ''}{statusFilter !== 'all' && timeFilter !== 'all' ? ', ' : ''}{timeFilter !== 'all' ? timeFilter : ''}
