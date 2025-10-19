@@ -528,11 +528,11 @@ describe('PromptManager Component', () => {
       await user.click(screen.getByRole('button', { name: /add prompt/i }));
 
       await waitFor(() => {
-        const saveButton = screen.getByRole('button', { name: /save/i });
+        const saveButton = screen.getByRole('button', { name: /add prompt/i });
         expect(saveButton).toBeDefined();
       });
 
-      await user.click(screen.getByRole('button', { name: /save/i }));
+      await user.click(screen.getByRole('button', { name: /add prompt/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/please fill in all fields/i)).toBeDefined();
@@ -575,7 +575,7 @@ describe('PromptManager Component', () => {
 
       await user.type(screen.getByPlaceholderText(/pray for those in need/i), 'New Prompt');
       await user.type(screen.getByPlaceholderText(/write a prayer or meditation prompt/i), 'Test description');
-      await user.click(screen.getByRole('button', { name: /save/i }));
+      await user.click(screen.getByRole('button', { name: /add prompt/i }));
 
       await waitFor(() => {
         expect(mockInsert).toHaveBeenCalledWith([
@@ -1024,7 +1024,7 @@ describe('PromptManager Component', () => {
 
       await user.type(screen.getByPlaceholderText(/pray for those in need/i), 'Test Prompt');
       await user.type(screen.getByPlaceholderText(/write a prayer or meditation prompt/i), 'Test desc');
-      await user.click(screen.getByRole('button', { name: /save/i }));
+      await user.click(screen.getByRole('button', { name: /add prompt/i }));
 
       await waitFor(() => {
         expect(mockOnSuccess).toHaveBeenCalled();
