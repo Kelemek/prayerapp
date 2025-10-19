@@ -227,7 +227,8 @@ describe('EmailSettings Component', () => {
       expect(screen.getByText('admin@example.com')).toBeDefined();
     });
 
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    // Now there are multiple save buttons (one per section), test the email list save button
+    const saveButton = screen.getByRole('button', { name: /save email list/i });
     await user.click(saveButton);
 
     await waitFor(() => {

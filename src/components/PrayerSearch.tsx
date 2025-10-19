@@ -159,13 +159,11 @@ export const PrayerSearch: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Search className="text-purple-600 dark:text-purple-400" size={24} />
-          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
-            Search & Delete Prayers
-          </h3>
-        </div>
+      <div className="flex items-center gap-2 mb-4">
+        <Search className="text-red-600 dark:text-red-400" size={24} />
+        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
+          Search & Delete Prayers
+        </h3>
       </div>
 
       <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
@@ -181,7 +179,7 @@ export const PrayerSearch: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Search by name or email..."
-            className="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
           />
           {searchTerm && (
             <button
@@ -195,7 +193,7 @@ export const PrayerSearch: React.FC = () => {
         <button
           onClick={handleSearch}
           disabled={searching || !searchTerm.trim()}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors"
         >
           {searching ? (
             <>
@@ -226,12 +224,12 @@ export const PrayerSearch: React.FC = () => {
                 type="checkbox"
                 checked={selectedPrayers.size === searchResults.length && searchResults.length > 0}
                 onChange={toggleSelectAll}
-                className="rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500"
+                className="rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500"
               />
               Select All ({searchResults.length})
             </label>
             {selectedPrayers.size > 0 && (
-              <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">
+              <span className="text-sm text-red-600 dark:text-red-400 font-medium">
                 {selectedPrayers.size} selected
               </span>
             )}
@@ -266,7 +264,7 @@ export const PrayerSearch: React.FC = () => {
               key={prayer.id}
               className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
                 selectedPrayers.has(prayer.id)
-                  ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700'
+                  ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
                   : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700'
               }`}
             >
@@ -274,7 +272,7 @@ export const PrayerSearch: React.FC = () => {
                 type="checkbox"
                 checked={selectedPrayers.has(prayer.id)}
                 onChange={() => toggleSelectPrayer(prayer.id)}
-                className="mt-1 rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500"
+                className="mt-1 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500"
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -331,7 +329,7 @@ export const PrayerSearch: React.FC = () => {
               Found: <span className="font-semibold">{searchResults.length}</span> prayer(s)
             </span>
             {selectedPrayers.size > 0 && (
-              <span className="text-purple-600 dark:text-purple-400">
+              <span className="text-red-600 dark:text-red-400">
                 Selected: <span className="font-semibold">{selectedPrayers.size}</span>
               </span>
             )}

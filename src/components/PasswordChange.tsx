@@ -64,13 +64,14 @@ export const PasswordChange: React.FC<PasswordChangeProps> = ({ onPasswordChange
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-2 mb-4">
         <Lock className="text-blue-600 dark:text-blue-400" size={24} />
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Change Password</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300">Set a new password for your admin account</p>
-        </div>
+        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">Change Password</h3>
       </div>
+
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+        Set a new password for your admin account.
+      </p>
 
       {message && (
         <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${

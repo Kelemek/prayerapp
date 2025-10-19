@@ -14,7 +14,7 @@ describe('PasswordChange', () => {
       render(<PasswordChange onPasswordChange={mockOnPasswordChange} />);
       
       expect(screen.getByRole('heading', { name: /change password/i })).toBeDefined();
-      expect(screen.getByText('Set a new password for your admin account')).toBeDefined();
+      expect(screen.getByText('Set a new password for your admin account.')).toBeDefined();
     });    it('renders new password input field', () => {
       render(<PasswordChange onPasswordChange={mockOnPasswordChange} />);
 
