@@ -52,6 +52,7 @@ export const MobilePresentation: React.FC = () => {
   const [currentDuration, setCurrentDuration] = useState(10);
   const [showControls, setShowControls] = useState(true);
   const [lastTap, setLastTap] = useState<number>(0);
+  const [showControlsHint, setShowControlsHint] = useState(true);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
@@ -252,6 +253,20 @@ export const MobilePresentation: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [prayerTimerActive, prayerTimerRemaining]);
+
+  // Auto-hide controls hint after 5 seconds
+  useEffect(() => {
+    if (!showControls && showControlsHint) {
+      const timer = setTimeout(() => {
+        setShowControlsHint(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    } else if (showControls) {
+      // Reset hint visibility when controls are shown
+      setShowControlsHint(true);
+    }
+  }, [showControls, showControlsHint]);
 
   const startPrayerTimer = async () => {
     // Request notification permission
@@ -503,9 +518,9 @@ export const MobilePresentation: React.FC = () => {
       </div>
 
       {/* Controls hidden hint */}
-      {!showControls && (
+      {!showControls && showControlsHint && (
         <div className="fixed bottom-4 left-0 right-0 flex justify-center pointer-events-none">
-          <div className="bg-gray-900/80 dark:bg-gray-100/80 text-white dark:text-gray-900 px-4 py-2 rounded-full text-sm backdrop-blur-sm">
+          <div className="bg-gray-900/80 dark:bg-gray-100/80 text-white dark:text-gray-900 px-4 py-2 rounded-full text-sm backdrop-blur-sm animate-fade-in">
             Double-tap to show controls
           </div>
         </div>
