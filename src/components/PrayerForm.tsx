@@ -3,6 +3,8 @@ import { X } from 'lucide-react';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';
+import { useVerification } from '../hooks/useVerification';
+import { VerificationDialog } from './VerificationDialog';
 
 interface PrayerFormProps {
   onSubmit: (prayer: Omit<PrayerRequest, 'id' | 'date_requested' | 'created_at' | 'updated_at' | 'updates'>) => Promise<void>;
@@ -25,6 +27,20 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Email verification
+  const { isEnabled, requestCode, verifyCode } = useVerification();
+  const [verificationState, setVerificationState] = useState<{
+    isOpen: boolean;
+    codeId: string | null;
+    expiresAt: string | null;
+    email: string;
+  }>({
+    isOpen: false,
+    codeId: null,
+    expiresAt: null,
+    email: ''
+  });
 
   // Load saved user info when component mounts
   useEffect(() => {
@@ -64,13 +80,45 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
       
       // Save user info to localStorage for future use
       saveUserInfo(firstName, lastName, formData.email);
-      
-      await onSubmit({
+
+      // Prepare the prayer data
+      const prayerData = {
         ...formData,
         requester: fullName,
         title: `Prayer for ${formData.prayer_for}`,
         status: PrayerStatus.CURRENT
-      });
+      };
+
+      // Check if email verification is required
+      if (isEnabled) {
+        // Request verification code
+        const { codeId, expiresAt } = await requestCode(
+          formData.email,
+          'prayer_submission',
+          prayerData
+        );
+        
+        // Show verification dialog
+        setVerificationState({
+          isOpen: true,
+          codeId,
+          expiresAt,
+          email: formData.email
+        });
+      } else {
+        // No verification required, submit directly
+        await submitPrayer(prayerData);
+      }
+      
+    } catch (error) {
+      console.error('Failed to initiate prayer submission:', error);
+      setIsSubmitting(false);
+    }
+  };
+
+  const submitPrayer = async (prayerData: Omit<PrayerRequest, 'id' | 'date_requested' | 'created_at' | 'updated_at' | 'updates'>) => {
+    try {
+      await onSubmit(prayerData);
 
       // Show success message and mark as submitted
       setShowSuccessMessage(true);
@@ -80,7 +128,7 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
       setFormData(prev => ({
         title: '',
         description: '',
-        requester: fullName,
+        requester: prayerData.requester,
         prayer_for: '',
         email: prev.email,
         is_anonymous: false
@@ -89,9 +137,71 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
       
     } catch (error) {
       console.error('Failed to add prayer:', error);
-      // Don't close form on error so user can retry
+      throw error; // Re-throw so verification dialog knows submission failed
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleVerified = async (actionData: any) => {
+    try {
+      await submitPrayer(actionData);
+      
+      // Close verification dialog
+      setVerificationState({
+        isOpen: false,
+        codeId: null,
+        expiresAt: null,
+        email: ''
+      });
+    } catch (error) {
+      console.error('Failed to submit verified prayer:', error);
+      // Don't close verification dialog on error
+      throw error;
+    }
+  };
+
+  const handleVerificationCancel = () => {
+    setVerificationState({
+      isOpen: false,
+      codeId: null,
+      expiresAt: null,
+      email: ''
+    });
+    setIsSubmitting(false);
+  };
+
+  const handleResendCode = async () => {
+    try {
+      if (!formData.email) return;
+
+      // Concatenate first and last name
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+
+      // Prepare the prayer data
+      const prayerData = {
+        ...formData,
+        requester: fullName,
+        title: `Prayer for ${formData.prayer_for}`,
+        status: PrayerStatus.CURRENT
+      };
+
+      // Request new verification code
+      const { codeId, expiresAt } = await requestCode(
+        formData.email,
+        'prayer_submission',
+        prayerData
+      );
+      
+      // Update verification state with new code
+      setVerificationState(prev => ({
+        ...prev,
+        codeId,
+        expiresAt
+      }));
+    } catch (error) {
+      console.error('Failed to resend verification code:', error);
+      throw error;
     }
   };
 
@@ -227,6 +337,19 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
           </div>
         </form>
       </div>
+
+      {/* Email Verification Dialog */}
+      {verificationState.isOpen && verificationState.codeId && verificationState.expiresAt && (
+        <VerificationDialog
+          isOpen={verificationState.isOpen}
+          codeId={verificationState.codeId}
+          expiresAt={verificationState.expiresAt}
+          email={verificationState.email}
+          onVerified={handleVerified}
+          onClose={handleVerificationCancel}
+          onResend={handleResendCode}
+        />
+      )}
     </div>
   );
 };
