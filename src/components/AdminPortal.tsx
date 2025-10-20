@@ -10,6 +10,7 @@ import { PendingPreferenceChangeCard } from './PendingPreferenceChangeCard';
 import { PasswordChange } from './PasswordChange';
 import { EmailSettings } from './EmailSettings';
 import { EmailSubscribers } from './EmailSubscribers';
+import SyncMailchimpSubscribers from './SyncMailchimpSubscribers';
 import { PrayerSearch } from './PrayerSearch';
 import BackupStatus from './BackupStatus';
 import { PromptManager } from './PromptManager'; // Prayer prompts management
@@ -1203,6 +1204,7 @@ export const AdminPortal: React.FC = () => {
               </div>
 
               <EmailSubscribers />
+              <SyncMailchimpSubscribers />
               <EmailSettings />
               <PromptManager onSuccess={() => {
                 // Success message is shown within the component

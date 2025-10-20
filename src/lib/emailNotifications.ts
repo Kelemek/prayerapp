@@ -276,7 +276,7 @@ interface ApprovedUpdatePayload {
 
 /**
  * Send email notifications when a prayer is approved
- * Sends to all users or just admins based on email_distribution setting
+ * Uses Mailchimp for mass subscriber emails, Resend for admin-only notifications
  */
 export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayload): Promise<void> {
   try {
@@ -291,47 +291,70 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
       return;
     }
 
-    let recipients: string[] = [];
-
-    // Determine recipient list based on distribution setting
+    // Determine distribution method based on setting
     if (settings?.email_distribution === 'all_users') {
-      // Get all active subscribers from email_subscribers table (respects opt-in/opt-out)
-      const { data: subscribers, error: subscribersError } = await supabase
-        .from('email_subscribers')
-        .select('email')
-        .eq('is_active', true);
-
-      if (!subscribersError && subscribers) {
-        recipients = subscribers.map(s => s.email);
-      }
+      // Use Mailchimp for mass email to all subscribers
+      await sendMailchimpCampaign(payload);
     } else {
-      // Default to admin_only
-      recipients = settings?.notification_emails || [];
-    }
+      // Default to admin_only - use Resend for transactional emails
+      const recipients = settings?.notification_emails || [];
 
-    if (recipients.length === 0) {
-      console.warn('No recipients for approved prayer notification');
-      return;
-    }
+      if (recipients.length === 0) {
+        console.warn('No admin recipients for approved prayer notification');
+        return;
+      }
 
-    const subject = `New Prayer Request: ${payload.title}`;
-    const body = `A new prayer request has been approved and is now live.\n\nTitle: ${payload.title}\nFor: ${payload.prayerFor}\nRequested by: ${payload.requester}\n\nDescription: ${payload.description}`;
+      const subject = `New Prayer Request: ${payload.title}`;
+      const body = `A new prayer request has been approved and is now live.\n\nTitle: ${payload.title}\nFor: ${payload.prayerFor}\nRequested by: ${payload.requester}\n\nDescription: ${payload.description}`;
 
-    const html = generateApprovedPrayerHTML(payload);
+      const html = generateApprovedPrayerHTML(payload);
 
-    // Send email via Supabase Edge Function
-    const { error: functionError } = await invokeSendNotification({
-      to: recipients,
-      subject,
-      body,
-      html
-    });
+      // Send email via Resend (transactional)
+      const { error: functionError } = await invokeSendNotification({
+        to: recipients,
+        subject,
+        body,
+        html
+      });
 
-    if (functionError) {
-      console.error('Error sending approved prayer notification:', functionError);
+      if (functionError) {
+        console.error('Error sending approved prayer notification:', functionError);
+      }
     }
   } catch (error) {
     console.error('Error in sendApprovedPrayerNotification:', error);
+  }
+}
+
+/**
+ * Send Mailchimp campaign for approved prayer to all subscribers
+ */
+async function sendMailchimpCampaign(payload: ApprovedPrayerPayload): Promise<void> {
+  try {
+    const subject = `New Prayer Request: ${payload.title}`;
+    const htmlContent = generateApprovedPrayerHTML(payload);
+    const textContent = `A new prayer request has been approved and is now live.\n\nTitle: ${payload.title}\nFor: ${payload.prayerFor}\nRequested by: ${payload.requester}\n\nDescription: ${payload.description}`;
+
+    // Call Mailchimp Edge Function
+    const { data, error } = await supabase.functions.invoke('send-mass-prayer-email', {
+      body: {
+        subject,
+        htmlContent,
+        textContent,
+        fromName: 'Prayer App',
+        replyTo: 'noreply@yourchurch.com' // Update with your email
+      }
+    });
+
+    if (error) {
+      console.error('Error sending Mailchimp campaign:', error);
+      throw error;
+    }
+
+    console.log('Mailchimp campaign sent successfully:', data);
+  } catch (error) {
+    console.error('Error in sendMailchimpCampaign:', error);
+    throw error;
   }
 }
 
