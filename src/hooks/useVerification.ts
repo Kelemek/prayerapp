@@ -105,11 +105,11 @@ export const useVerification = () => {
       try {
         const { data } = await supabase
           .from('admin_settings')
-          .select('value')
-          .eq('key', 'email_verification_required')
+          .select('require_email_verification')
+          .eq('id', 1)
           .maybeSingle()
         
-        setIsEnabled(data?.value === true)
+        setIsEnabled(data?.require_email_verification === true)
       } catch (err) {
         console.error('Error checking verification setting:', err)
         setIsEnabled(false) // Default to disabled on error
