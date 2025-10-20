@@ -1,0 +1,63 @@
+name: Sync Mailchimp Unsubscribes to Database
+
+on:
+  # Run daily at 2 AM UTC (6 PM PST / 7 PM PDT)
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # Allow manual triggering from Actions tab
+  workflow_dispatch:
+
+jobs:
+  sync-mailchimp:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Sync Mailchimp subscriber status
+        id: sync
+        run: |
+          # Call the Supabase Edge Function to sync status
+          response=$(curl -s -X POST \
+            "https://eqiafsygvfaifhoaewxi.supabase.co/functions/v1/sync-mailchimp-status" \
+            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json")
+          
+          echo "Response: $response"
+          
+          # Parse response and check for success
+          success=$(echo "$response" | jq -r '.success // false')
+          
+          if [ "$success" != "true" ]; then
+            echo "❌ Sync failed"
+            echo "$response" | jq '.'
+            exit 1
+          fi
+          
+          # Extract statistics
+          updated=$(echo "$response" | jq -r '.updated // 0')
+          total=$(echo "$response" | jq -r '.total // 0')
+          
+          echo "✅ Sync completed successfully!"
+          echo "📈 Statistics:"
+          echo "   - Updated: $updated subscribers"
+          echo "   - Total checked: $total subscribers"
+          
+          # Output changes if any
+          changes=$(echo "$response" | jq -r '.changes // []')
+          if [ "$changes" != "[]" ]; then
+            echo "📝 Changes:"
+            echo "$response" | jq -r '.changes[] | "   - \(.email): \(.new_status)"'
+          fi
+          
+          # Set outputs for potential use in other steps
+          echo "updated=$updated" >> $GITHUB_OUTPUT
+          echo "total=$total" >> $GITHUB_OUTPUT
+      
+      - name: Report results
+        if: always()
+        run: |
+          if [ "${{ steps.sync.outcome }}" == "success" ]; then
+            echo "✅ Mailchimp sync completed successfully"
+          else
+            echo "❌ Mailchimp sync failed - check logs above"
+          fi
