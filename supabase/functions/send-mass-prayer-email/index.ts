@@ -117,15 +117,31 @@ serve(async (req) => {
 })
 
 async function addOrUpdateSubscriber(email: string, name?: string) {
+  // Skip obviously fake emails that Mailchimp will reject
+  const fakeEmailPatterns = ['@example.com', '@test.com', '@fake.com'];
+  if (fakeEmailPatterns.some(pattern => email.toLowerCase().includes(pattern))) {
+    console.warn(`⚠️ Skipping fake email: ${email}`);
+    return { skipped: true, reason: 'Fake email address' };
+  }
+
   const emailHash = hashEmail(email)
   const url = `https://${MAILCHIMP_SERVER_PREFIX}.api.mailchimp.com/3.0/lists/${MAILCHIMP_AUDIENCE_ID}/members/${emailHash}`
   
-  const mergeFields: Record<string, string> = {}
+  const mergeFields: Record<string, any> = {}
   if (name) {
     // Split name into first and last for Mailchimp
     const nameParts = name.trim().split(' ')
     mergeFields.FNAME = nameParts[0] || ''
     mergeFields.LNAME = nameParts.slice(1).join(' ') || ''
+  }
+  
+  // Add empty ADDRESS field to satisfy Mailchimp requirement
+  // You can customize this if you collect actual addresses
+  mergeFields.ADDRESS = {
+    addr1: '',
+    city: '',
+    state: '',
+    zip: ''
   }
   
   const response = await fetch(url, {
