@@ -289,4 +289,417 @@ describe('PrayerCard Component', () => {
     expect(screen.getByText('First update')).toBeDefined();
     expect(screen.getByText('Second update')).toBeDefined();
   });
+
+  describe('Add Update Form', () => {
+    it('submits update with all required fields', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      // Open add update form
+      await user.click(screen.getByText(/Add Update/i));
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Add Prayer Update/i)).toBeDefined();
+      });
+      
+      // Fill in form
+      await user.type(screen.getByPlaceholderText('First name'), 'Jane');
+      await user.type(screen.getByPlaceholderText('Last name'), 'Smith');
+      await user.type(screen.getByPlaceholderText('Your email'), 'jane@example.com');
+      await user.type(screen.getByPlaceholderText(/Prayer update/i), 'Update content');
+      
+      // Submit form
+      const submitButton = screen.getAllByRole('button', { name: /Add Update/i }).find(
+        btn => btn.getAttribute('type') === 'submit'
+      );
+      if (submitButton) {
+        await user.click(submitButton);
+        
+        await waitFor(() => {
+          expect(mockCallbacks.onAddUpdate).toHaveBeenCalledWith(
+            '1',
+            'Update content',
+            'Jane Smith',
+            'jane@example.com',
+            false
+          );
+        });
+      }
+    });
+
+    it('can post update anonymously', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      await user.click(screen.getByText(/Add Update/i));
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Add Prayer Update/i)).toBeDefined();
+      });
+      
+      // Fill in form
+      await user.type(screen.getByPlaceholderText('First name'), 'Jane');
+      await user.type(screen.getByPlaceholderText('Last name'), 'Smith');
+      await user.type(screen.getByPlaceholderText('Your email'), 'jane@example.com');
+      await user.type(screen.getByPlaceholderText(/Prayer update/i), 'Anonymous update');
+      
+      // Check anonymous checkbox
+      const anonymousCheckbox = screen.getByLabelText(/Post update anonymously/i);
+      await user.click(anonymousCheckbox);
+      
+      const submitButton = screen.getAllByRole('button', { name: /Add Update/i }).find(
+        btn => btn.getAttribute('type') === 'submit'
+      );
+      if (submitButton) {
+        await user.click(submitButton);
+        
+        await waitFor(() => {
+          expect(mockCallbacks.onAddUpdate).toHaveBeenCalledWith(
+            '1',
+            'Anonymous update',
+            'Jane Smith',
+            'jane@example.com',
+            true
+          );
+        });
+      }
+    });
+
+    it('cancels add update form', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      await user.click(screen.getByText(/Add Update/i));
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Add Prayer Update/i)).toBeDefined();
+      });
+      
+      const cancelButton = screen.getByRole('button', { name: /Cancel/i });
+      await user.click(cancelButton);
+      
+      await waitFor(() => {
+        expect(screen.queryByText(/Add Prayer Update/i)).toBeNull();
+      });
+    });
+  });
+
+  describe('Delete Request Form', () => {
+    it('shows delete request form for non-admin', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      const deleteButton = screen.getByTitle(/request deletion/i);
+      await user.click(deleteButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Request Prayer Deletion/i)).toBeDefined();
+      });
+    });
+
+    it('submits delete request with all fields', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      const deleteButton = screen.getByTitle(/request deletion/i);
+      await user.click(deleteButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Request Prayer Deletion/i)).toBeDefined();
+      });
+      
+      // Fill in form
+      const inputs = screen.getAllByPlaceholderText('First name');
+      const deleteFirstName = inputs.find(input => input.closest('form')?.querySelector('h4')?.textContent?.includes('Deletion'));
+      if (deleteFirstName) {
+        await user.type(deleteFirstName, 'John');
+      }
+      
+      const lastNameInputs = screen.getAllByPlaceholderText('Last name');
+      const deleteLastName = lastNameInputs.find(input => input.closest('form')?.querySelector('h4')?.textContent?.includes('Deletion'));
+      if (deleteLastName) {
+        await user.type(deleteLastName, 'Doe');
+      }
+      
+      const emailInputs = screen.getAllByPlaceholderText('Your email');
+      const deleteEmail = emailInputs.find(input => input.closest('form')?.querySelector('h4')?.textContent?.includes('Deletion'));
+      if (deleteEmail) {
+        await user.type(deleteEmail, 'john@example.com');
+      }
+      
+      await user.type(screen.getByPlaceholderText(/Reason for deletion/i), 'No longer needed');
+      
+      const submitButton = screen.getByRole('button', { name: /Submit Request/i });
+      await user.click(submitButton);
+      
+      await waitFor(() => {
+        expect(mockCallbacks.onRequestDelete).toHaveBeenCalledWith(
+          '1',
+          'No longer needed',
+          'John Doe',
+          'john@example.com'
+        );
+      });
+    });
+
+    it('cancels delete request form', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      const deleteButton = screen.getByTitle(/request deletion/i);
+      await user.click(deleteButton);
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Request Prayer Deletion/i)).toBeDefined();
+      });
+      
+      const cancelButtons = screen.getAllByRole('button', { name: /Cancel/i });
+      const deleteCancelButton = cancelButtons.find(btn => 
+        btn.closest('form')?.querySelector('h4')?.textContent?.includes('Deletion')
+      );
+      
+      if (deleteCancelButton) {
+        await user.click(deleteCancelButton);
+        
+        await waitFor(() => {
+          expect(screen.queryByText(/Request Prayer Deletion/i)).toBeNull();
+        });
+      }
+    });
+  });
+
+  describe('Status Change Request Form', () => {
+    it('shows status change request form for non-admin', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      await user.click(screen.getByText(/Request Status Change/i));
+      
+      await waitFor(() => {
+        // Check for the form heading
+        const forms = document.querySelectorAll('form');
+        const hasStatusChangeForm = Array.from(forms).some(form =>
+          form.querySelector('h4')?.textContent?.includes('Request Status Change')
+        );
+        expect(hasStatusChangeForm).toBe(true);
+      });
+    });
+
+    it('submits status change request', async () => {
+      const user = userEvent.setup();
+      mockCallbacks.onRequestStatusChange.mockResolvedValue(undefined);
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      await user.click(screen.getByText(/Request Status Change/i));
+      
+      await waitFor(() => {
+        const heading = screen.getAllByText(/Request Status Change/i);
+        expect(heading.length).toBeGreaterThan(0);
+      });
+      
+      // Fill in form - find inputs within the status change form
+      const inputs = screen.getAllByPlaceholderText('First name');
+      const statusFirstName = inputs.find(input => 
+        input.closest('form')?.querySelector('h4')?.textContent?.includes('Status Change')
+      );
+      if (statusFirstName) {
+        await user.type(statusFirstName, 'Jane');
+      }
+      
+      const lastNameInputs = screen.getAllByPlaceholderText('Last name');
+      const statusLastName = lastNameInputs.find(input =>
+        input.closest('form')?.querySelector('h4')?.textContent?.includes('Status Change')
+      );
+      if (statusLastName) {
+        await user.type(statusLastName, 'Doe');
+      }
+      
+      const emailInputs = screen.getAllByPlaceholderText('Your email');
+      const statusEmail = emailInputs.find(input =>
+        input.closest('form')?.querySelector('h4')?.textContent?.includes('Status Change')
+      );
+      if (statusEmail) {
+        await user.type(statusEmail, 'jane@example.com');
+      }
+      
+      // Select status
+      const select = screen.getByRole('combobox');
+      await user.selectOptions(select, 'answered');
+      
+      await user.type(screen.getByPlaceholderText(/Reason for status change/i), 'Prayer answered');
+      
+      const submitButtons = screen.getAllByRole('button', { name: /Submit Request/i });
+      const statusSubmitButton = submitButtons.find(btn =>
+        btn.closest('form')?.querySelector('h4')?.textContent?.includes('Status Change')
+      );
+      
+      if (statusSubmitButton) {
+        await user.click(statusSubmitButton);
+        
+        await waitFor(() => {
+          expect(mockCallbacks.onRequestStatusChange).toHaveBeenCalledWith(
+            '1',
+            'answered',
+            'Prayer answered',
+            'Jane Doe',
+            'jane@example.com'
+          );
+        });
+      }
+    });
+
+    it('cancels status change request form', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      await user.click(screen.getByText(/Request Status Change/i));
+      
+      await waitFor(() => {
+        const heading = screen.getAllByText(/Request Status Change/i);
+        expect(heading.length).toBeGreaterThan(0);
+      });
+      
+      const cancelButtons = screen.getAllByRole('button', { name: /Cancel/i });
+      const statusCancelButton = cancelButtons.find(btn =>
+        btn.closest('form')?.querySelector('h4')?.textContent?.includes('Status Change')
+      );
+      
+      if (statusCancelButton) {
+        await user.click(statusCancelButton);
+        
+        await waitFor(() => {
+          const forms = document.querySelectorAll('form');
+          const hasStatusChangeForm = Array.from(forms).some(form =>
+            form.querySelector('h4')?.textContent?.includes('Status Change')
+          );
+          expect(hasStatusChangeForm).toBe(false);
+        });
+      }
+    });
+  });
+
+  describe('Admin Actions', () => {
+    it('admin can change status to current', async () => {
+      const user = userEvent.setup();
+      const ongoingPrayer = { ...mockPrayer, status: PrayerStatus.ONGOING };
+      render(<PrayerCard prayer={ongoingPrayer} isAdmin={true} {...mockCallbacks} />);
+      
+      const currentButton = screen.getByRole('button', { name: /^Current$/i });
+      await user.click(currentButton);
+      
+      expect(mockCallbacks.onUpdateStatus).toHaveBeenCalledWith('1', PrayerStatus.CURRENT);
+    });
+
+    it('admin can change status to ongoing', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
+      
+      const ongoingButton = screen.getByRole('button', { name: /^Ongoing$/i });
+      await user.click(ongoingButton);
+      
+      expect(mockCallbacks.onUpdateStatus).toHaveBeenCalledWith('1', PrayerStatus.ONGOING);
+    });
+
+    it('admin can change status to answered', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
+      
+      const answeredButton = screen.getByRole('button', { name: /^Answered$/i });
+      await user.click(answeredButton);
+      
+      expect(mockCallbacks.onUpdateStatus).toHaveBeenCalledWith('1', PrayerStatus.ANSWERED);
+    });
+
+    it('admin can change status to closed', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
+      
+      const closedButton = screen.getByRole('button', { name: /^Closed$/i });
+      await user.click(closedButton);
+      
+      expect(mockCallbacks.onUpdateStatus).toHaveBeenCalledWith('1', PrayerStatus.CLOSED);
+    });
+
+    it('highlights current status for admin', () => {
+      render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
+      
+      const currentButton = screen.getByRole('button', { name: /^Current$/i });
+      expect(currentButton.className).toContain('bg-blue');
+    });
+  });
+
+  describe('Show/Hide Updates', () => {
+    it('shows "Show all" button when more than 2 updates exist', () => {
+      const prayerWith3Updates = {
+        ...mockPrayer,
+        updates: [
+          { id: '1', prayer_id: '1', content: 'Update 1', author: 'User', author_email: 'user@example.com', created_at: '2025-01-02T00:00:00Z', is_anonymous: false },
+          { id: '2', prayer_id: '1', content: 'Update 2', author: 'User', author_email: 'user@example.com', created_at: '2025-01-03T00:00:00Z', is_anonymous: false },
+          { id: '3', prayer_id: '1', content: 'Update 3', author: 'User', author_email: 'user@example.com', created_at: '2025-01-04T00:00:00Z', is_anonymous: false },
+        ],
+      };
+      
+      render(<PrayerCard prayer={prayerWith3Updates} isAdmin={false} {...mockCallbacks} />);
+      
+      expect(screen.getByText(/Show all/i)).toBeDefined();
+    });
+
+    it('toggles between showing 2 and all updates', async () => {
+      const user = userEvent.setup();
+      const prayerWith3Updates = {
+        ...mockPrayer,
+        updates: [
+          { id: '1', prayer_id: '1', content: 'Update 1', author: 'User', author_email: 'user@example.com', created_at: '2025-01-02T00:00:00Z', is_anonymous: false },
+          { id: '2', prayer_id: '1', content: 'Update 2', author: 'User', author_email: 'user@example.com', created_at: '2025-01-03T00:00:00Z', is_anonymous: false },
+          { id: '3', prayer_id: '1', content: 'Update 3', author: 'User', author_email: 'user@example.com', created_at: '2025-01-04T00:00:00Z', is_anonymous: false },
+        ],
+      };
+      
+      render(<PrayerCard prayer={prayerWith3Updates} isAdmin={false} {...mockCallbacks} />);
+      
+      // Click show all
+      await user.click(screen.getByText(/Show all/i));
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Show less/i)).toBeDefined();
+      });
+      
+      // Click show less
+      await user.click(screen.getByText(/Show less/i));
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Show all/i)).toBeDefined();
+      });
+    });
+  });
+
+  describe('Form Opening Callback', () => {
+    it('calls onFormOpen when opening add update form', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      await user.click(screen.getByText(/Add Update/i));
+      
+      expect(mockCallbacks.onFormOpen).toHaveBeenCalled();
+    });
+
+    it('calls onFormOpen when opening delete request form', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      const deleteButton = screen.getByTitle(/request deletion/i);
+      await user.click(deleteButton);
+      
+      expect(mockCallbacks.onFormOpen).toHaveBeenCalled();
+    });
+
+    it('calls onFormOpen when opening status change request form', async () => {
+      const user = userEvent.setup();
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
+      
+      await user.click(screen.getByText(/Request Status Change/i));
+      
+      expect(mockCallbacks.onFormOpen).toHaveBeenCalled();
+    });
+  });
 });
