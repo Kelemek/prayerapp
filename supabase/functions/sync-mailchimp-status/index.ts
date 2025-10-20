@@ -1,3 +1,4 @@
+// @ts-nocheck - Deno Edge Function
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const MAILCHIMP_API_KEY = Deno.env.get('MAILCHIMP_API_KEY');
@@ -40,49 +41,49 @@ serve(async (req) => {
     }
 
     console.log('📧 Fetching Mailchimp audience members...');
-    const mailchimpUrl = \`https://\${MAILCHIMP_SERVER_PREFIX}.api.mailchimp.com/3.0/lists/\${MAILCHIMP_AUDIENCE_ID}/members?count=1000&fields=members.email_address,members.status\`;
+    const mailchimpUrl = `https://${MAILCHIMP_SERVER_PREFIX}.api.mailchimp.com/3.0/lists/${MAILCHIMP_AUDIENCE_ID}/members?count=1000&fields=members.email_address,members.status`;
 
     const mailchimpResponse = await fetch(mailchimpUrl, {
       method: 'GET',
       headers: {
-        'Authorization': \`Bearer \${MAILCHIMP_API_KEY}\`,
+        'Authorization': `Bearer ${MAILCHIMP_API_KEY}`,
         'Content-Type': 'application/json'
       }
     });
 
     if (!mailchimpResponse.ok) {
       const error = await mailchimpResponse.json();
-      throw new Error(\`Mailchimp API error: \${JSON.stringify(error)}\`);
+      throw new Error(`Mailchimp API error: ${JSON.stringify(error)}`);
     }
 
     const mailchimpData = await mailchimpResponse.json();
     const members = mailchimpData.members || [];
 
-    console.log(\`✅ Fetched \${members.length} members from Mailchimp\`);
+    console.log(`✅ Fetched ${members.length} members from Mailchimp`);
 
     const mailchimpStatusMap = new Map();
     members.forEach((member) => {
       const email = member.email_address.toLowerCase().trim();
       const isActive = member.status === 'subscribed';
       mailchimpStatusMap.set(email, isActive);
-      console.log(\`  \${email}: \${member.status} → \${isActive ? 'active' : 'inactive'}\`);
+      console.log(`  ${email}: ${member.status} → ${isActive ? 'active' : 'inactive'}`);
     });
 
     console.log('📊 Fetching database subscribers...');
-    const dbResponse = await fetch(\`\${SUPABASE_URL}/rest/v1/email_subscribers?select=*\`, {
+    const dbResponse = await fetch(`${SUPABASE_URL}/rest/v1/email_subscribers?select=*`, {
       headers: {
         'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': \`Bearer \${SUPABASE_SERVICE_ROLE_KEY}\`,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json'
       }
     });
 
     if (!dbResponse.ok) {
-      throw new Error(\`Database fetch error: \${dbResponse.statusText}\`);
+      throw new Error(`Database fetch error: ${dbResponse.statusText}`);
     }
 
     const dbSubscribers = await dbResponse.json();
-    console.log(\`✅ Fetched \${dbSubscribers.length} subscribers from database\`);
+    console.log(`✅ Fetched ${dbSubscribers.length} subscribers from database`);
 
     let updatedCount = 0;
     let skippedCount = 0;
@@ -94,13 +95,13 @@ serve(async (req) => {
       const mailchimpStatus = mailchimpStatusMap.get(email);
 
       if (mailchimpStatus !== undefined && dbIsActive !== mailchimpStatus) {
-        console.log(\`🔄 Updating \${email}: \${dbIsActive} → \${mailchimpStatus}\`);
+        console.log(`🔄 Updating ${email}: ${dbIsActive} → ${mailchimpStatus}`);
 
-        const updateResponse = await fetch(\`\${SUPABASE_URL}/rest/v1/email_subscribers?email=eq.\${email}\`, {
+        const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/email_subscribers?email=eq.${email}`, {
           method: 'PATCH',
           headers: {
             'apikey': SUPABASE_SERVICE_ROLE_KEY,
-            'Authorization': \`Bearer \${SUPABASE_SERVICE_ROLE_KEY}\`,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
             'Content-Type': 'application/json',
             'Prefer': 'return=minimal'
           },
@@ -116,22 +117,22 @@ serve(async (req) => {
             oldStatus: dbIsActive,
             newStatus: mailchimpStatus
           });
-          console.log(\`  ✅ Updated \${email}\`);
+          console.log(`  ✅ Updated ${email}`);
         } else {
-          console.error(\`  ❌ Failed to update \${email}:\`, await updateResponse.text());
+          console.error(`  ❌ Failed to update ${email}:`, await updateResponse.text());
         }
       } else if (mailchimpStatus !== undefined) {
         skippedCount++;
-        console.log(\`  ⏭️  Skipped \${email} (already in sync)\`);
+        console.log(`  ⏭️  Skipped ${email} (already in sync)`);
       } else {
-        console.log(\`  ℹ️  \${email} not in Mailchimp (possibly new)\`);
+        console.log(`  ℹ️  ${email} not in Mailchimp (possibly new)`);
       }
     }
 
     console.log('✅ Sync complete!');
-    console.log(\`   Updated: \${updatedCount}\`);
-    console.log(\`   Skipped: \${skippedCount}\`);
-    console.log(\`   Total checked: \${dbSubscribers.length}\`);
+    console.log(`   Updated: ${updatedCount}`);
+    console.log(`   Skipped: ${skippedCount}`);
+    console.log(`   Total checked: ${dbSubscribers.length}`);
 
     return new Response(JSON.stringify({
       success: true,
@@ -139,7 +140,7 @@ serve(async (req) => {
       skipped: skippedCount,
       total: dbSubscribers.length,
       changes: updates,
-      message: \`Synced \${updatedCount} subscriber status changes from Mailchimp\`
+      message: `Synced ${updatedCount} subscriber status changes from Mailchimp`
     }), {
       status: 200,
       headers: {
