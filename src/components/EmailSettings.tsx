@@ -11,6 +11,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [newEmail, setNewEmail] = useState('');
   const [emailDistribution, setEmailDistribution] = useState<'admin_only' | 'all_users'>('admin_only');
   const [replyToEmail, setReplyToEmail] = useState<string>('markdlarson@me.com');
+  const [requireEmailVerification, setRequireEmailVerification] = useState<boolean>(false);
   const [daysBeforeOngoing, setDaysBeforeOngoing] = useState<number>(30);
   const [reminderIntervalDays, setReminderIntervalDays] = useState<number>(7);
   const [loading, setLoading] = useState(true);
@@ -38,7 +39,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('notification_emails, email_distribution, reply_to_email, days_before_ongoing, reminder_interval_days')
+        .select('notification_emails, email_distribution, reply_to_email, require_email_verification, days_before_ongoing, reminder_interval_days')
         .eq('id', 1)
         .maybeSingle();
 
@@ -60,6 +61,10 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
 
       if (data?.reply_to_email) {
         setReplyToEmail(data.reply_to_email);
+      }
+
+      if (data?.require_email_verification !== null && data?.require_email_verification !== undefined) {
+        setRequireEmailVerification(data.require_email_verification);
       }
 
       if (data?.days_before_ongoing !== null && data?.days_before_ongoing !== undefined) {
@@ -92,6 +97,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           notification_emails: emails,
           email_distribution: emailDistribution,
           reply_to_email: replyToEmail,
+          require_email_verification: requireEmailVerification,
           days_before_ongoing: daysBeforeOngoing,
           reminder_interval_days: reminderIntervalDays,
           updated_at: new Date().toISOString()
@@ -470,6 +476,38 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Email address shown when recipients reply to notification emails (must be verified in Mailchimp)
           </p>
+        </div>
+
+        {/* Email Verification Requirement */}
+        <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={requireEmailVerification}
+                  onChange={(e) => setRequireEmailVerification(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Require Email Verification (2FA)
+                </span>
+              </label>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 ml-6">
+                When enabled, users must verify their email address with a code before submitting:
+              </p>
+              <ul className="text-xs text-gray-600 dark:text-gray-400 mt-1 ml-6 space-y-1">
+                <li>• Prayer requests</li>
+                <li>• Prayer updates</li>
+                <li>• Deletion requests</li>
+                <li>• Status change requests</li>
+                <li>• Email preference changes</li>
+              </ul>
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-2 ml-6 font-medium">
+                ✓ Prevents spam and validates email addresses
+              </p>
+            </div>
+          </div>
         </div>
 
         {successDistribution && (

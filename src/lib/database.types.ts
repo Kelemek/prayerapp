@@ -351,6 +351,73 @@ export interface Database {
           updated_at?: string
         }
       }
+      admin_settings: {
+        Row: {
+          id: number
+          notification_emails: string[]
+          email_distribution: string
+          reply_to_email: string | null
+          require_email_verification: boolean
+          days_before_ongoing: number
+          reminder_interval_days: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          notification_emails?: string[]
+          email_distribution?: string
+          reply_to_email?: string | null
+          require_email_verification?: boolean
+          days_before_ongoing?: number
+          reminder_interval_days?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          notification_emails?: string[]
+          email_distribution?: string
+          reply_to_email?: string | null
+          require_email_verification?: boolean
+          days_before_ongoing?: number
+          reminder_interval_days?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      verification_codes: {
+        Row: {
+          id: string
+          email: string
+          code: string
+          action_type: string
+          action_data: Json
+          expires_at: string
+          used_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          code: string
+          action_type: string
+          action_data: Json
+          expires_at: string
+          used_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          code?: string
+          action_type?: string
+          action_data?: Json
+          expires_at?: string
+          used_at?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
