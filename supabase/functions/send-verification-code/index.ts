@@ -6,9 +6,11 @@ const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@yourdoma
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-// Generate a random 6-digit code
-function generateCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+// Generate a random code of specified length
+function generateCode(length: number = 6): string {
+  const min = Math.pow(10, length - 1);
+  const max = Math.pow(10, length) - 1;
+  return Math.floor(min + Math.random() * (max - min + 1)).toString();
 }
 
 // Get action description for email
@@ -106,9 +108,33 @@ serve(async (req) => {
       });
     }
 
-    // Generate 6-digit code
-    const code = generateCode();
-    console.log(`🔢 Generated code for ${email}: ${code}`);
+    // Fetch admin settings to get code length
+    console.log('⚙️ Fetching admin settings for code length...');
+    const settingsResponse = await fetch(`${SUPABASE_URL}/rest/v1/admin_settings?id=eq.1`, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    let codeLength = 6; // Default to 6 digits
+    if (settingsResponse.ok) {
+      const settings = await settingsResponse.json();
+      if (settings && settings.length > 0 && settings[0].verification_code_length) {
+        codeLength = settings[0].verification_code_length;
+        console.log(`✅ Using code length from settings: ${codeLength}`);
+      } else {
+        console.log(`⚠️ No code length setting found, using default: ${codeLength}`);
+      }
+    } else {
+      console.warn('⚠️ Failed to fetch admin settings, using default code length: 6');
+    }
+
+    // Generate code with specified length
+    const code = generateCode(codeLength);
+    console.log(`🔢 Generated ${codeLength}-digit code for ${email}: ${code}`);
 
     // Calculate expiration time (15 minutes from now)
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();

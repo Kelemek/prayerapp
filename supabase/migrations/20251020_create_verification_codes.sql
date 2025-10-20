@@ -6,8 +6,13 @@
 ALTER TABLE admin_settings 
 ADD COLUMN IF NOT EXISTS require_email_verification BOOLEAN DEFAULT false;
 
--- Add comment
+-- Add verification_code_length setting to admin_settings table
+ALTER TABLE admin_settings 
+ADD COLUMN IF NOT EXISTS verification_code_length INTEGER DEFAULT 6 CHECK (verification_code_length >= 4 AND verification_code_length <= 8);
+
+-- Add comments
 COMMENT ON COLUMN admin_settings.require_email_verification IS 'When enabled, users must verify their email before submitting prayers, updates, deletions, status changes, or preference changes';
+COMMENT ON COLUMN admin_settings.verification_code_length IS 'Length of verification code (4-8 digits). Default is 6.';
 
 -- Create verification_codes table for email verification system
 -- This table stores temporary verification codes sent to users

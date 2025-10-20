@@ -21,12 +21,41 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
   codeId,
   expiresAt
 }) => {
-  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [codeLength, setCodeLength] = useState<number>(6);
+  const [code, setCode] = useState<string[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Fetch code length from admin settings
+  useEffect(() => {
+    const fetchCodeLength = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('admin_settings')
+          .select('verification_code_length')
+          .eq('id', 1)
+          .maybeSingle();
+
+        if (!error && data?.verification_code_length) {
+          const length = data.verification_code_length;
+          setCodeLength(length);
+          setCode(new Array(length).fill(''));
+        } else {
+          setCode(new Array(6).fill(''));
+        }
+      } catch (err) {
+        console.error('Failed to fetch code length:', err);
+        setCode(new Array(6).fill(''));
+      }
+    };
+
+    if (isOpen) {
+      fetchCodeLength();
+    }
+  }, [isOpen]);
 
   // Calculate time remaining
   useEffect(() => {
@@ -59,10 +88,10 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
   // Reset state when dialog closes
   useEffect(() => {
     if (!isOpen) {
-      setCode(['', '', '', '', '', '']);
+      setCode(new Array(codeLength).fill(''));
       setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, codeLength]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -191,7 +220,7 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
             Verify Your Email
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            We've sent a 6-digit code to
+            We've sent a {codeLength}-digit code to
           </p>
           <p className="text-sm font-medium text-gray-900 dark:text-white">
             {email}
