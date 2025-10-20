@@ -103,32 +103,19 @@ export const useVerification = () => {
   useEffect(() => {
     const checkIfEnabled = async () => {
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('admin_settings')
-          .select('require_email_verification, verification_code_expiry_minutes')
-          .eq('id', 1)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Error checking verification setting:', error);
-          // Default to disabled if we can't check
-          setIsEnabled(false);
-          return;
-        }
-
-        const enabled = data?.require_email_verification ?? false;
-        const expiry = data?.verification_code_expiry_minutes ?? 15;
-        setIsEnabled(enabled);
-        setExpiryMinutes(expiry);
+          .select('value')
+          .eq('key', 'email_verification_required')
+          .maybeSingle()
         
-        // Clean up expired sessions on load
-        cleanupExpiredSessions();
+        setIsEnabled(data?.value === true)
       } catch (err) {
-        console.error('Error checking verification setting:', err);
-        setIsEnabled(false);
+        console.error('Error checking verification setting:', err)
+        setIsEnabled(false) // Default to disabled on error
       }
-    };
-
+    }
+    
     checkIfEnabled();
   }, []);
 
