@@ -4,6 +4,8 @@ import { useToast } from '../hooks/useToast';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';
+import { useVerification } from '../hooks/useVerification';
+import { VerificationDialog } from './VerificationDialog';
 
 interface PrayerCardProps {
   prayer: PrayerRequest;
@@ -61,6 +63,24 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   const [showAllUpdates, setShowAllUpdates] = useState(false);
   const { showToast } = useToast();
 
+  // Email verification
+  const { isEnabled, requestCode } = useVerification();
+  const [verificationState, setVerificationState] = useState<{
+    isOpen: boolean;
+    codeId: string | null;
+    expiresAt: string | null;
+    email: string;
+    actionType: 'prayer_update' | 'prayer_deletion' | 'status_change' | 'update_deletion';
+    actionData: any;
+  }>({
+    isOpen: false,
+    codeId: null,
+    expiresAt: null,
+    email: '',
+    actionType: 'prayer_update',
+    actionData: null
+  });
+
   // Load saved user info when component mounts
   useEffect(() => {
     const userInfo = getUserInfo();
@@ -102,7 +122,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     formSetter(); // Then open the desired form
   };
 
-  const handleAddUpdate = (e: React.FormEvent) => {
+  const handleAddUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!updateText.trim() || !updateFirstName.trim() || !updateLastName.trim() || !updateAuthorEmail.trim()) return;
     
@@ -112,8 +132,45 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     // Save user info to localStorage for future use
     saveUserInfo(updateFirstName, updateLastName, updateAuthorEmail);
     
+    const updateData = {
+      prayerId: prayer.id,
+      content: updateText,
+      author: fullName,
+      authorEmail: updateAuthorEmail,
+      isAnonymous: updateIsAnonymous
+    };
+
+    // Check if email verification is required
+    if (isEnabled) {
+      try {
+        // Request verification code
+        const { codeId, expiresAt } = await requestCode(
+          updateAuthorEmail,
+          'prayer_update',
+          updateData
+        );
+        
+        // Show verification dialog
+        setVerificationState({
+          isOpen: true,
+          codeId,
+          expiresAt,
+          email: updateAuthorEmail,
+          actionType: 'prayer_update',
+          actionData: updateData
+        });
+      } catch (error) {
+        console.error('Failed to request verification code:', error);
+      }
+    } else {
+      // No verification required, submit directly
+      submitUpdate(updateData);
+    }
+  };
+
+  const submitUpdate = (updateData: any) => {
     // include author email and anonymous flag when adding an update
-    onAddUpdate(prayer.id, updateText, fullName, updateAuthorEmail, updateIsAnonymous);
+    onAddUpdate(updateData.prayerId, updateData.content, updateData.author, updateData.authorEmail, updateData.isAnonymous);
     setUpdateText('');
     // Don't reset name and email - keep them for next time
     // setUpdateFirstName('');
@@ -134,8 +191,44 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     // Save user info to localStorage for future use
     saveUserInfo(deleteRequesterFirstName, deleteRequesterLastName, deleteRequesterEmail);
     
+    const deleteData = {
+      prayerId: prayer.id,
+      reason: deleteReason,
+      requesterName: fullName,
+      requesterEmail: deleteRequesterEmail
+    };
+
+    // Check if email verification is required
+    if (isEnabled) {
+      try {
+        // Request verification code
+        const { codeId, expiresAt } = await requestCode(
+          deleteRequesterEmail,
+          'prayer_deletion',
+          deleteData
+        );
+        
+        // Show verification dialog
+        setVerificationState({
+          isOpen: true,
+          codeId,
+          expiresAt,
+          email: deleteRequesterEmail,
+          actionType: 'prayer_deletion',
+          actionData: deleteData
+        });
+      } catch (error) {
+        console.error('Failed to request verification code:', error);
+      }
+    } else {
+      // No verification required, submit directly
+      await submitDeleteRequest(deleteData);
+    }
+  };
+
+  const submitDeleteRequest = async (deleteData: any) => {
     try {
-      await onRequestDelete(prayer.id, deleteReason, fullName, deleteRequesterEmail);
+      await onRequestDelete(deleteData.prayerId, deleteData.reason, deleteData.requesterName, deleteData.requesterEmail);
       setDeleteReason('');
       // Don't reset name and email - keep them for next time
       // setDeleteRequesterFirstName('');
@@ -146,6 +239,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     } catch (error) {
       console.error('Error in handleDeleteRequest:', error);
       // Don't reset the form on error so user can try again
+      throw error;
     }
   };
 
@@ -165,8 +259,45 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     // Save user info to localStorage for future use
     saveUserInfo(statusChangeRequesterFirstName, statusChangeRequesterLastName, statusChangeRequesterEmail);
     
+    const statusChangeData = {
+      prayerId: prayer.id,
+      newStatus: requestedStatus,
+      reason: statusChangeReason,
+      requesterName: fullName,
+      requesterEmail: statusChangeRequesterEmail
+    };
+
+    // Check if email verification is required
+    if (isEnabled) {
+      try {
+        // Request verification code
+        const { codeId, expiresAt } = await requestCode(
+          statusChangeRequesterEmail,
+          'status_change',
+          statusChangeData
+        );
+        
+        // Show verification dialog
+        setVerificationState({
+          isOpen: true,
+          codeId,
+          expiresAt,
+          email: statusChangeRequesterEmail,
+          actionType: 'status_change',
+          actionData: statusChangeData
+        });
+      } catch (error) {
+        console.error('Failed to request verification code:', error);
+      }
+    } else {
+      // No verification required, submit directly
+      await submitStatusChange(statusChangeData);
+    }
+  };
+
+  const submitStatusChange = async (statusChangeData: any) => {
     try {
-      await onRequestStatusChange(prayer.id, requestedStatus, statusChangeReason, fullName, statusChangeRequesterEmail);
+      await onRequestStatusChange(statusChangeData.prayerId, statusChangeData.newStatus, statusChangeData.reason, statusChangeData.requesterName, statusChangeData.requesterEmail);
       setStatusChangeReason('');
       // Don't reset name and email - keep them for next time
       // setStatusChangeRequesterFirstName('');
@@ -177,6 +308,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     } catch (error) {
       console.error('Error in handleStatusChangeRequest:', error);
       // Don't reset the form on error so user can try again
+      throw error;
     }
   };
 
@@ -190,6 +322,73 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     });
   };
 
+  const handleVerified = async (actionData: any) => {
+    try {
+      // Route to the correct submission function based on action type
+      switch (verificationState.actionType) {
+        case 'prayer_update':
+          submitUpdate(actionData);
+          break;
+        case 'prayer_deletion':
+          await submitDeleteRequest(actionData);
+          break;
+        case 'status_change':
+          await submitStatusChange(actionData);
+          break;
+        case 'update_deletion':
+          await submitUpdateDeletion(actionData);
+          break;
+      }
+      
+      // Close verification dialog
+      setVerificationState({
+        isOpen: false,
+        codeId: null,
+        expiresAt: null,
+        email: '',
+        actionType: 'prayer_update',
+        actionData: null
+      });
+    } catch (error) {
+      console.error('Failed to submit verified action:', error);
+      throw error;
+    }
+  };
+
+  const handleVerificationCancel = () => {
+    setVerificationState({
+      isOpen: false,
+      codeId: null,
+      expiresAt: null,
+      email: '',
+      actionType: 'prayer_update',
+      actionData: null
+    });
+  };
+
+  const handleResendCode = async () => {
+    try {
+      if (!verificationState.email || !verificationState.actionData) return;
+
+      // Request new verification code
+      const { codeId, expiresAt } = await requestCode(
+        verificationState.email,
+        verificationState.actionType,
+        verificationState.actionData
+      );
+      
+      // Update verification state with new code
+      setVerificationState(prev => ({
+        ...prev,
+        codeId,
+        expiresAt
+      }));
+    } catch (error) {
+      console.error('Failed to resend verification code:', error);
+      throw error;
+    }
+  };
+
   const handleUpdateDeletionRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!updateDeleteReason.trim() || !updateDeleteRequesterFirstName.trim() || !updateDeleteRequesterLastName.trim() || !updateDeleteRequesterEmail.trim() || !showUpdateDeleteRequest) return;
@@ -200,10 +399,47 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     // Save user info to localStorage for future use
     saveUserInfo(updateDeleteRequesterFirstName, updateDeleteRequesterLastName, updateDeleteRequesterEmail);
     
+    const updateDeleteData = {
+      updateId: showUpdateDeleteRequest,
+      reason: updateDeleteReason,
+      requesterName: fullName,
+      requesterEmail: updateDeleteRequesterEmail
+    };
+
+    // Check if email verification is required
+    if (isEnabled) {
+      try {
+        // Request verification code
+        const { codeId, expiresAt } = await requestCode(
+          updateDeleteRequesterEmail,
+          'update_deletion',
+          updateDeleteData
+        );
+        
+        // Show verification dialog
+        setVerificationState({
+          isOpen: true,
+          codeId,
+          expiresAt,
+          email: updateDeleteRequesterEmail,
+          actionType: 'update_deletion',
+          actionData: updateDeleteData
+        });
+      } catch (error) {
+        console.error('Failed to request verification code:', error);
+        setIsSubmittingUpdateDelete(false);
+      }
+    } else {
+      // No verification required, submit directly
+      await submitUpdateDeletion(updateDeleteData);
+    }
+  };
+
+  const submitUpdateDeletion = async (updateDeleteData: any) => {
     try {
       setIsSubmittingUpdateDelete(true);
       setUpdateDeleteError(null);
-      const res = await onRequestUpdateDelete(showUpdateDeleteRequest, updateDeleteReason, fullName, updateDeleteRequesterEmail);
+      const res = await onRequestUpdateDelete(updateDeleteData.updateId, updateDeleteData.reason, updateDeleteData.requesterName, updateDeleteData.requesterEmail);
       if (!res || (res as { ok?: boolean }).ok === false) {
         // Handle common Supabase errors more gracefully
         let errMsg = (res && (res as { error?: unknown }).error) ? (res as { error?: unknown }).error : 'Failed to submit update deletion request';
@@ -224,6 +460,8 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       setShowUpdateDeleteRequest(null);
       // show a toast to match other successful actions
       try { showToast('Update deletion request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
+    } catch (error) {
+      throw error;
     } finally {
       setIsSubmittingUpdateDelete(false);
     }
@@ -656,6 +894,19 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Email Verification Dialog */}
+      {verificationState.isOpen && verificationState.codeId && verificationState.expiresAt && (
+        <VerificationDialog
+          isOpen={verificationState.isOpen}
+          codeId={verificationState.codeId}
+          expiresAt={verificationState.expiresAt}
+          email={verificationState.email}
+          onVerified={handleVerified}
+          onClose={handleVerificationCancel}
+          onResend={handleResendCode}
+        />
       )}
     </div>
   );

@@ -5,6 +5,8 @@ import { sendPreferenceChangeNotification } from '../lib/emailNotifications';
 import { downloadPrintablePrayerList } from '../utils/printablePrayerList';
 import { downloadPrintablePromptList } from '../utils/printablePromptList';
 import { getUserInfo } from '../utils/userInfoStorage';
+import { useVerification } from '../hooks/useVerification';
+import { VerificationDialog } from './VerificationDialog';
 
 interface UserSettingsProps {
   isOpen: boolean;
@@ -22,6 +24,22 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
   const [isPrinting, setIsPrinting] = useState(false);
   const [isPrintingPrompts, setIsPrintingPrompts] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(false);
+
+  // Email verification
+  const { isEnabled, requestCode } = useVerification();
+  const [verificationState, setVerificationState] = useState<{
+    isOpen: boolean;
+    codeId: string | null;
+    expiresAt: string | null;
+    email: string;
+    actionData: any;
+  }>({
+    isOpen: false,
+    codeId: null,
+    expiresAt: null,
+    email: '',
+    actionData: null
+  });
 
   const handlePrint = async (range: 'week' | 'month' | 'year') => {
     setIsPrinting(true);
@@ -205,23 +223,59 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
 
       const emailLower = email.toLowerCase().trim();
 
+      const preferenceData = {
+        name: name.trim(),
+        email: emailLower,
+        receive_new_prayer_notifications: receiveNotifications
+      };
+
+      // Check if email verification is required
+      if (isEnabled) {
+        // Request verification code
+        const { codeId, expiresAt } = await requestCode(
+          emailLower,
+          'preference_change',
+          preferenceData
+        );
+        
+        // Show verification dialog
+        setVerificationState({
+          isOpen: true,
+          codeId,
+          expiresAt,
+          email: emailLower,
+          actionData: preferenceData
+        });
+        setSaving(false);
+      } else {
+        // No verification required, submit directly
+        await submitPreference(preferenceData);
+      }
+    } catch (err: unknown) {
+      console.error('Error initiating preference change:', err);
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String(err.message)
+        : 'Failed to save preferences';
+      setError(errorMessage);
+      setSaving(false);
+    }
+  };
+
+  const submitPreference = async (preferenceData: any) => {
+    try {
       // Submit as pending preference change for admin approval
       const { error } = await supabase
         .from('pending_preference_changes')
-        .insert({
-          name: name.trim(),
-          email: emailLower,
-          receive_new_prayer_notifications: receiveNotifications
-        });
+        .insert(preferenceData);
 
       if (error) throw error;
 
       // Send admin notification email (don't let this block the save)
       try {
         await sendPreferenceChangeNotification({
-          name: name.trim(),
-          email: emailLower,
-          receiveNotifications
+          name: preferenceData.name,
+          email: preferenceData.email,
+          receiveNotifications: preferenceData.receive_new_prayer_notifications
         });
       } catch (emailError) {
         console.warn('⚠️ Admin notification email failed (but preference was saved):', emailError);
@@ -238,8 +292,61 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         ? String(err.message)
         : 'Failed to save preferences';
       setError(errorMessage);
+      throw err;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleVerified = async (actionData: any) => {
+    try {
+      await submitPreference(actionData);
+      
+      // Close verification dialog
+      setVerificationState({
+        isOpen: false,
+        codeId: null,
+        expiresAt: null,
+        email: '',
+        actionData: null
+      });
+    } catch (error) {
+      console.error('Failed to submit verified preference:', error);
+      throw error;
+    }
+  };
+
+  const handleVerificationCancel = () => {
+    setVerificationState({
+      isOpen: false,
+      codeId: null,
+      expiresAt: null,
+      email: '',
+      actionData: null
+    });
+    setSaving(false);
+  };
+
+  const handleResendCode = async () => {
+    try {
+      if (!verificationState.email || !verificationState.actionData) return;
+
+      // Request new verification code
+      const { codeId, expiresAt } = await requestCode(
+        verificationState.email,
+        'preference_change',
+        verificationState.actionData
+      );
+      
+      // Update verification state with new code
+      setVerificationState(prev => ({
+        ...prev,
+        codeId,
+        expiresAt
+      }));
+    } catch (error) {
+      console.error('Failed to resend verification code:', error);
+      throw error;
     }
   };
 
@@ -481,6 +588,19 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
           </button>
         </div>
       </div>
+
+      {/* Email Verification Dialog */}
+      {verificationState.isOpen && verificationState.codeId && verificationState.expiresAt && (
+        <VerificationDialog
+          isOpen={verificationState.isOpen}
+          codeId={verificationState.codeId}
+          expiresAt={verificationState.expiresAt}
+          email={verificationState.email}
+          onVerified={handleVerified}
+          onClose={handleVerificationCancel}
+          onResend={handleResendCode}
+        />
+      )}
     </div>
   );
 };
