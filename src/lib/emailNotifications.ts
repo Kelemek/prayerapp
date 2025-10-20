@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 /**
  * Helper function to invoke the send-notification Edge Function with proper auth
  */
-async function invokeSendNotification(payload: { to: string[]; subject: string; body: string; html?: string }) {
+async function invokeSendNotification(payload: { to: string[]; subject: string; body: string; html?: string; replyTo?: string }) {
   return await supabase.functions.invoke('send-notification', {
     body: payload
   });
@@ -280,16 +280,18 @@ interface ApprovedUpdatePayload {
  */
 export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayload): Promise<void> {
   try {
-    // Get admin settings including distribution preference
+    // Get admin settings including distribution preference and reply-to email
     const { data: settings, error: settingsError} = await supabase
       .from('admin_settings')
-      .select('notification_emails, email_distribution')
+      .select('notification_emails, email_distribution, reply_to_email')
       .single();
 
     if (settingsError) {
       console.error('Error fetching admin settings:', settingsError);
       return;
     }
+
+    const replyToEmail = settings?.reply_to_email || 'markdlarson@me.com';
 
     // Determine distribution method based on setting
     if (settings?.email_distribution === 'all_users') {
@@ -314,7 +316,8 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
         to: recipients,
         subject,
         body,
-        html
+        html,
+        replyTo: replyToEmail
       });
 
       if (functionError) {
@@ -331,6 +334,15 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
  */
 async function sendMailchimpCampaign(payload: ApprovedPrayerPayload): Promise<void> {
   try {
+    // Fetch reply-to email from admin_settings
+    const { data: settings } = await supabase
+      .from('admin_settings')
+      .select('reply_to_email')
+      .eq('id', 1)
+      .maybeSingle();
+
+    const replyToEmail = settings?.reply_to_email || 'markdlarson@me.com';
+
     const subject = `New Prayer Request: ${payload.title}`;
     const htmlContent = generateApprovedPrayerHTML(payload);
     const textContent = `A new prayer request has been approved and is now live.\n\nTitle: ${payload.title}\nFor: ${payload.prayerFor}\nRequested by: ${payload.requester}\n\nDescription: ${payload.description}`;
@@ -342,7 +354,7 @@ async function sendMailchimpCampaign(payload: ApprovedPrayerPayload): Promise<vo
         htmlContent,
         textContent,
         fromName: 'Prayer App',
-        replyTo: 'noreply@yourchurch.com' // Update with your email
+        replyTo: replyToEmail
       }
     });
 

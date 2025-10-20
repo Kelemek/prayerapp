@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, X, Save, RefreshCw } from 'lucide-react';
+import { Mail, Plus, X, Save, RefreshCw, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface EmailSettingsProps {
@@ -10,6 +10,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [emails, setEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [emailDistribution, setEmailDistribution] = useState<'admin_only' | 'all_users'>('admin_only');
+  const [replyToEmail, setReplyToEmail] = useState<string>('markdlarson@me.com');
   const [daysBeforeOngoing, setDaysBeforeOngoing] = useState<number>(30);
   const [reminderIntervalDays, setReminderIntervalDays] = useState<number>(7);
   const [loading, setLoading] = useState(true);
@@ -19,11 +20,13 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [savingEmails, setSavingEmails] = useState(false);
   const [runningTransition, setRunningTransition] = useState(false);
   const [sendingReminders, setSendingReminders] = useState(false);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successDistribution, setSuccessDistribution] = useState(false);
   const [successTransition, setSuccessTransition] = useState(false);
   const [successReminders, setSuccessReminders] = useState(false);
   const [successEmails, setSuccessEmails] = useState(false);
+  const [successTestEmail, setSuccessTestEmail] = useState(false);
 
   // Load email list from Supabase
   useEffect(() => {
@@ -35,7 +38,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('notification_emails, email_distribution, days_before_ongoing, reminder_interval_days')
+        .select('notification_emails, email_distribution, reply_to_email, days_before_ongoing, reminder_interval_days')
         .eq('id', 1)
         .maybeSingle();
 
@@ -53,6 +56,10 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
 
       if (data?.email_distribution) {
         setEmailDistribution(data.email_distribution as 'admin_only' | 'all_users');
+      }
+
+      if (data?.reply_to_email) {
+        setReplyToEmail(data.reply_to_email);
       }
 
       if (data?.days_before_ongoing !== null && data?.days_before_ongoing !== undefined) {
@@ -84,6 +91,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           id: 1, // Use a fixed ID for singleton settings
           notification_emails: emails,
           email_distribution: emailDistribution,
+          reply_to_email: replyToEmail,
           days_before_ongoing: daysBeforeOngoing,
           reminder_interval_days: reminderIntervalDays,
           updated_at: new Date().toISOString()
@@ -240,6 +248,53 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
     setEmails([...emails, trimmedEmail]);
     setNewEmail('');
     setError(null);
+  };
+
+  const sendTestEmail = async () => {
+    try {
+      setSendingTestEmail(true);
+      setError(null);
+      setSuccessTestEmail(false);
+
+      // Get reply-to email from state
+      const testReplyTo = replyToEmail || 'markdlarson@me.com';
+
+      const subject = 'Test Email from Prayer App';
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4A90E2;">Test Email from Prayer App</h1>
+          <p>This is a test email to verify your Mailchimp integration is working correctly.</p>
+          <p><strong>Reply-To Address:</strong> ${testReplyTo}</p>
+          <p>If you received this email, your Mailchimp setup is configured properly!</p>
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+          <p style="color: #666; font-size: 12px;">Sent from Prayer App - Mailchimp Integration Test</p>
+        </div>
+      `;
+      const textContent = `Test Email from Prayer App\n\nThis is a test email to verify your Mailchimp integration is working correctly.\n\nReply-To Address: ${testReplyTo}\n\nIf you received this email, your Mailchimp setup is configured properly!`;
+
+      const { error: functionError } = await supabase.functions.invoke('send-mass-prayer-email', {
+        body: {
+          subject,
+          htmlContent,
+          textContent,
+          fromName: 'Prayer App - Test',
+          replyTo: testReplyTo
+        }
+      });
+
+      if (functionError) {
+        throw new Error(functionError.message || 'Failed to send test email');
+      }
+
+      setSuccessTestEmail(true);
+      setTimeout(() => setSuccessTestEmail(false), 5000);
+    } catch (err: unknown) {
+      console.error('Error sending test email:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send test email';
+      setError(errorMessage);
+    } finally {
+      setSendingTestEmail(false);
+    }
   };
 
   const removeEmail = (emailToRemove: string) => {
@@ -400,6 +455,23 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           </div>
         </div>
 
+        {/* Reply-To Email Address */}
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Reply-To Email Address
+          </label>
+          <input
+            type="email"
+            value={replyToEmail}
+            onChange={(e) => setReplyToEmail(e.target.value)}
+            placeholder="markdlarson@me.com"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Email address shown when recipients reply to notification emails (must be verified in Mailchimp)
+          </p>
+        </div>
+
         {successDistribution && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md p-4 mb-4">
             <p className="text-sm text-green-800 dark:text-green-200">
@@ -408,7 +480,33 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           </div>
         )}
 
-        <div className="flex justify-end">
+        {successTestEmail && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md p-4 mb-4">
+            <p className="text-sm text-green-800 dark:text-green-200">
+              ✅ Test email sent successfully! Check your Mailchimp subscriber inboxes.
+            </p>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={sendTestEmail}
+            disabled={sendingTestEmail || emailDistribution === 'admin_only'}
+            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title={emailDistribution === 'admin_only' ? 'Test email only works with "All Users" distribution mode' : 'Send a test email via Mailchimp'}
+          >
+            {sendingTestEmail ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send size={16} />
+                Send Test Email
+              </>
+            )}
+          </button>
           <button
             onClick={saveDistributionSettings}
             disabled={savingDistribution}
