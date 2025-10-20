@@ -13,6 +13,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [replyToEmail, setReplyToEmail] = useState<string>('markdlarson@me.com');
   const [requireEmailVerification, setRequireEmailVerification] = useState<boolean>(false);
   const [verificationCodeLength, setVerificationCodeLength] = useState<number>(6);
+  const [verificationCodeExpiryMinutes, setVerificationCodeExpiryMinutes] = useState<number>(15);
   const [daysBeforeOngoing, setDaysBeforeOngoing] = useState<number>(30);
   const [reminderIntervalDays, setReminderIntervalDays] = useState<number>(7);
   const [loading, setLoading] = useState(true);
@@ -40,7 +41,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('notification_emails, email_distribution, reply_to_email, require_email_verification, verification_code_length, days_before_ongoing, reminder_interval_days')
+        .select('notification_emails, email_distribution, reply_to_email, require_email_verification, verification_code_length, verification_code_expiry_minutes, days_before_ongoing, reminder_interval_days')
         .eq('id', 1)
         .maybeSingle();
 
@@ -70,6 +71,10 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
 
       if (data?.verification_code_length !== null && data?.verification_code_length !== undefined) {
         setVerificationCodeLength(data.verification_code_length);
+      }
+
+      if (data?.verification_code_expiry_minutes !== null && data?.verification_code_expiry_minutes !== undefined) {
+        setVerificationCodeExpiryMinutes(data.verification_code_expiry_minutes);
       }
 
       if (data?.days_before_ongoing !== null && data?.days_before_ongoing !== undefined) {
@@ -104,6 +109,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           reply_to_email: replyToEmail,
           require_email_verification: requireEmailVerification,
           verification_code_length: verificationCodeLength,
+          verification_code_expiry_minutes: verificationCodeExpiryMinutes,
           days_before_ongoing: daysBeforeOngoing,
           reminder_interval_days: reminderIntervalDays,
           updated_at: new Date().toISOString()
@@ -513,26 +519,50 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
                 ✓ Prevents spam and validates email addresses
               </p>
 
-              {/* Verification Code Length */}
+              {/* Verification Code Settings */}
               {requireEmailVerification && (
-                <div className="mt-4 ml-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Verification Code Length
-                  </label>
-                  <select
-                    value={verificationCodeLength}
-                    onChange={(e) => setVerificationCodeLength(Number(e.target.value))}
-                    className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value={4}>4 digits</option>
-                    <option value={5}>5 digits</option>
-                    <option value={6}>6 digits</option>
-                    <option value={7}>7 digits</option>
-                    <option value={8}>8 digits</option>
-                  </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Length of verification code sent to users (4-8 digits, default: 6)
-                  </p>
+                <div className="mt-4 ml-6 space-y-4">
+                  {/* Code Length */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Verification Code Length
+                    </label>
+                    <select
+                      value={verificationCodeLength}
+                      onChange={(e) => setVerificationCodeLength(Number(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value={4}>4 digits</option>
+                      <option value={6}>6 digits (recommended)</option>
+                      <option value={8}>8 digits</option>
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Length of verification code sent to users
+                    </p>
+                  </div>
+
+                  {/* Code Expiry */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Code Expiration Time
+                    </label>
+                    <select
+                      value={verificationCodeExpiryMinutes}
+                      onChange={(e) => setVerificationCodeExpiryMinutes(Number(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value={5}>5 minutes</option>
+                      <option value={10}>10 minutes</option>
+                      <option value={15}>15 minutes (recommended)</option>
+                      <option value={20}>20 minutes</option>
+                      <option value={30}>30 minutes</option>
+                      <option value={45}>45 minutes</option>
+                      <option value={60}>60 minutes</option>
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      How long verification codes remain valid
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

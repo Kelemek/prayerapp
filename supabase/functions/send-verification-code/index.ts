@@ -108,8 +108,8 @@ serve(async (req) => {
       });
     }
 
-    // Fetch admin settings to get code length
-    console.log('⚙️ Fetching admin settings for code length...');
+    // Fetch admin settings to get code length and expiry time
+    console.log('⚙️ Fetching admin settings for verification configuration...');
     const settingsResponse = await fetch(`${SUPABASE_URL}/rest/v1/admin_settings?id=eq.1`, {
       method: 'GET',
       headers: {
@@ -120,24 +120,32 @@ serve(async (req) => {
     });
 
     let codeLength = 6; // Default to 6 digits
+    let expiryMinutes = 15; // Default to 15 minutes
     if (settingsResponse.ok) {
       const settings = await settingsResponse.json();
-      if (settings && settings.length > 0 && settings[0].verification_code_length) {
-        codeLength = settings[0].verification_code_length;
-        console.log(`✅ Using code length from settings: ${codeLength}`);
+      if (settings && settings.length > 0) {
+        if (settings[0].verification_code_length) {
+          codeLength = settings[0].verification_code_length;
+          console.log(`✅ Using code length from settings: ${codeLength}`);
+        }
+        if (settings[0].verification_code_expiry_minutes) {
+          expiryMinutes = settings[0].verification_code_expiry_minutes;
+          console.log(`✅ Using expiry time from settings: ${expiryMinutes} minutes`);
+        }
       } else {
-        console.log(`⚠️ No code length setting found, using default: ${codeLength}`);
+        console.log(`⚠️ No settings found, using defaults: ${codeLength} digits, ${expiryMinutes} minutes`);
       }
     } else {
-      console.warn('⚠️ Failed to fetch admin settings, using default code length: 6');
+      console.warn(`⚠️ Failed to fetch admin settings, using defaults: ${codeLength} digits, ${expiryMinutes} minutes`);
     }
 
     // Generate code with specified length
     const code = generateCode(codeLength);
     console.log(`🔢 Generated ${codeLength}-digit code for ${email}: ${code}`);
 
-    // Calculate expiration time (15 minutes from now)
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    // Calculate expiration time based on admin setting
+    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();
+    console.log(`⏰ Code expires in ${expiryMinutes} minutes at ${expiresAt}`);
 
     // Store verification code in database
     const insertResponse = await fetch(`${SUPABASE_URL}/rest/v1/verification_codes`, {

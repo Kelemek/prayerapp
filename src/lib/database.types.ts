@@ -359,6 +359,7 @@ export interface Database {
           reply_to_email: string | null
           require_email_verification: boolean
           verification_code_length: number
+          verification_code_expiry_minutes: number
           days_before_ongoing: number
           reminder_interval_days: number
           created_at: string
@@ -371,6 +372,7 @@ export interface Database {
           reply_to_email?: string | null
           require_email_verification?: boolean
           verification_code_length?: number
+          verification_code_expiry_minutes?: number
           days_before_ongoing?: number
           reminder_interval_days?: number
           created_at?: string
@@ -383,6 +385,7 @@ export interface Database {
           reply_to_email?: string | null
           require_email_verification?: boolean
           verification_code_length?: number
+          verification_code_expiry_minutes?: number
           days_before_ongoing?: number
           reminder_interval_days?: number
           created_at?: string
