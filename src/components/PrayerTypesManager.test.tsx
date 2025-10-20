@@ -160,11 +160,6 @@ describe('PrayerTypesManager Component', () => {
       });
     });
 
-    it.skip('validates required name field', async () => {
-      // HTML5 required attribute prevents form submission in browser
-      // Testing library doesn't trigger browser validation
-    });
-
     it('successfully creates a new prayer type', async () => {
       const user = userEvent.setup();
       const mockOrder = vi.fn().mockResolvedValue({

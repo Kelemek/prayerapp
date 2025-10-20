@@ -327,30 +327,6 @@ describe('PromptManager Component', () => {
   });
 
   describe('Prayer Type Filter', () => {
-    it.skip('displays prayer type filter dropdown', async () => {
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockTypesOrder }))
-      }));
-
-      (supabase.from as any).mockImplementation((_table: string) => ({
-        select: mockSelect,
-      }));
-
-      render(<PromptManager onSuccess={mockOnSuccess} />);
-      
-      await waitFor(() => {
-        const filterElements = screen.getAllByRole('combobox');
-        expect(filterElements.length).toBeGreaterThan(0);
-      });
-    });
-
     it('filters prompts by selected prayer type', async () => {
       const user = userEvent.setup();
       const mockPrompts = [
@@ -438,48 +414,6 @@ describe('PromptManager Component', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/add new prayer prompt/i)).toBeDefined();
-      });
-    });
-
-    it.skip('validates required fields when submitting', async () => {
-      const user = userEvent.setup();
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockTypesOrder }))
-      }));
-
-      (supabase.from as any).mockImplementation((_table: string) => ({
-        select: mockSelect,
-      }));
-
-      render(<PromptManager onSuccess={mockOnSuccess} />);
-      
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /add prompt/i })).toBeDefined();
-      });
-
-      // Click the top Add Prompt button
-      const addButtons1 = screen.getAllByRole('button', { name: /add prompt/i });
-      await user.click(addButtons1[0]);
-
-      await waitFor(() => {
-        const saveButton = screen.getByRole('button', { name: /add prompt/i });
-        expect(saveButton).toBeDefined();
-      });
-
-      // Click the submit button in the form
-      const addButtons2 = screen.getAllByRole('button', { name: /add prompt/i });
-      const submitBtn = addButtons2.find(btn => btn.getAttribute('type') === 'submit');
-      if (submitBtn) await user.click(submitBtn);
-
-      await waitFor(() => {
-        expect(screen.getByText(/please fill in all fields/i)).toBeDefined();
       });
     });
 
@@ -826,115 +760,6 @@ describe('PromptManager Component', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/upload csv file/i)).toBeDefined();
-      });
-    });
-
-    it.skip('cancels CSV upload when cancel button is clicked', async () => {
-      const user = userEvent.setup();
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockTypesOrder }))
-      }));
-
-      (supabase.from as any).mockImplementation((_table: string) => ({
-        select: mockSelect,
-      }));
-
-      render(<PromptManager onSuccess={mockOnSuccess} />);
-      
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /upload csv/i })).toBeDefined();
-      });
-
-      await user.click(screen.getByRole('button', { name: /upload csv/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/upload csv file/i)).toBeDefined();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /cancel/i })).toBeDefined();
-      });
-
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
-      await user.click(cancelButton);
-
-      await waitFor(() => {
-        expect(screen.queryByText(/upload csv file/i)).toBeNull();
-      });
-    });
-  });
-
-  describe('Error Handling', () => {
-    it.skip('displays error message when loading prayer types fails', async () => {
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: null,
-        error: { message: 'Database error' },
-      });
-
-      const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockTypesOrder }))
-      }));
-
-      (supabase.from as any).mockImplementation((_table: string) => ({
-        select: mockSelect,
-      }));
-
-      render(<PromptManager onSuccess={mockOnSuccess} />);
-      
-      await waitFor(() => {
-        expect(screen.getByText(/error/i)).toBeDefined();
-      });
-    });
-
-    it.skip('displays error message when search fails', async () => {
-      const user = userEvent.setup();
-
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: null,
-        error: { message: 'Search failed' },
-      });
-
-      // Chain: .or() -> .order() -> .order() -> .limit()
-      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
-      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
-      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
-
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
-        error: null,
-      });
-
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => {
-          if (table === 'prayer_types') {
-            return { 
-              eq: vi.fn(() => ({ order: mockTypesOrder }))
-            };
-          }
-          return { or: mockOr };
-        }),
-      }));
-
-      render(<PromptManager onSuccess={mockOnSuccess} />);
-      
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
-      });
-
-      await user.type(screen.getByPlaceholderText(/search prompts/i), 'Test');
-      await user.click(screen.getByRole('button', { name: /^search$/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/search failed/i)).toBeDefined();
       });
     });
   });

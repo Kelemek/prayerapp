@@ -206,55 +206,6 @@ describe('EmailSubscribers Component', () => {
       });
     });
 
-    it.skip('validates required fields when submitting', async () => {
-      // HTML5 required attribute prevents form submission in browser
-      // Testing library doesn't trigger browser validation
-      const user = userEvent.setup();
-      render(<EmailSubscribers />);
-      
-      const addButtons = screen.getAllByRole('button', { name: /add subscriber/i });
-      await user.click(addButtons[0]); // Click the top "Add Subscriber" button
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/john doe/i)).toBeDefined();
-      });
-
-      const submitButtons = screen.getAllByRole('button', { name: /add subscriber/i });
-      const submitButton = submitButtons.find(btn => btn.getAttribute('type') === 'submit');
-      if (submitButton) await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/please fill in all fields/i)).toBeDefined();
-      });
-    });
-
-    it.skip('validates email format', async () => {
-      // HTML5 email type validation happens in browser
-      // Testing library doesn't trigger browser validation
-      const user = userEvent.setup();
-      render(<EmailSubscribers />);
-      
-      await user.click(screen.getByRole('button', { name: /add subscriber/i }));
-
-      await waitFor(() => {
-        const nameInput = screen.getByPlaceholderText(/john doe/i);
-        const emailInput = screen.getByPlaceholderText(/john@example.com/i);
-        expect(nameInput).toBeDefined();
-        expect(emailInput).toBeDefined();
-      });
-
-      await user.type(screen.getByPlaceholderText(/john doe/i), 'John Doe');
-      await user.type(screen.getByPlaceholderText(/john@example.com/i), 'invalid-email');
-
-      const submitButtons = screen.getAllByRole('button', { name: /add subscriber/i });
-      const submitButton = submitButtons.find(btn => btn.getAttribute('type') === 'submit');
-      if (submitButton) await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/please enter a valid email address/i)).toBeDefined();
-      });
-    });
-
     it('successfully adds a subscriber', async () => {
       const user = userEvent.setup();
       
