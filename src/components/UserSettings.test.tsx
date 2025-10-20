@@ -238,13 +238,20 @@ describe('UserSettings', () => {
       const mockEq4 = vi.fn(() => ({ maybeSingle: mockMaybeSingle2 }));
       const mockEq3 = vi.fn(() => ({ eq: mockEq4 }));
 
+      // Mock for admin_settings call from useVerification
+      const mockMaybeSingle3 = vi.fn().mockResolvedValue({ data: { value: false }, error: null });
+      const mockEq5 = vi.fn(() => ({ maybeSingle: mockMaybeSingle3 }));
+
       let callCount = 0;
       const mockSelect = vi.fn(() => {
         callCount++;
         if (callCount === 1) {
-          return { eq: mockEq1 };
+          return { eq: mockEq5 }; // admin_settings check
         }
-        return { eq: mockEq3 };
+        if (callCount === 2) {
+          return { eq: mockEq1 }; // pending_preference_changes
+        }
+        return { eq: mockEq3 }; // email_subscribers
       });
 
       (supabase.from as any).mockImplementation((_table: string) => ({
