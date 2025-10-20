@@ -324,69 +324,6 @@ describe('PromptManager Component', () => {
         expect(screen.getByText(/no prayer prompts found/i)).toBeDefined();
       });
     });
-
-    it.skip('clears search when clear button is clicked', async () => {
-      const user = userEvent.setup();
-      const mockPrompts = [
-        {
-          id: '1',
-          title: 'Gratitude Prayer',
-          type: 'Personal',
-          description: 'Give thanks',
-          created_at: '2025-01-01T00:00:00Z',
-        },
-      ];
-
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockPrompts,
-        error: null,
-      });
-
-      // Chain: .or() -> .order() -> .order() -> .limit()
-      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
-      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
-      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
-
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => {
-          if (table === 'prayer_types') {
-            return { 
-              eq: vi.fn(() => ({ order: mockTypesOrder }))
-            };
-          }
-          return { or: mockOr };
-        }),
-      }));
-
-      render(<PromptManager onSuccess={mockOnSuccess} />);
-      
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText(/search prompts/i)).toBeDefined();
-      });
-
-      const searchInput = screen.getByPlaceholderText(/search prompts/i) as HTMLInputElement;
-      
-      await user.type(searchInput, 'Gratitude');
-      await user.click(screen.getByRole('button', { name: /^search$/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText('Gratitude Prayer')).toBeDefined();
-      });
-
-      const clearButtons = screen.getAllByRole('button');
-      const clearButton = clearButtons.find(btn => btn.getAttribute('title')?.includes('Clear'));
-
-      if (clearButton) {
-        await user.click(clearButton);
-      }
-
-      expect(searchInput.value).toBe('');
-    });
   });
 
   describe('Prayer Type Filter', () => {

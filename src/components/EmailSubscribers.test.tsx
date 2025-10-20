@@ -190,11 +190,6 @@ describe('EmailSubscribers Component', () => {
         expect(screen.getByText(/no subscribers found/i)).toBeDefined();
       });
     });
-
-    it.skip('clears search results when clear button is clicked', async () => {
-      // EmailSubscribers component doesn't have a clear button
-      // Search input can be manually cleared by user
-    });
   });
 
   describe('Add Subscriber Functionality', () => {
