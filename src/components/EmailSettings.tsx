@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, X, Save, RefreshCw, Send } from 'lucide-react';
+import { Mail, Plus, X, Save, RefreshCw, Send, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface EmailSettingsProps {
@@ -527,15 +527,18 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Verification Code Length
                     </label>
-                    <select
-                      value={verificationCodeLength}
-                      onChange={(e) => setVerificationCodeLength(Number(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value={4}>4 digits</option>
-                      <option value={6}>6 digits (recommended)</option>
-                      <option value={8}>8 digits</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={verificationCodeLength}
+                        onChange={(e) => setVerificationCodeLength(Number(e.target.value))}
+                        className="w-full appearance-none px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
+                      >
+                        <option value={4}>4 digits</option>
+                        <option value={6}>6 digits (recommended)</option>
+                        <option value={8}>8 digits</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 dark:text-blue-400" size={18} />
+                    </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Length of verification code sent to users
                     </p>
@@ -546,19 +549,22 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Code Expiration Time
                     </label>
-                    <select
-                      value={verificationCodeExpiryMinutes}
-                      onChange={(e) => setVerificationCodeExpiryMinutes(Number(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value={5}>5 minutes</option>
-                      <option value={10}>10 minutes</option>
-                      <option value={15}>15 minutes (recommended)</option>
-                      <option value={20}>20 minutes</option>
-                      <option value={30}>30 minutes</option>
-                      <option value={45}>45 minutes</option>
-                      <option value={60}>60 minutes</option>
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={verificationCodeExpiryMinutes}
+                        onChange={(e) => setVerificationCodeExpiryMinutes(Number(e.target.value))}
+                        className="w-full appearance-none px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
+                      >
+                        <option value={5}>5 minutes</option>
+                        <option value={10}>10 minutes</option>
+                        <option value={15}>15 minutes (recommended)</option>
+                        <option value={20}>20 minutes</option>
+                        <option value={30}>30 minutes</option>
+                        <option value={45}>45 minutes</option>
+                        <option value={60}>60 minutes</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 dark:text-blue-400" size={18} />
+                    </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       How long verification codes remain valid
                     </p>
@@ -585,7 +591,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           </div>
         )}
 
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={sendTestEmail}
             disabled={sendingTestEmail || emailDistribution === 'admin_only'}
