@@ -145,15 +145,28 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setSavingDistribution(true);
       setError(null);
 
-      const { error } = await supabase
-        .from('admin_settings')
-        .upsert({
-          id: 1,
-          email_distribution: emailDistribution,
-          updated_at: new Date().toISOString()
-        });
+      const dataToSave = {
+        id: 1,
+        email_distribution: emailDistribution,
+        require_email_verification: requireEmailVerification,
+        verification_code_length: verificationCodeLength,
+        verification_code_expiry_minutes: verificationCodeExpiryMinutes,
+        updated_at: new Date().toISOString()
+      };
 
-      if (error) throw error;
+      console.log('🔍 Saving distribution settings:', dataToSave);
+
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .upsert(dataToSave)
+        .select();
+
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        throw error;
+      }
+
+      console.log('✅ Save successful, returned data:', data);
 
       setSuccessDistribution(true);
       setTimeout(() => setSuccessDistribution(false), 3000);

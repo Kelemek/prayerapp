@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, RefreshCw, Clock, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useVerification } from '../hooks/useVerification';
 
 interface VerificationDialogProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
   codeId,
   expiresAt
 }) => {
+  const { verifyCode } = useVerification();
   const [codeLength, setCodeLength] = useState<number>(6);
   const [code, setCode] = useState<string[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -138,8 +140,8 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
   const handleVerify = async () => {
     const fullCode = code.join('');
     
-    if (fullCode.length !== 6) {
-      setError('Please enter all 6 digits');
+    if (fullCode.length !== codeLength) {
+      setError(`Please enter all ${codeLength} digits`);
       return;
     }
 
@@ -152,29 +154,16 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
       setIsVerifying(true);
       setError(null);
 
-      const { data, error: functionError } = await supabase.functions.invoke('verify-code', {
-        body: { codeId, code: fullCode }
-      });
-
-      if (functionError) {
-        console.error('Verification error:', functionError);
-        setError(functionError.message || 'Verification failed');
-        return;
-      }
-
-      if (data.error) {
-        setError(data.error);
-        return;
-      }
-
-      if (data.success) {
-        // Pass the action data to the parent component
-        onVerified(data.actionData);
-        onClose();
-      }
+      // Use the verifyCode function from the hook - this will save the session!
+      const result = await verifyCode(codeId, fullCode);
+      
+      // Pass the action data to the parent component
+      onVerified(result.actionData);
+      onClose();
     } catch (err: unknown) {
       console.error('Verification error:', err);
-      setError('Failed to verify code. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to verify code. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsVerifying(false);
     }

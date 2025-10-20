@@ -51,11 +51,11 @@ serve(async (req) => {
       });
     }
 
-    // Validate code format (6 digits)
-    if (!/^\d{6}$/.test(code)) {
+    // Validate code format (4, 6, or 8 digits)
+    if (!/^\d{4,8}$/.test(code)) {
       return new Response(JSON.stringify({
         error: 'Invalid code format',
-        details: 'Code must be 6 digits'
+        details: 'Code must be 4, 6, or 8 digits'
       }), {
         status: 400,
         headers: {

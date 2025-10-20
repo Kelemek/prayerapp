@@ -92,17 +92,23 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
       // Check if email verification is required
       if (isEnabled) {
         // Request verification code
-        const { codeId, expiresAt } = await requestCode(
+        const verificationResult = await requestCode(
           formData.email,
           'prayer_submission',
           prayerData
         );
         
+        // If null, user was recently verified - skip verification dialog
+        if (verificationResult === null) {
+          await submitPrayer(prayerData);
+          return;
+        }
+        
         // Show verification dialog
         setVerificationState({
           isOpen: true,
-          codeId,
-          expiresAt,
+          codeId: verificationResult.codeId,
+          expiresAt: verificationResult.expiresAt,
           email: formData.email
         });
       } else {
@@ -187,17 +193,24 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
       };
 
       // Request new verification code
-      const { codeId, expiresAt } = await requestCode(
+      const verificationResult = await requestCode(
         formData.email,
         'prayer_submission',
         prayerData
       );
       
+      // If null, user was recently verified - this shouldn't happen in resend case
+      // but handle it anyway
+      if (verificationResult === null) {
+        console.warn('User was recently verified, no need to resend code');
+        return;
+      }
+      
       // Update verification state with new code
       setVerificationState(prev => ({
         ...prev,
-        codeId,
-        expiresAt
+        codeId: verificationResult.codeId,
+        expiresAt: verificationResult.expiresAt
       }));
     } catch (error) {
       console.error('Failed to resend verification code:', error);

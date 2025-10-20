@@ -144,17 +144,23 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     if (isEnabled) {
       try {
         // Request verification code
-        const { codeId, expiresAt } = await requestCode(
+        const verificationResult = await requestCode(
           updateAuthorEmail,
           'prayer_update',
           updateData
         );
         
+        // If null, user was recently verified - skip verification dialog
+        if (verificationResult === null) {
+          await submitUpdate(updateData);
+          return;
+        }
+        
         // Show verification dialog
         setVerificationState({
           isOpen: true,
-          codeId,
-          expiresAt,
+          codeId: verificationResult.codeId,
+          expiresAt: verificationResult.expiresAt,
           email: updateAuthorEmail,
           actionType: 'prayer_update',
           actionData: updateData
@@ -202,17 +208,23 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     if (isEnabled) {
       try {
         // Request verification code
-        const { codeId, expiresAt } = await requestCode(
+        const verificationResult = await requestCode(
           deleteRequesterEmail,
-          'prayer_deletion',
+          'deletion_request',
           deleteData
         );
+        
+        // If null, user was recently verified - skip verification dialog
+        if (verificationResult === null) {
+          await submitDeleteRequest(deleteData);
+          return;
+        }
         
         // Show verification dialog
         setVerificationState({
           isOpen: true,
-          codeId,
-          expiresAt,
+          codeId: verificationResult.codeId,
+          expiresAt: verificationResult.expiresAt,
           email: deleteRequesterEmail,
           actionType: 'prayer_deletion',
           actionData: deleteData
@@ -271,17 +283,23 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     if (isEnabled) {
       try {
         // Request verification code
-        const { codeId, expiresAt } = await requestCode(
+        const verificationResult = await requestCode(
           statusChangeRequesterEmail,
-          'status_change',
+          'status_change_request',
           statusChangeData
         );
+        
+        // If null, user was recently verified - skip verification dialog
+        if (verificationResult === null) {
+          await submitStatusChange(statusChangeData);
+          return;
+        }
         
         // Show verification dialog
         setVerificationState({
           isOpen: true,
-          codeId,
-          expiresAt,
+          codeId: verificationResult.codeId,
+          expiresAt: verificationResult.expiresAt,
           email: statusChangeRequesterEmail,
           actionType: 'status_change',
           actionData: statusChangeData
@@ -371,17 +389,24 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       if (!verificationState.email || !verificationState.actionData) return;
 
       // Request new verification code
-      const { codeId, expiresAt } = await requestCode(
+      const verificationResult = await requestCode(
         verificationState.email,
         verificationState.actionType,
         verificationState.actionData
       );
       
+      // If null, user was recently verified - this shouldn't happen in resend case
+      // but handle it anyway
+      if (verificationResult === null) {
+        console.warn('User was recently verified, no need to resend code');
+        return;
+      }
+      
       // Update verification state with new code
       setVerificationState(prev => ({
         ...prev,
-        codeId,
-        expiresAt
+        codeId: verificationResult.codeId,
+        expiresAt: verificationResult.expiresAt
       }));
     } catch (error) {
       console.error('Failed to resend verification code:', error);
@@ -410,17 +435,23 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     if (isEnabled) {
       try {
         // Request verification code
-        const { codeId, expiresAt } = await requestCode(
+        const verificationResult = await requestCode(
           updateDeleteRequesterEmail,
-          'update_deletion',
+          'update_deletion_request',
           updateDeleteData
         );
+        
+        // If null, user was recently verified - skip verification dialog
+        if (verificationResult === null) {
+          await submitUpdateDeletion(updateDeleteData);
+          return;
+        }
         
         // Show verification dialog
         setVerificationState({
           isOpen: true,
-          codeId,
-          expiresAt,
+          codeId: verificationResult.codeId,
+          expiresAt: verificationResult.expiresAt,
           email: updateDeleteRequesterEmail,
           actionType: 'update_deletion',
           actionData: updateDeleteData

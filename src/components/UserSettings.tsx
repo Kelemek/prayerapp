@@ -232,17 +232,23 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
       // Check if email verification is required
       if (isEnabled) {
         // Request verification code
-        const { codeId, expiresAt } = await requestCode(
+        const verificationResult = await requestCode(
           emailLower,
           'preference_change',
           preferenceData
         );
         
+        // If null, user was recently verified - skip verification dialog
+        if (verificationResult === null) {
+          await submitPreference(preferenceData);
+          return;
+        }
+        
         // Show verification dialog
         setVerificationState({
           isOpen: true,
-          codeId,
-          expiresAt,
+          codeId: verificationResult.codeId,
+          expiresAt: verificationResult.expiresAt,
           email: emailLower,
           actionData: preferenceData
         });
@@ -332,17 +338,24 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
       if (!verificationState.email || !verificationState.actionData) return;
 
       // Request new verification code
-      const { codeId, expiresAt } = await requestCode(
+      const verificationResult = await requestCode(
         verificationState.email,
         'preference_change',
         verificationState.actionData
       );
       
+      // If null, user was recently verified - this shouldn't happen in resend case
+      // but handle it anyway
+      if (verificationResult === null) {
+        console.warn('User was recently verified, no need to resend code');
+        return;
+      }
+      
       // Update verification state with new code
       setVerificationState(prev => ({
         ...prev,
-        codeId,
-        expiresAt
+        codeId: verificationResult.codeId,
+        expiresAt: verificationResult.expiresAt
       }));
     } catch (error) {
       console.error('Failed to resend verification code:', error);
