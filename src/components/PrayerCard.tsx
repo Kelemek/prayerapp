@@ -819,8 +819,8 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             )}
           </div>
           <div className="space-y-3">
-            {/* Show last 2 updates by default, or all if showAllUpdates is true */}
-            {(showAllUpdates ? prayer.updates : prayer.updates.slice(-2)).map((update) => (
+            {/* Show first 2 updates (newest) by default, or all if showAllUpdates is true */}
+            {(showAllUpdates ? prayer.updates : prayer.updates.slice(0, 2)).map((update) => (
               <div key={update.id} className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
                 <div className="relative mb-2">
                   <div className="flex items-center justify-between">
