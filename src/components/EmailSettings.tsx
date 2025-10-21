@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, X, Save, RefreshCw, Send, ChevronDown } from 'lucide-react';
+import { Mail, Plus, X, Save, RefreshCw, Send, ChevronDown, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface EmailSettingsProps {
@@ -16,7 +16,10 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [verificationCodeExpiryMinutes, setVerificationCodeExpiryMinutes] = useState<number>(15);
   const [daysBeforeOngoing, setDaysBeforeOngoing] = useState<number>(30);
   const [reminderIntervalDays, setReminderIntervalDays] = useState<number>(7);
+  const [appTitle, setAppTitle] = useState<string>('Church Prayer Manager');
+  const [appSubtitle, setAppSubtitle] = useState<string>('Keeping our community connected in prayer');
   const [loading, setLoading] = useState(true);
+  const [savingBranding, setSavingBranding] = useState(false);
   const [savingDistribution, setSavingDistribution] = useState(false);
   const [savingTransition, setSavingTransition] = useState(false);
   const [savingReminders, setSavingReminders] = useState(false);
@@ -25,6 +28,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [sendingReminders, setSendingReminders] = useState(false);
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successBranding, setSuccessBranding] = useState(false);
   const [successDistribution, setSuccessDistribution] = useState(false);
   const [successTransition, setSuccessTransition] = useState(false);
   const [successReminders, setSuccessReminders] = useState(false);
@@ -41,7 +45,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('notification_emails, email_distribution, reply_to_email, require_email_verification, verification_code_length, verification_code_expiry_minutes, days_before_ongoing, reminder_interval_days')
+        .select('notification_emails, email_distribution, reply_to_email, require_email_verification, verification_code_length, verification_code_expiry_minutes, days_before_ongoing, reminder_interval_days, app_title, app_subtitle')
         .eq('id', 1)
         .maybeSingle();
 
@@ -84,6 +88,14 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       if (data?.reminder_interval_days !== null && data?.reminder_interval_days !== undefined) {
         setReminderIntervalDays(data.reminder_interval_days);
       }
+
+      if (data?.app_title) {
+        setAppTitle(data.app_title);
+      }
+
+      if (data?.app_subtitle) {
+        setAppSubtitle(data.app_subtitle);
+      }
     } catch (err: unknown) {
       console.error('Error loading emails:', err);
       setError('Failed to load email settings. Please make sure the database table is set up correctly.');
@@ -112,6 +124,8 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           verification_code_expiry_minutes: verificationCodeExpiryMinutes,
           days_before_ongoing: daysBeforeOngoing,
           reminder_interval_days: reminderIntervalDays,
+          app_title: appTitle,
+          app_subtitle: appSubtitle,
           updated_at: new Date().toISOString()
         });
 
@@ -151,6 +165,8 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         require_email_verification: requireEmailVerification,
         verification_code_length: verificationCodeLength,
         verification_code_expiry_minutes: verificationCodeExpiryMinutes,
+        app_title: appTitle,
+        app_subtitle: appSubtitle,
         updated_at: new Date().toISOString()
       };
 
@@ -177,6 +193,34 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setError('Failed to save distribution settings');
     } finally {
       setSavingDistribution(false);
+    }
+  };
+
+  const saveBrandingSettings = async () => {
+    try {
+      setSavingBranding(true);
+      setError(null);
+
+      const { error } = await supabase
+        .from('admin_settings')
+        .upsert({
+          id: 1,
+          app_title: appTitle,
+          app_subtitle: appSubtitle,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      setSuccessBranding(true);
+      setTimeout(() => setSuccessBranding(false), 3000);
+      
+      if (onSave) onSave();
+    } catch (err: unknown) {
+      console.error('Error saving branding settings:', err);
+      setError('Failed to save branding settings');
+    } finally {
+      setSavingBranding(false);
     }
   };
 
@@ -429,6 +473,78 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
 
   return (
     <div className="space-y-6">
+      {/* App Branding Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Settings className="text-purple-600 dark:text-purple-400" size={24} />
+          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
+            App Branding
+          </h3>
+        </div>
+
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Customize the title and tagline displayed at the top of your app.
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              App Title
+            </label>
+            <input
+              type="text"
+              value={appTitle}
+              onChange={(e) => setAppTitle(e.target.value)}
+              placeholder="Church Prayer Manager"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Main heading displayed in the app header
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              App Subtitle/Tagline
+            </label>
+            <input
+              type="text"
+              value={appSubtitle}
+              onChange={(e) => setAppSubtitle(e.target.value)}
+              placeholder="Keeping our community connected in prayer"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Descriptive tagline shown under the title (hidden on mobile)
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={saveBrandingSettings}
+          disabled={savingBranding}
+          className={`mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors ${
+            successBranding
+              ? 'bg-green-600 text-white'
+              : 'bg-purple-600 hover:bg-purple-700 text-white disabled:bg-purple-400'
+          }`}
+        >
+          {savingBranding ? (
+            <>
+              <RefreshCw size={16} className="animate-spin" />
+              Saving...
+            </>
+          ) : successBranding ? (
+            'Saved!'
+          ) : (
+            <>
+              <Save size={16} />
+              Save Branding
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Email Distribution Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center gap-2 mb-4">

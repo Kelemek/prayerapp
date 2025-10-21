@@ -2,6 +2,28 @@ import '@testing-library/jest-dom'
 import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
+// Mock Supabase client
+vi.mock('./lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null }))
+        }))
+      })),
+      insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+      update: vi.fn(() => Promise.resolve({ data: null, error: null })),
+      delete: vi.fn(() => Promise.resolve({ data: null, error: null }))
+    })),
+    functions: {
+      invoke: vi.fn(() => Promise.resolve({ data: null, error: null }))
+    },
+    auth: {
+      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null }))
+    }
+  }
+}))
+
 // Cleanup after each test
 afterEach(() => {
   cleanup()

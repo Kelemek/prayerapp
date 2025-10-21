@@ -39,6 +39,10 @@ function AppContent() {
     requestUpdateDeletion
   } = usePrayerManager();
 
+  // App branding
+  const [appTitle, setAppTitle] = useState('Church Prayer Manager');
+  const [appSubtitle, setAppSubtitle] = useState('Keeping our community connected in prayer');
+
   const [showForm, setShowForm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [filters, setFilters] = useState<PrayerFilters>({status: 'current'});
@@ -60,6 +64,28 @@ function AppContent() {
   const closeAllForms = () => {
     closeAllFormsCallbacks.current.forEach(callback => callback());
   };
+
+  // Fetch app branding settings
+  useEffect(() => {
+    const fetchBranding = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('admin_settings')
+          .select('app_title, app_subtitle')
+          .eq('id', 1)
+          .maybeSingle();
+        
+        if (!error && data) {
+          if (data.app_title) setAppTitle(data.app_title);
+          if (data.app_subtitle) setAppSubtitle(data.app_subtitle);
+        }
+      } catch (error) {
+        console.error('Failed to fetch branding settings:', error);
+      }
+    };
+    
+    fetchBranding();
+  }, []);
 
   // Track page view on initial load
   useEffect(() => {
@@ -197,8 +223,8 @@ function AppContent() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 truncate">Church Prayer Manager</h1>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hidden sm:block mt-1">Keeping our community connected in prayer</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 truncate">{appTitle}</h1>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hidden sm:block mt-1">{appSubtitle}</p>
               </div>
             </div>
             <div className="flex flex-col gap-2">
