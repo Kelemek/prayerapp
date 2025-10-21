@@ -583,9 +583,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 dark:text-gray-300">
-              Status: <span className="font-medium capitalize">{prayer.status}</span>
-            </span>
             <button
               onClick={() => {
                 openForm(() => setShowStatusChangeRequest(!showStatusChangeRequest));

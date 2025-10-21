@@ -78,27 +78,6 @@ describe('PrayerCard Component', () => {
     expect(screen.queryByText('John Doe')).toBeNull();
   });
 
-  it('shows status badge with correct status', () => {
-    render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
-    
-    // Status is displayed as "current" (lowercase)
-    expect(screen.getByText('current')).toBeDefined();
-  });
-
-  it('displays answered status badge correctly', () => {
-    const answeredPrayer = { ...mockPrayer, status: 'answered' as const };
-    render(<PrayerCard prayer={answeredPrayer} isAdmin={false} {...mockCallbacks} />);
-    
-    expect(screen.getByText('answered')).toBeDefined();
-  });
-
-    it('displays ongoing status badge correctly', () => {
-    const ongoingPrayer = { ...mockPrayer, status: 'ongoing' as const };
-    render(<PrayerCard prayer={ongoingPrayer} isAdmin={false} {...mockCallbacks} />);
-    
-    expect(screen.getByText('ongoing')).toBeDefined();
-  });
-
   it('shows delete button for admin users', () => {
     render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
     

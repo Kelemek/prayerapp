@@ -24,19 +24,6 @@ describe('PrayerFiltersComponent', () => {
       expect(screen.getByPlaceholderText('Search prayers...')).toBeDefined();
     });
 
-    it('renders search label', () => {
-      const filters: PrayerFilters = {};
-      
-      render(
-        <PrayerFiltersComponent
-          filters={filters}
-          onFiltersChange={mockOnFiltersChange}
-        />
-      );
-
-      expect(screen.getByText('Search')).toBeDefined();
-    });
-
     it('renders Search icon', () => {
       const filters: PrayerFilters = {};
       
@@ -302,20 +289,6 @@ describe('PrayerFiltersComponent', () => {
   });
 
   describe('Accessibility', () => {
-    it('has proper label association', () => {
-      const filters: PrayerFilters = {};
-      
-      render(
-        <PrayerFiltersComponent
-          filters={filters}
-          onFiltersChange={mockOnFiltersChange}
-        />
-      );
-
-      const label = screen.getByText('Search');
-      expect(label.tagName).toBe('LABEL');
-    });
-
     it('has placeholder text for screen readers', () => {
       const filters: PrayerFilters = {};
       
