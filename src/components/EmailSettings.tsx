@@ -520,23 +520,25 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           </div>
         </div>
 
-        <button
-          onClick={saveBrandingSettings}
-          disabled={savingBranding}
-          className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {savingBranding ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save size={16} />
-              Save Branding Settings
-            </>
-          )}
-        </button>
+        <div className="flex justify-end gap-3 mt-6">
+          <button
+            onClick={saveBrandingSettings}
+            disabled={savingBranding}
+            className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {savingBranding ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save size={16} />
+                Save Branding Settings
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Email Distribution Section */}
