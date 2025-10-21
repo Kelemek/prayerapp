@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Check, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Lock, Check, AlertTriangle, Eye, EyeOff, Save } from 'lucide-react';
 
 interface PasswordChangeProps {
   onPasswordChange: (newPassword: string) => Promise<boolean>;
@@ -149,20 +149,25 @@ export const PasswordChange: React.FC<PasswordChangeProps> = ({ onPasswordChange
         </div>
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              Changing Password...
-            </div>
-          ) : (
-            'Change Password'
-          )}
-        </button>
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save size={16} />
+                Change Password
+              </>
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );
