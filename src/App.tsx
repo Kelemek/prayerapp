@@ -1,14 +1,10 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { Shield, LogOut, Settings } from 'lucide-react';
 import { PrayerForm } from './components/PrayerForm';
 import { PrayerCard } from './components/PrayerCard';
 import { PromptCard } from './components/PromptCard';
 import { PrayerFiltersComponent } from './components/PrayerFilters';
-import { PrayerPresentation } from './components/PrayerPresentation';
-import { MobilePresentation } from './components/MobilePresentation';
 import { ToastProvider } from './components/ToastProvider';
-import { AdminPortal } from './components/AdminPortal';
-import { AdminLogin } from './components/AdminLogin';
 import { UserSettings } from './components/UserSettings';
 import { AdminAuthProvider } from './hooks/useAdminAuth';
 import { useAdminAuth } from './hooks/useAdminAuthHook';
@@ -18,6 +14,12 @@ import { useTheme } from './hooks/useTheme';
 import { supabase } from './lib/supabase';
 import type { PrayerFilters } from './types/prayer';
 import { sendAdminNotification } from './lib/emailNotifications';
+
+// Lazy load heavy components
+const PrayerPresentation = lazy(() => import('./components/PrayerPresentation').then(module => ({ default: module.PrayerPresentation })));
+const MobilePresentation = lazy(() => import('./components/MobilePresentation').then(module => ({ default: module.MobilePresentation })));
+const AdminPortal = lazy(() => import('./components/AdminPortal').then(module => ({ default: module.AdminPortal })));
+const AdminLogin = lazy(() => import('./components/AdminLogin').then(module => ({ default: module.AdminLogin })));
 
 function AppContent() {
   // Initialize theme system
@@ -684,19 +686,35 @@ function AdminWrapper() {
   }
   
   if (currentView === 'presentation') {
-    return <PrayerPresentation />;
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+        <PrayerPresentation />
+      </Suspense>
+    );
   }
   
   if (currentView === 'mobile-presentation') {
-    return <MobilePresentation />;
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+        <MobilePresentation />
+      </Suspense>
+    );
   }
   
   if (currentView === 'admin-login') {
-    return <AdminLogin />;
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+        <AdminLogin />
+      </Suspense>
+    );
   }
   
   if (currentView === 'admin-portal' && isAdmin) {
-    return <AdminPortal />;
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+        <AdminPortal />
+      </Suspense>
+    );
   }
   
   return <AppContent />;
