@@ -169,12 +169,27 @@ export const PrayerSearch: React.FC = () => {
       setDeleting(true);
       setError(null);
 
-      const { error } = await supabase
+      // First delete related prayer_updates
+      const { error: updatesError } = await supabase
+        .from('prayer_updates')
+        .delete()
+        .eq('prayer_id', prayerId);
+
+      if (updatesError) {
+        console.error('Error deleting prayer updates:', updatesError);
+        throw new Error(`Failed to delete prayer updates: ${updatesError.message}`);
+      }
+
+      // Then delete the prayer
+      const { error: prayerError } = await supabase
         .from('prayers')
         .delete()
         .eq('id', prayerId);
 
-      if (error) throw error;
+      if (prayerError) {
+        console.error('Error deleting prayer:', prayerError);
+        throw new Error(`Failed to delete prayer: ${prayerError.message}`);
+      }
 
       // Remove from results
       setSearchResults(searchResults.filter(p => p.id !== prayerId));
@@ -187,7 +202,7 @@ export const PrayerSearch: React.FC = () => {
       console.error('Error deleting prayer:', err);
       const errorMessage = err && typeof err === 'object' && 'message' in err 
         ? String(err.message) 
-        : 'Failed to delete prayer';
+        : 'Failed to delete prayer. Please try again.';
       setError(errorMessage);
     } finally {
       setDeleting(false);
@@ -205,12 +220,29 @@ export const PrayerSearch: React.FC = () => {
       setDeleting(true);
       setError(null);
 
-      const { error } = await supabase
+      const prayerIds = Array.from(selectedPrayers);
+
+      // First delete related prayer_updates
+      const { error: updatesError } = await supabase
+        .from('prayer_updates')
+        .delete()
+        .in('prayer_id', prayerIds);
+
+      if (updatesError) {
+        console.error('Error deleting prayer updates:', updatesError);
+        throw new Error(`Failed to delete prayer updates: ${updatesError.message}`);
+      }
+
+      // Then delete the prayers
+      const { error: prayersError } = await supabase
         .from('prayers')
         .delete()
-        .in('id', Array.from(selectedPrayers));
+        .in('id', prayerIds);
 
-      if (error) throw error;
+      if (prayersError) {
+        console.error('Error deleting prayers:', prayersError);
+        throw new Error(`Failed to delete prayers: ${prayersError.message}`);
+      }
 
       // Remove deleted prayers from results
       setSearchResults(searchResults.filter(p => !selectedPrayers.has(p.id)));
@@ -219,7 +251,7 @@ export const PrayerSearch: React.FC = () => {
       console.error('Error deleting prayers:', err);
       const errorMessage = err && typeof err === 'object' && 'message' in err 
         ? String(err.message) 
-        : 'Failed to delete selected prayers';
+        : 'Failed to delete selected prayers. Please try again.';
       setError(errorMessage);
     } finally {
       setDeleting(false);
