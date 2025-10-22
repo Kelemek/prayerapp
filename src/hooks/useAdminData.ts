@@ -178,7 +178,7 @@ export const useAdminData = () => {
         .from('prayers')
         .select('*')
         .eq('approval_status', 'denied')
-        .order('approved_at', { ascending: false });
+        .order('denied_at', { ascending: false });
       if (deniedPrayersError) throw deniedPrayersError;
 
       const { data: deniedUpdates, error: deniedUpdatesError } = await supabase
@@ -188,7 +188,7 @@ export const useAdminData = () => {
           prayers!inner(title)
         `)
         .eq('approval_status', 'denied')
-        .order('approved_at', { ascending: false });
+        .order('denied_at', { ascending: false });
       if (deniedUpdatesError) throw deniedUpdatesError;
 
       // Fetch denied status change requests with prayer titles
@@ -366,7 +366,8 @@ export const useAdminData = () => {
       const { error } = await supabase
         .from('prayers')
         .update({
-          approval_status: 'approved'
+          approval_status: 'approved',
+          approved_at: new Date().toISOString()
         })
         .eq('id', prayerId);
       
@@ -414,7 +415,8 @@ export const useAdminData = () => {
         .from('prayers')
         .update({
           approval_status: 'denied',
-          denial_reason: reason
+          denial_reason: reason,
+          denied_at: new Date().toISOString()
         })
         .eq('id', prayerId);
       
@@ -453,7 +455,10 @@ export const useAdminData = () => {
       // Update the status
       const { error } = await supabase
         .from('prayer_updates')
-        .update({ approval_status: 'approved' })
+        .update({ 
+          approval_status: 'approved',
+          approved_at: new Date().toISOString()
+        })
         .eq('id', updateId);
       
       if (error) throw error;
@@ -490,7 +495,11 @@ export const useAdminData = () => {
       // Update the status
       const { error } = await supabase
         .from('prayer_updates')
-        .update({ approval_status: 'denied', denial_reason: reason })
+        .update({ 
+          approval_status: 'denied', 
+          denial_reason: reason,
+          denied_at: new Date().toISOString()
+        })
         .eq('id', updateId);
       
       if (error) throw error;
@@ -558,7 +567,10 @@ export const useAdminData = () => {
       
       const { error: approveError } = await supabase
         .from('deletion_requests')
-        .update({ approval_status: 'approved' })
+        .update({ 
+          approval_status: 'approved',
+          reviewed_at: new Date().toISOString()
+        })
         .eq('id', requestId);
       if (approveError) throw approveError;
       const { error: deleteError } = await supabase
@@ -577,7 +589,11 @@ export const useAdminData = () => {
     try {
       const { error } = await supabase
         .from('deletion_requests')
-        .update({ approval_status: 'denied', denial_reason: reason })
+        .update({ 
+          approval_status: 'denied', 
+          denial_reason: reason,
+          reviewed_at: new Date().toISOString()
+        })
         .eq('id', requestId);
       if (error) throw error;
       await fetchAdminData();

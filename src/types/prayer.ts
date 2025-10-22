@@ -26,6 +26,7 @@ export interface PrayerUpdate {
   author_email?: string | null;
   is_anonymous?: boolean;
   created_at: string;
+  updated_at?: string;
   approval_status?: 'pending' | 'approved' | 'denied';
   denial_reason?: string | null;
   approved_at?: string | null;

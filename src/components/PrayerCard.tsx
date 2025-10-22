@@ -491,8 +491,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       setShowUpdateDeleteRequest(null);
       // show a toast to match other successful actions
       try { showToast('Update deletion request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
-    } catch (error) {
-      throw error;
     } finally {
       setIsSubmittingUpdateDelete(false);
     }

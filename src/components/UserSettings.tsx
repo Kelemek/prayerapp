@@ -103,7 +103,8 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
       }
       
       // Reset flag after a short delay
-      setTimeout(() => setIsInitialLoad(false), 100);
+      const timer = setTimeout(() => setIsInitialLoad(false), 100);
+      return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);

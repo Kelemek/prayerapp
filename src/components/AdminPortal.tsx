@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings, User, Calendar, X, TrendingUp, Eye, Mail, Heart, UserCheck } from 'lucide-react';
-import { DeletionStyleCard } from './DeletionStyleCard';
+import { Shield, Users, MessageSquare, CheckCircle, XCircle, Clock, AlertTriangle, ArrowLeft, Trash2, RefreshCw, Settings, User, Calendar, TrendingUp, Eye, Mail, Heart, UserCheck } from 'lucide-react';
 import { PendingPrayerCard } from './PendingPrayerCard';
 import { PendingUpdateCard } from './PendingUpdateCard';
 import { PendingDeletionCard } from './PendingDeletionCard';
@@ -21,7 +20,7 @@ import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
 import { supabase } from '../lib/supabase';
 import { sendApprovedPreferenceChangeNotification, sendDeniedPreferenceChangeNotification } from '../lib/emailNotifications';
 
-type AdminTab = 'prayers' | 'updates' | 'deletions' | 'status-changes' | 'preferences' | 'approved' | 'denied' | 'settings';
+type AdminTab = 'prayers' | 'updates' | 'deletions' | 'status-changes' | 'preferences' | 'settings';
 
 export const AdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('prayers');
@@ -39,10 +38,7 @@ export const AdminPortal: React.FC = () => {
     deniedDeletionRequests,
     deniedUpdateDeletionRequests,
     deniedPreferenceChanges,
-    approvedPrayersCount,
-    approvedUpdatesCount,
-    deniedPrayersCount,
-    deniedUpdatesCount,
+
     loading,
     approvePrayer,
     denyPrayer,
@@ -421,7 +417,7 @@ export const AdminPortal: React.FC = () => {
       {/* Content */}
       <main className="max-w-6xl mx-auto px-4 py-6">
         {/* Stats Grid - Clickable Filter Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-2 mb-8">
           <button
             onClick={() => setActiveTab('prayers')}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
@@ -507,51 +503,19 @@ export const AdminPortal: React.FC = () => {
               </div>
             </div>
           </button>
-          
-          <button
-            onClick={() => setActiveTab('approved')}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              activeTab === 'approved' ? 'ring-2 ring-green-500 border-green-500' : 'hover:border-green-300 dark:hover:border-green-600'
-            }`}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <CheckCircle className="text-green-500" size={20} />
-              <div className="text-center">
-                <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                  {approvedPrayersCount + approvedUpdatesCount}
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-300">Approved</div>
-              </div>
-            </div>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('denied')}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              activeTab === 'denied' ? 'ring-2 ring-red-500 border-red-500' : 'hover:border-red-300 dark:hover:border-red-600'
-            }`}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <XCircle className="text-red-500" size={20} />
-              <div className="text-center">
-                <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                  {deniedCount}
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-300">Denied</div>
-              </div>
-            </div>
-          </button>
+
+
           
           <button
             onClick={() => setActiveTab('settings')}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              activeTab === 'settings' ? 'ring-2 ring-purple-500 border-purple-500' : 'hover:border-purple-300 dark:hover:border-purple-600'
+              activeTab === 'settings' ? 'ring-2 ring-gray-500 border-gray-500' : 'hover:border-gray-400 dark:hover:border-gray-500'
             }`}
           >
             <div className="flex flex-col items-center gap-1">
-              <Settings className="text-purple-500" size={20} />
+              <Settings className="text-gray-600 dark:text-gray-400" size={20} />
               <div className="text-center">
-                <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                <div className="text-lg font-bold text-gray-700 dark:text-gray-300">
                   Settings
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-300">Config</div>
@@ -753,7 +717,8 @@ export const AdminPortal: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'approved' && (
+        {/* Removed approved tab - now handled by PrayerSearch audit feature */}
+        {false && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
               Approved Items ({approvedPrayers.length + approvedUpdates.length})
@@ -864,7 +829,8 @@ export const AdminPortal: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'denied' && (
+        {/* Removed denied tab - now handled by PrayerSearch audit feature */}
+        {false && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
               Denied Items ({deniedCount})

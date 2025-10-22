@@ -112,6 +112,9 @@ describe('AdminPortal', () => {
     deniedPrayers: [],
     deniedUpdates: [],
     deniedStatusChangeRequests: [],
+    deniedDeletionRequests: [],
+    deniedUpdateDeletionRequests: [],
+    deniedPreferenceChanges: [],
     approvedPrayersCount: 0,
     approvedUpdatesCount: 0,
     deniedPrayersCount: 0,
@@ -226,16 +229,7 @@ describe('AdminPortal', () => {
       expect(screen.getByText('Updates')).toBeDefined();
     });
 
-    it('displays approved prayers count', () => {
-      mockUseAdminData.mockReturnValue({
-        ...defaultAdminData,
-        approvedPrayersCount: 5
-      });
 
-      render(<AdminPortal />);
-      
-      expect(screen.getByText('5')).toBeDefined();
-    });
   });
 
   describe('Tab Navigation', () => {
@@ -275,8 +269,17 @@ describe('AdminPortal', () => {
       fireEvent.click(settingsButton!);
       
       await waitFor(() => {
-        expect(settingsButton?.className).toContain('ring-purple-500');
+        expect(settingsButton?.className).toContain('ring-gray-500');
       });
+    });
+
+    it('has settings button with gray color scheme', () => {
+      render(<AdminPortal />);
+      
+      const settingsButton = screen.getByText('Settings').closest('button');
+      const settingsIcon = settingsButton?.querySelector('svg');
+      
+      expect(settingsIcon?.classList).toContain('text-gray-600');
     });
   });
 
@@ -371,39 +374,7 @@ describe('AdminPortal', () => {
     });
   });
 
-  describe('Approved Tab', () => {
-    it('switches to approved tab and shows approved prayers', async () => {
-      mockUseAdminData.mockReturnValue({
-        ...defaultAdminData,
-        approvedPrayers: [
-          { id: 'approved-1', title: 'Approved Prayer' }
-        ] as any,
-        approvedPrayersCount: 1
-      });
 
-      render(<AdminPortal />);
-      
-      const approvedButton = screen.getByText('Approved').closest('button');
-      fireEvent.click(approvedButton!);
-      
-      await waitFor(() => {
-        expect(approvedButton?.className).toContain('ring-green-500');
-      });
-    });
-  });
-
-  describe('Denied Tab', () => {
-    it('switches to denied tab', async () => {
-      render(<AdminPortal />);
-      
-      const deniedButton = screen.getByText('Denied').closest('button');
-      fireEvent.click(deniedButton!);
-      
-      await waitFor(() => {
-        expect(deniedButton?.className).toContain('ring-red-500');
-      });
-    });
-  });
 
   describe('Responsive Layout', () => {
     it('renders stats grid with proper layout classes', () => {
@@ -411,8 +382,10 @@ describe('AdminPortal', () => {
       
       const statsGrid = document.querySelector('.grid.grid-cols-2');
       expect(statsGrid).toBeDefined();
-      expect(statsGrid?.className).toContain('sm:grid-cols-4');
-      expect(statsGrid?.className).toContain('lg:grid-cols-8');
+      expect(statsGrid?.className).toContain('sm:grid-cols-3');
+      expect(statsGrid?.className).toContain('md:grid-cols-4');
+      expect(statsGrid?.className).toContain('lg:grid-cols-6');
+      expect(statsGrid?.className).toContain('xl:grid-cols-6');
     });
 
     it('renders content within max-width container', () => {
