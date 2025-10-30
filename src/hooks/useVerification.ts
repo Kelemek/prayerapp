@@ -157,13 +157,15 @@ export const useVerification = () => {
       );
 
       if (functionError) {
-        console.error('Error requesting code:', functionError);
+        console.error('❌ Edge Function error:', functionError);
+        console.error('Error details:', JSON.stringify(functionError, null, 2));
         throw new Error(functionError.message || 'Failed to send verification code');
       }
 
       if (data?.error) {
-        console.error('Data error:', data.error);
-        throw new Error(data.error);
+        console.error('❌ Data error from Edge Function:', data.error);
+        console.error('Full response:', JSON.stringify(data, null, 2));
+        throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
       }
 
       if (!data.success || !data.codeId || !data.expiresAt) {

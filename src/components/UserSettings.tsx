@@ -259,11 +259,13 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         await submitPreference(preferenceData);
       }
     } catch (err: unknown) {
-      console.error('Error initiating preference change:', err);
+      console.error('❌ Error initiating preference change:', err);
+      console.error('Error type:', typeof err);
+      console.error('Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
       const errorMessage = err && typeof err === 'object' && 'message' in err
         ? String(err.message)
         : 'Failed to save preferences';
-      setError(errorMessage);
+      setError(`${errorMessage}. Check browser console for details.`);
       setSaving(false);
     }
   };

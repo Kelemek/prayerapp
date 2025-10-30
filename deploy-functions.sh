@@ -50,6 +50,17 @@ case $FUNCTION_NAME in
         echo "   1. Configure reminder interval in Admin Settings"
         echo "   2. Test with 'Send Reminders Now' button"
         ;;
+    "send-verification-code")
+        deploy_function "send-verification-code" "--no-verify-jwt"
+        echo "💡 Remember: send-verification-code runs without JWT verification"
+        echo "   This is for email verification before prayer/preference submissions"
+        echo ""
+        echo "📋 Required environment variables:"
+        echo "   - RESEND_API_KEY"
+        echo "   - RESEND_FROM_EMAIL"
+        echo "   - SUPABASE_URL"
+        echo "   - SUPABASE_SERVICE_ROLE_KEY"
+        ;;
     "auto-transition-prayers")
         deploy_function "auto-transition-prayers" ""
         echo "💡 This function runs on a schedule to auto-transition prayers"
@@ -58,6 +69,7 @@ case $FUNCTION_NAME in
         echo "Deploying all functions..."
         echo ""
         deploy_function "send-notification" "--no-verify-jwt"
+        deploy_function "send-verification-code" "--no-verify-jwt"
         deploy_function "send-prayer-reminders" ""
         deploy_function "auto-transition-prayers" ""
         echo "🎉 All functions deployed successfully!"
@@ -68,10 +80,11 @@ case $FUNCTION_NAME in
         echo "Usage: ./deploy-functions.sh [function-name]"
         echo ""
         echo "Available functions:"
-        echo "  send-notification       - Email sending (no JWT)"
-        echo "  send-prayer-reminders   - Automated prayer reminders"
-        echo "  auto-transition-prayers - Auto-transition prayer statuses"
-        echo "  all                     - Deploy all functions (default)"
+        echo "  send-notification        - Email sending (no JWT)"
+        echo "  send-verification-code   - Email verification codes (no JWT)"
+        echo "  send-prayer-reminders    - Automated prayer reminders"
+        echo "  auto-transition-prayers  - Auto-transition prayer statuses"
+        echo "  all                      - Deploy all functions (default)"
         echo ""
         exit 1
         ;;
