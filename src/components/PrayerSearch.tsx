@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Trash2, AlertTriangle, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Trash2, AlertTriangle, X, ChevronDown, ChevronUp, Edit2, Save, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Prayer {
@@ -33,6 +33,21 @@ export const PrayerSearch: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPrayers, setSelectedPrayers] = useState<Set<string>>(new Set());
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [editingPrayer, setEditingPrayer] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{
+    title: string;
+    description: string;
+    requester: string;
+    email: string;
+    prayer_for: string;
+  }>({
+    title: '',
+    description: '',
+    requester: '',
+    email: '',
+    prayer_for: ''
+  });
+  const [saving, setSaving] = useState(false);
 
   const handleSearch = useCallback(async () => {
     // Check if we have any actual search criteria (not just "all" selections)
@@ -206,6 +221,82 @@ export const PrayerSearch: React.FC = () => {
       setError(errorMessage);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const startEditPrayer = (prayer: Prayer) => {
+    setEditForm({
+      title: prayer.title,
+      description: prayer.description || '',
+      requester: prayer.requester,
+      email: prayer.email || '',
+      prayer_for: prayer.prayer_for || ''
+    });
+    setEditingPrayer(prayer.id);
+    // Expand the card when editing starts
+    setExpandedCards(new Set([...expandedCards, prayer.id]));
+  };
+
+  const cancelEdit = () => {
+    setEditingPrayer(null);
+    setEditForm({
+      title: '',
+      description: '',
+      requester: '',
+      email: '',
+      prayer_for: ''
+    });
+  };
+
+  const savePrayer = async (prayerId: string) => {
+    if (!editForm.title.trim() || !editForm.description.trim() || !editForm.requester.trim()) {
+      setError('Title, description, and requester are required');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+
+      const { error: updateError } = await supabase
+        .from('prayers')
+        .update({
+          title: editForm.title.trim(),
+          description: editForm.description.trim(),
+          requester: editForm.requester.trim(),
+          email: editForm.email.trim() || null,
+          prayer_for: editForm.prayer_for.trim() || null
+        })
+        .eq('id', prayerId);
+
+      if (updateError) {
+        throw new Error(`Failed to update prayer: ${updateError.message}`);
+      }
+
+      // Update local state
+      setSearchResults(searchResults.map(p => 
+        p.id === prayerId 
+          ? { 
+              ...p, 
+              title: editForm.title.trim(),
+              description: editForm.description.trim(),
+              requester: editForm.requester.trim(),
+              email: editForm.email.trim() || null,
+              prayer_for: editForm.prayer_for.trim() || null
+            }
+          : p
+      ));
+
+      // Exit edit mode
+      cancelEdit();
+    } catch (err: unknown) {
+      console.error('Error updating prayer:', err);
+      const errorMessage = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Failed to update prayer. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -497,6 +588,17 @@ export const PrayerSearch: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        startEditPrayer(prayer);
+                      }}
+                      disabled={saving}
+                      className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors disabled:opacity-50"
+                      title="Edit this prayer"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
                         deletePrayer(prayer.id, prayer.title);
                       }}
                       disabled={deleting}
@@ -512,10 +614,105 @@ export const PrayerSearch: React.FC = () => {
                 {isExpanded && (
                   <div className="px-6 pb-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div className="pt-4 space-y-3">
-                      <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                        Complete Prayer Details
-                      </h5>
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          {editingPrayer === prayer.id ? 'Edit Prayer Details' : 'Complete Prayer Details'}
+                        </h5>
+                        {editingPrayer === prayer.id && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => savePrayer(prayer.id)}
+                              disabled={saving}
+                              className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm disabled:opacity-50"
+                            >
+                              <Save size={14} />
+                              {saving ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              disabled={saving}
+                              className="flex items-center gap-1 px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm disabled:opacity-50"
+                            >
+                              <XCircle size={14} />
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       
+                      {editingPrayer === prayer.id ? (
+                        /* Edit Mode */
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Title *
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.title}
+                              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                              placeholder="Prayer title"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Description *
+                            </label>
+                            <textarea
+                              value={editForm.description}
+                              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                              rows={4}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                              placeholder="Prayer description"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Requester *
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.requester}
+                                onChange={(e) => setEditForm({ ...editForm, requester: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                                placeholder="Requester name"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Email
+                              </label>
+                              <input
+                                type="email"
+                                value={editForm.email}
+                                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                                placeholder="Email address"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Praying For
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.prayer_for}
+                              onChange={(e) => setEditForm({ ...editForm, prayer_for: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                              placeholder="Person being prayed for"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        /* View Mode */
+                        <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Basic Information */}
                         <div className="space-y-3">
@@ -684,6 +881,8 @@ export const PrayerSearch: React.FC = () => {
                               ))}
                           </div>
                         </div>
+                      )}
+                      </>
                       )}
                     </div>
                   </div>
