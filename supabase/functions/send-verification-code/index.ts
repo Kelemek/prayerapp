@@ -255,7 +255,24 @@ Prayer App
     if (!emailResponse.ok) {
       const error = await emailResponse.json();
       console.error('❌ Failed to send email:', error);
-      throw new Error(`Email service error: ${JSON.stringify(error)}`);
+      
+      // Provide helpful error messages for common Resend issues
+      if (emailResponse.status === 403) {
+        console.error('⚠️ Resend domain not verified! Email can only be sent to your Resend account email in development mode.');
+        throw new Error(
+          `Email domain not verified in Resend. ` +
+          `To fix: 1) Verify your domain at https://resend.com/domains, OR ` +
+          `2) Add "${email}" as a verified email in Resend, OR ` +
+          `3) Use your Resend account email for testing. ` +
+          `Error: ${JSON.stringify(error)}`
+        );
+      }
+      
+      if (emailResponse.status === 401) {
+        throw new Error(`Invalid Resend API key. Check your RESEND_API_KEY in Edge Function secrets.`);
+      }
+      
+      throw new Error(`Email service error (${emailResponse.status}): ${JSON.stringify(error)}`);
     }
 
     const emailResult = await emailResponse.json();
