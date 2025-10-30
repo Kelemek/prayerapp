@@ -156,16 +156,31 @@ export const useVerification = () => {
         }
       );
 
+      // Log the full response for debugging
+      console.log('📨 Edge Function response:', { data, functionError });
+
       if (functionError) {
         console.error('❌ Edge Function error:', functionError);
         console.error('Error details:', JSON.stringify(functionError, null, 2));
+        
+        // Try to get more details from the data if available
+        if (data) {
+          console.error('Response data despite error:', JSON.stringify(data, null, 2));
+          const errorMsg = data.error || data.details || functionError.message || 'Failed to send verification code';
+          throw new Error(`Edge Function failed: ${errorMsg}`);
+        }
+        
         throw new Error(functionError.message || 'Failed to send verification code');
       }
 
       if (data?.error) {
         console.error('❌ Data error from Edge Function:', data.error);
         console.error('Full response:', JSON.stringify(data, null, 2));
-        throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
+        
+        // Show both error and details if available
+        const errorMsg = typeof data.error === 'string' ? data.error : JSON.stringify(data.error);
+        const details = data.details ? ` - ${data.details}` : '';
+        throw new Error(`${errorMsg}${details}`);
       }
 
       if (!data.success || !data.codeId || !data.expiresAt) {
