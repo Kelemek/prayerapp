@@ -56,6 +56,17 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         setUser(session?.user ?? null);
         checkAdminStatus(session?.user ?? null);
         setLoading(false);
+        
+        // Update last sign in timestamp for admins
+        if (event === 'SIGNED_IN' && session?.user?.email) {
+          try {
+            await supabase.rpc('update_admin_last_sign_in', {
+              admin_email: session.user.email
+            });
+          } catch (error) {
+            console.error('Error updating last sign in:', error);
+          }
+        }
       }
     );
 

@@ -13,6 +13,7 @@ import { PrayerSearch } from './PrayerSearch';
 import BackupStatus from './BackupStatus';
 import { PromptManager } from './PromptManager'; // Prayer prompts management
 import { PrayerTypesManager } from './PrayerTypesManager';
+import { AdminUserManagement } from './AdminUserManagement';
 import { useAdminData, type PendingPreferenceChange } from '../hooks/useAdminData';
 import { useAdminAuth } from '../hooks/useAdminAuthHook';
 import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
@@ -1167,6 +1168,7 @@ export const AdminPortal: React.FC = () => {
               </div>
 
               <EmailSubscribers />
+              <AdminUserManagement />
               <SyncMailchimpSubscribers />
               <EmailSettings />
               <PromptManager onSuccess={() => {
