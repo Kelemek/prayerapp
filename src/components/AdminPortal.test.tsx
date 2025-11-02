@@ -145,9 +145,8 @@ describe('AdminPortal', () => {
       isAdmin: true,
       loading: false,
       user: null,
-      login: vi.fn(),
-      logout: vi.fn(),
-      changePassword: vi.fn()
+      sendMagicLink: vi.fn(),
+      logout: vi.fn()
     });
   });
 
