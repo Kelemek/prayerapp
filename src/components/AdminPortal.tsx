@@ -6,7 +6,6 @@ import { PendingDeletionCard } from './PendingDeletionCard';
 import { PendingUpdateDeletionCard } from './PendingUpdateDeletionCard';
 import { PendingStatusChangeCard } from './PendingStatusChangeCard';
 import { PendingPreferenceChangeCard } from './PendingPreferenceChangeCard';
-import { PasswordChange } from './PasswordChange';
 import { EmailSettings } from './EmailSettings';
 import { EmailSubscribers } from './EmailSubscribers';
 import SyncMailchimpSubscribers from './SyncMailchimpSubscribers';
@@ -53,8 +52,6 @@ export const AdminPortal: React.FC = () => {
     denyUpdateDeletionRequest,
     editPrayer
   } = useAdminData();
-
-  const { changePassword } = useAdminAuth();
 
   // Dev seed loading states
   const [seedLoading, setSeedLoading] = useState(false);
@@ -1178,7 +1175,6 @@ export const AdminPortal: React.FC = () => {
               <PrayerTypesManager onSuccess={() => {
                 // Success message is shown within the component
               }} />
-              <PasswordChange onPasswordChange={changePassword} />
               <PrayerSearch />
 
               {/* Dev seed controls */}
