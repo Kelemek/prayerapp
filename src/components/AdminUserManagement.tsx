@@ -146,7 +146,7 @@ export const AdminUserManagement: React.FC = () => {
                       </ol>
                       
                       <div style="text-align: center;">
-                        <a href="${window.location.origin}/admin" class="button">Go to Admin Portal</a>
+                        <a href="${window.location.origin}/#admin" class="button">Go to Admin Portal</a>
                       </div>
                       
                       <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -168,7 +168,7 @@ Hi ${name},
 You've been granted admin access to the Prayer App.
 
 To sign in:
-1. Go to ${window.location.origin}/admin
+1. Go to ${window.location.origin}/#admin
 2. Enter your email: ${email}
 3. Click "Send Magic Link"
 4. Check your email for the sign-in link

@@ -639,17 +639,30 @@ function AdminWrapper() {
   // Handle hash changes for admin access
   useEffect(() => {
     const handleHashChange = () => {
-      if (window.location.hash === '#presentation') {
+      const hash = window.location.hash;
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      
+      if (hash === '#presentation') {
         setCurrentView('presentation');
-      } else if (window.location.hash === '#mobile-presentation') {
+      } else if (hash === '#mobile-presentation') {
         setCurrentView('mobile-presentation');
-      } else if (window.location.hash === '#admin') {
+      } else if (hash.startsWith('#admin') || redirect === 'admin') {
+        // Handle #admin or ?redirect=admin (during magic link callback)
         // If already logged in (session valid), go straight to portal
         // Otherwise, show login page
         if (isAdmin && !loading) {
           setCurrentView('admin-portal');
+          // Clean up redirect param if present
+          if (redirect === 'admin') {
+            window.history.replaceState(null, '', window.location.pathname + '#admin');
+          }
         } else if (!loading) {
           setCurrentView('admin-login');
+          // Clean up redirect param if present
+          if (redirect === 'admin') {
+            window.history.replaceState(null, '', window.location.pathname + '#admin');
+          }
         }
       } else {
         setCurrentView('public');
@@ -671,11 +684,14 @@ function AdminWrapper() {
 
   // Auto-redirect to admin portal after login
   useEffect(() => {
-    if (isAdmin && currentView === 'admin-login') {
-      setCurrentView('admin-portal');
-      window.location.hash = '#admin';
+    if (isAdmin && !loading) {
+      // If user is admin and on login page or public page with #admin hash, go to portal
+      if (currentView === 'admin-login' || (window.location.hash.startsWith('#admin') && currentView === 'public')) {
+        setCurrentView('admin-portal');
+        window.location.hash = '#admin';
+      }
     }
-  }, [isAdmin, currentView]);
+  }, [isAdmin, currentView, loading]);
 
   if (loading) {
     return (

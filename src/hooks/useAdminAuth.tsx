@@ -17,18 +17,32 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
 
   // Check if the current user is an admin
-  const checkAdminStatus = (currentUser: User | null) => {
+  const checkAdminStatus = async (currentUser: User | null) => {
     if (!currentUser) {
       setIsAdmin(false);
       return;
     }
 
-    // Check if user email is in admin list or has admin role
-    // For this demo, we'll use a specific admin email
-    // In production, you'd check user metadata or a separate admin table
-    const adminEmails = ['admin@prayerapp.com', 'admin@example.com'];
-    const isUserAdmin = adminEmails.includes(currentUser.email || '');
-    setIsAdmin(isUserAdmin);
+    try {
+      // Check if user has admin privileges in the database
+      const { data, error } = await supabase
+        .from('email_subscribers')
+        .select('is_admin')
+        .eq('email', currentUser.email)
+        .eq('is_admin', true)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+        return;
+      }
+
+      setIsAdmin(!!data);
+    } catch (error) {
+      console.error('Exception checking admin status:', error);
+      setIsAdmin(false);
+    }
   };
 
   // Initialize auth state and listen for changes
@@ -54,8 +68,16 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setUser(session?.user ?? null);
-        checkAdminStatus(session?.user ?? null);
+        await checkAdminStatus(session?.user ?? null);
         setLoading(false);
+        
+        // Clean up URL hash after magic link authentication
+        if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
+          console.log('🧹 Cleaning URL hash...');
+          // Remove the auth tokens from the URL and redirect to #admin
+          window.location.hash = '#admin';
+          console.log('✅ Redirected to #admin');
+        }
         
         // Update last sign in timestamp for admins
         if (event === 'SIGNED_IN' && session?.user?.email) {
@@ -103,10 +125,12 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     setLoading(true);
     
     try {
+      const redirectUrl = `${window.location.origin}?redirect=admin`;
+      
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/admin`,
+          emailRedirectTo: redirectUrl,
         },
       });
 
