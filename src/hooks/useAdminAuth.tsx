@@ -88,49 +88,30 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     };
   }, [isAdmin, lastActivity]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const sendMagicLink = async (email: string): Promise<boolean> => {
     setLoading(true);
+    
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/admin`,
+        },
       });
 
       if (error) {
-        console.error('Login error:', error.message);
+        console.error('Magic link error:', error.message, error);
         return false;
       }
 
-      if (data.user) {
-        // Reset activity timer on login
-        setLastActivity(Date.now());
-        return true;
-      }
-
-      return false;
+      // Reset activity timer
+      setLastActivity(Date.now());
+      return true;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Magic link exception:', error);
       return false;
     } finally {
       setLoading(false);
-    }
-  };
-
-  const changePassword = async (newPassword: string): Promise<boolean> => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) {
-        console.error('Password change error:', error.message);
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Password change error:', error);
-      return false;
     }
   };
 
@@ -159,7 +140,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   };
 
   return (
-    <AdminAuthContext.Provider value={{ isAdmin, user, login, logout, changePassword, loading }}>
+    <AdminAuthContext.Provider value={{ isAdmin, user, sendMagicLink, logout, loading }}>
       {children}
     </AdminAuthContext.Provider>
   );

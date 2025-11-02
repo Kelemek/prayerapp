@@ -4,9 +4,8 @@ import type { User } from '@supabase/supabase-js';
 export interface AdminAuthContextType {
   isAdmin: boolean;
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  sendMagicLink: (email: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  changePassword: (newPassword: string) => Promise<boolean>;
   loading: boolean;
 }
 
