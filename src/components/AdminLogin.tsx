@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAdminAuth } from '../hooks/useAdminAuthHook';
+import { supabase } from '../lib/supabase';
 
 export const AdminLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -31,6 +32,28 @@ export const AdminLogin: React.FC = () => {
     sessionStorage.removeItem('magic_link_email');
 
     try {
+      // Check if email has admin privileges
+      const { data: adminCheck, error: checkError } = await supabase
+        .from('email_subscribers')
+        .select('is_admin')
+        .eq('email', email.toLowerCase().trim())
+        .eq('is_admin', true)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking admin status:', checkError);
+        setError('An error occurred. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      if (!adminCheck) {
+        setError('This email address does not have admin access.');
+        setLoading(false);
+        return;
+      }
+
+      // Email is an admin, send magic link
       const sent = await sendMagicLink(email);
       
       if (sent) {
