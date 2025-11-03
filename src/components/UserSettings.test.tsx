@@ -564,7 +564,7 @@ describe('UserSettings', () => {
       await user.click(screen.getByText('Submit for Approval'));
       
       await waitFor(() => {
-        expect(screen.getByText('Database error')).toBeDefined();
+        expect(screen.getByText(/Database error/i)).toBeDefined();
       });
     });
 

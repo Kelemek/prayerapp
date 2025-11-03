@@ -291,7 +291,7 @@ describe('PendingUpdateDeletionCard', () => {
       expect(xIcon).toBeDefined();
     });
 
-    it('shows denial form when deny button clicked', () => {
+    it('shows denial form when deny button clicked', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -303,11 +303,13 @@ describe('PendingUpdateDeletionCard', () => {
       const denyButton = screen.getByText('Deny');
       fireEvent.click(denyButton);
 
-      expect(screen.getByText('Reason for denial (required):')).toBeDefined();
-      expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined();
+      await waitFor(() => {
+        expect(screen.getByText('Reason for denial (required):')).toBeDefined();
+        expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined();
+      });
     });
 
-    it('hides denial form when deny button clicked again', () => {
+    it('hides denial form when deny button clicked again', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -320,14 +322,14 @@ describe('PendingUpdateDeletionCard', () => {
       
       // Show form
       fireEvent.click(denyButton);
-      expect(screen.getByText('Reason for denial (required):')).toBeDefined();
+      await waitFor(() => expect(screen.getByText('Reason for denial (required):')).toBeDefined());
       
       // Hide form
       fireEvent.click(denyButton);
-      expect(screen.queryByText('Reason for denial (required):')).toBeNull();
+      await waitFor(() => expect(screen.queryByText('Reason for denial (required):')).toBeNull());
     });
 
-    it('can input denial reason', () => {
+    it('can input denial reason', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -338,14 +340,15 @@ describe('PendingUpdateDeletionCard', () => {
 
       const denyButton = screen.getByText('Deny');
       fireEvent.click(denyButton);
+      await waitFor(() => expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined());
 
       const textarea = screen.getByPlaceholderText('Explain why this deletion request is being denied...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: 'This update is still relevant' } });
 
-      expect(textarea.value).toBe('This update is still relevant');
+      await waitFor(() => expect(textarea.value).toBe('This update is still relevant'));
     });
 
-    it('calls onDeny with request ID and reason when form submitted', () => {
+    it('calls onDeny with request ID and reason when form submitted', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -356,6 +359,7 @@ describe('PendingUpdateDeletionCard', () => {
 
       const denyButton = screen.getByText('Deny');
       fireEvent.click(denyButton);
+      await waitFor(() => expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined());
 
       const textarea = screen.getByPlaceholderText('Explain why this deletion request is being denied...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: 'Update information is accurate' } });
@@ -363,11 +367,13 @@ describe('PendingUpdateDeletionCard', () => {
       const confirmButton = screen.getByText('Confirm Denial');
       fireEvent.click(confirmButton);
 
-      expect(mockOnDeny).toHaveBeenCalledWith('update-deletion-1', 'Update information is accurate');
-      expect(mockOnDeny).toHaveBeenCalledTimes(1);
+      await waitFor(() => {
+        expect(mockOnDeny).toHaveBeenCalledWith('update-deletion-1', 'Update information is accurate');
+        expect(mockOnDeny).toHaveBeenCalledTimes(1);
+      });
     });
 
-    it('trims whitespace from denial reason', () => {
+    it('trims whitespace from denial reason', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -378,6 +384,7 @@ describe('PendingUpdateDeletionCard', () => {
 
       const denyButton = screen.getByText('Deny');
       fireEvent.click(denyButton);
+      await waitFor(() => expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined());
 
       const textarea = screen.getByPlaceholderText('Explain why this deletion request is being denied...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: '  Trimmed reason  ' } });
@@ -385,10 +392,10 @@ describe('PendingUpdateDeletionCard', () => {
       const confirmButton = screen.getByText('Confirm Denial');
       fireEvent.click(confirmButton);
 
-      expect(mockOnDeny).toHaveBeenCalledWith('update-deletion-1', 'Trimmed reason');
+      await waitFor(() => expect(mockOnDeny).toHaveBeenCalledWith('update-deletion-1', 'Trimmed reason'));
     });
 
-    it('does not submit empty denial reason', () => {
+    it('does not submit empty denial reason', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -399,6 +406,7 @@ describe('PendingUpdateDeletionCard', () => {
 
       const denyButton = screen.getByText('Deny');
       fireEvent.click(denyButton);
+      await waitFor(() => expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined());
 
       const textarea = screen.getByPlaceholderText('Explain why this deletion request is being denied...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: '' } });
@@ -406,10 +414,10 @@ describe('PendingUpdateDeletionCard', () => {
       const confirmButton = screen.getByText('Confirm Denial');
       fireEvent.click(confirmButton);
 
-      expect(mockOnDeny).not.toHaveBeenCalled();
+      await waitFor(() => expect(mockOnDeny).not.toHaveBeenCalled());
     });
 
-    it('does not submit whitespace-only denial reason', () => {
+    it('does not submit whitespace-only denial reason', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -420,6 +428,7 @@ describe('PendingUpdateDeletionCard', () => {
 
       const denyButton = screen.getByText('Deny');
       fireEvent.click(denyButton);
+      await waitFor(() => expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined());
 
       const textarea = screen.getByPlaceholderText('Explain why this deletion request is being denied...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: '   ' } });
@@ -427,10 +436,10 @@ describe('PendingUpdateDeletionCard', () => {
       const confirmButton = screen.getByText('Confirm Denial');
       fireEvent.click(confirmButton);
 
-      expect(mockOnDeny).not.toHaveBeenCalled();
+      await waitFor(() => expect(mockOnDeny).not.toHaveBeenCalled());
     });
 
-    it('clears denial form after successful submission', () => {
+    it('clears denial form after successful submission', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -441,6 +450,7 @@ describe('PendingUpdateDeletionCard', () => {
 
       const denyButton = screen.getByText('Deny');
       fireEvent.click(denyButton);
+      await waitFor(() => expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined());
 
       const textarea = screen.getByPlaceholderText('Explain why this deletion request is being denied...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: 'Denial reason' } });
@@ -449,10 +459,10 @@ describe('PendingUpdateDeletionCard', () => {
       fireEvent.click(confirmButton);
 
       // Form should be hidden after submission
-      expect(screen.queryByText('Reason for denial (required):')).toBeNull();
+      await waitFor(() => expect(screen.queryByText('Reason for denial (required):')).toBeNull());
     });
 
-    it('hides denial form when cancel button clicked', () => {
+    it('hides denial form when cancel button clicked', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -470,11 +480,13 @@ describe('PendingUpdateDeletionCard', () => {
       const cancelButton = screen.getByText('Cancel');
       fireEvent.click(cancelButton);
 
-      expect(screen.queryByText('Reason for denial (required):')).toBeNull();
-      expect(mockOnDeny).not.toHaveBeenCalled();
+      await waitFor(() => {
+        expect(screen.queryByText('Reason for denial (required):')).toBeNull();
+        expect(mockOnDeny).not.toHaveBeenCalled();
+      });
     });
 
-    it('clears textarea when cancel button clicked', () => {
+    it('clears textarea when cancel button clicked', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -487,6 +499,7 @@ describe('PendingUpdateDeletionCard', () => {
       
       // First time: enter text and cancel
       fireEvent.click(denyButton);
+      await waitFor(() => expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined());
       const textarea1 = screen.getByPlaceholderText('Explain why this deletion request is being denied...') as HTMLTextAreaElement;
       fireEvent.change(textarea1, { target: { value: 'Some reason' } });
       const cancelButton = screen.getByText('Cancel');
@@ -494,11 +507,13 @@ describe('PendingUpdateDeletionCard', () => {
 
       // Second time: textarea should be empty
       fireEvent.click(denyButton);
-      const textarea2 = screen.getByPlaceholderText('Explain why this deletion request is being denied...') as HTMLTextAreaElement;
-      expect(textarea2.value).toBe('');
+      await waitFor(() => {
+        const textarea2 = screen.getByPlaceholderText('Explain why this deletion request is being denied...') as HTMLTextAreaElement;
+        expect(textarea2.value).toBe('');
+      });
     });
 
-    it('disables confirm button when denial reason is empty', () => {
+    it('disables confirm button when denial reason is empty', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -509,12 +524,13 @@ describe('PendingUpdateDeletionCard', () => {
 
       const denyButton = screen.getByText('Deny');
       fireEvent.click(denyButton);
+      await waitFor(() => expect(screen.getByText('Confirm Denial')).toBeDefined());
 
       const confirmButton = screen.getByText('Confirm Denial') as HTMLButtonElement;
       expect(confirmButton.disabled).toBe(true);
     });
 
-    it('enables confirm button when denial reason is provided', () => {
+    it('enables confirm button when denial reason is provided', async () => {
       render(
         <PendingUpdateDeletionCard
           deletionRequest={mockUpdateDeletionRequest}
@@ -525,12 +541,15 @@ describe('PendingUpdateDeletionCard', () => {
 
       const denyButton = screen.getByText('Deny');
       fireEvent.click(denyButton);
+      await waitFor(() => expect(screen.getByPlaceholderText('Explain why this deletion request is being denied...')).toBeDefined());
 
       const textarea = screen.getByPlaceholderText('Explain why this deletion request is being denied...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: 'Valid reason' } });
 
-      const confirmButton = screen.getByText('Confirm Denial') as HTMLButtonElement;
-      expect(confirmButton.disabled).toBe(false);
+      await waitFor(() => {
+        const confirmButton = screen.getByText('Confirm Denial') as HTMLButtonElement;
+        expect(confirmButton.disabled).toBe(false);
+      });
     });
   });
 
