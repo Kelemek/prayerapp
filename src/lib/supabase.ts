@@ -18,11 +18,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Type-safe wrapper for common operations
 export const supabaseClient = supabase;
 
-// Helper function to handle Supabase errors
-export const handleSupabaseError = (error: unknown) => {
-  console.error('Supabase error:', error);
-  const message = error && typeof error === 'object' && 'message' in error 
-    ? (error as { message: string }).message 
-    : 'An unexpected error occurred';
-  throw new Error(message);
-};
+// Re-export the error helper from a small testable module so tests can import it
+export { handleSupabaseError } from './supabaseHelpers'

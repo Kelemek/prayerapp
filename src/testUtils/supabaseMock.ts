@@ -56,27 +56,66 @@ export function createSupabaseMock(opts: {
       return { data: null, error: { message: 'Not single' } }
     }
 
+    // Allow awaiting the query directly: await supabase.from(...).select()
+    then(cb: any) {
+      const all = (fromData[this.table] || []).slice()
+      const matched = all.filter(r => this.filters.every(f => f(r)))
+      return cb({ data: matched, error: null })
+    }
+
     // simple insert/update/delete helpers used by tests
-    async insert(payload: any) {
+  insert(payload: any) {
       const rows = fromData[this.table] || (fromData[this.table] = [])
       const toInsert = Array.isArray(payload) ? payload : [payload]
       rows.push(...toInsert)
-      return { data: toInsert, error: null }
+      // Return an object that supports chained .select() calls
+      return {
+        data: toInsert,
+        error: null,
+        select: async () => ({ data: toInsert, error: null }),
+        then: (cb: any) => cb({ data: toInsert, error: null })
+      }
     }
 
-    async update(payload: any) {
+  update(payload: any) {
       const rows = fromData[this.table] || []
       const matched = rows.filter(r => this.filters.every(f => f(r)))
       matched.forEach(r => Object.assign(r, payload))
-      return { data: matched, error: null }
+      return {
+        data: matched,
+        error: null,
+        select: async () => ({ data: matched, error: null }),
+        then: (cb: any) => cb({ data: matched, error: null })
+      }
     }
 
-    async delete() {
-      const rows = fromData[this.table] || []
-      const before = rows.length
-      const remaining = rows.filter(r => !this.filters.every(f => f(r)))
-      fromData[this.table] = remaining
-      return { data: { deleted: before - remaining.length }, error: null }
+    delete() {
+      // Return a chainable object so callers can do .delete().eq(...).select()
+      const self = this
+      const ret: any = {
+        eq: (column: string, value: any) => {
+          self.filters.push((r: Row) => r[column] === value)
+          return ret
+        },
+        select: async () => {
+          const rows = fromData[self.table] || []
+          const before = rows.length
+          const remaining = rows.filter(r => !self.filters.every(f => f(r)))
+          const deletedRows = rows.filter(r => self.filters.every(f => f(r)))
+          fromData[self.table] = remaining
+          return { data: deletedRows, error: null }
+        },
+        then: (cb: any) => {
+          // mirror the behavior of select(): compute deleted rows and return them
+          const rows = fromData[self.table] || []
+          const remaining = rows.filter(r => !self.filters.every(f => f(r)))
+          const deletedRows = rows.filter(r => self.filters.every(f => f(r)))
+          fromData[self.table] = remaining
+          return cb({ data: deletedRows, error: null })
+        }
+      }
+
+      return ret
     }
   }
 
