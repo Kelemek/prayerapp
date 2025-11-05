@@ -32,25 +32,25 @@ describe('PrintPrayerList', () => {
   });
 
   describe('Rendering', () => {
-    it('renders the print button', () => {
+    it('renders the print button', async () => {
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
+      const printButton = await screen.findByRole('button', { name: /print/i });
       expect(printButton).toBeDefined();
     });
 
-    it('displays print icon', () => {
+    it('displays print icon', async () => {
       const { container } = render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
+      const printButton = await screen.findByRole('button', { name: /print/i });
       const svg = printButton.querySelector('svg');
       expect(svg).toBeDefined();
     });
 
-    it('shows "Print" text on larger screens', () => {
+    it('shows "Print" text on larger screens', async () => {
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
+      const printButton = await screen.findByRole('button', { name: /print/i });
       expect(printButton.textContent).toContain('Print');
     });
 
@@ -64,10 +64,10 @@ describe('PrintPrayerList', () => {
   });
 
   describe('Dropdown Menu', () => {
-    it('opens dropdown when print button is clicked', () => {
+    it('opens dropdown when print button is clicked', async () => {
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
+      const printButton = await screen.findByRole('button', { name: /print/i });
       fireEvent.click(printButton);
       
       expect(screen.getByText('Last Week')).toBeDefined();
@@ -75,10 +75,10 @@ describe('PrintPrayerList', () => {
       expect(screen.getByText('Last Year')).toBeDefined();
     });
 
-    it('closes dropdown when print button is clicked again', () => {
+    it('closes dropdown when print button is clicked again', async () => {
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
+      const printButton = await screen.findByRole('button', { name: /print/i });
       fireEvent.click(printButton);
       expect(screen.getByText('Last Week')).toBeDefined();
       
@@ -86,10 +86,10 @@ describe('PrintPrayerList', () => {
       expect(screen.queryByText('Last Week')).toBeNull();
     });
 
-    it('closes dropdown when clicking outside', () => {
+    it('closes dropdown when clicking outside', async () => {
       const { container } = render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
+      const printButton = await screen.findByRole('button', { name: /print/i });
       fireEvent.click(printButton);
       expect(screen.getByText('Last Week')).toBeDefined();
       
@@ -102,10 +102,10 @@ describe('PrintPrayerList', () => {
       expect(screen.queryByText('Last Week')).toBeNull();
     });
 
-    it('displays checkmark next to selected range (week by default)', () => {
+    it('displays checkmark next to selected range (week by default)', async () => {
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
+      const printButton = await screen.findByRole('button', { name: /print/i });
       fireEvent.click(printButton);
       
       const weekOption = screen.getByText('Last Week').parentElement;
@@ -120,8 +120,8 @@ describe('PrintPrayerList', () => {
       
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const weekOption = screen.getByText('Last Week');
       fireEvent.click(weekOption);
@@ -137,8 +137,8 @@ describe('PrintPrayerList', () => {
       
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const monthOption = screen.getByText('Last Month');
       fireEvent.click(monthOption);
@@ -154,8 +154,8 @@ describe('PrintPrayerList', () => {
       
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const yearOption = screen.getByText('Last Year');
       fireEvent.click(yearOption);
@@ -171,8 +171,8 @@ describe('PrintPrayerList', () => {
       
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const weekOption = screen.getByText('Last Week');
       fireEvent.click(weekOption);
@@ -188,8 +188,8 @@ describe('PrintPrayerList', () => {
       
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const weekOption = screen.getByText('Last Week');
       fireEvent.click(weekOption);
@@ -205,8 +205,8 @@ describe('PrintPrayerList', () => {
       render(<PrintPrayerList />);
       
       // Open dropdown and select month
-      let printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  let printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const monthOption = screen.getByText('Last Month');
       fireEvent.click(monthOption);
@@ -216,8 +216,8 @@ describe('PrintPrayerList', () => {
       });
       
       // Open dropdown again and check that month is now selected
-      printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const monthOptionAgain = screen.getByText('Last Month').parentElement;
       expect(monthOptionAgain?.textContent).toContain('✓');
@@ -234,8 +234,8 @@ describe('PrintPrayerList', () => {
       
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const weekOption = screen.getByText('Last Week');
       fireEvent.click(weekOption);
@@ -261,8 +261,8 @@ describe('PrintPrayerList', () => {
       
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const weekOption = screen.getByText('Last Week');
       fireEvent.click(weekOption);
@@ -290,8 +290,8 @@ describe('PrintPrayerList', () => {
       
       const { container } = render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const weekOption = screen.getByText('Last Week');
       fireEvent.click(weekOption);
@@ -384,20 +384,20 @@ describe('PrintPrayerList', () => {
   });
 
   describe('Responsive Design', () => {
-    it('applies responsive classes to button', () => {
+  it('applies responsive classes to button', async () => {
       const { container } = render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      expect(printButton.className).toContain('sm:px-4');
-      expect(printButton.className).toContain('sm:text-base');
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  expect(printButton.className).toContain('sm:px-4');
+  expect(printButton.className).toContain('sm:text-base');
     });
 
-    it('has different text display for mobile and desktop', () => {
+  it('has different text display for mobile and desktop', async () => {
       const { container } = render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      const hiddenOnMobile = printButton.querySelector('.lg\\:hidden');
-      const hiddenOnDesktop = printButton.querySelector('.hidden.lg\\:inline');
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  const hiddenOnMobile = printButton.querySelector('.lg\\:hidden');
+  const hiddenOnDesktop = printButton.querySelector('.hidden.lg\\:inline');
       
       expect(hiddenOnMobile).toBeDefined();
       expect(hiddenOnDesktop).toBeDefined();
@@ -405,26 +405,26 @@ describe('PrintPrayerList', () => {
   });
 
   describe('Accessibility', () => {
-    it('has proper title attribute', () => {
+  it('has proper title attribute', async () => {
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      expect(printButton.getAttribute('title')).toBe('Print');
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  expect(printButton.getAttribute('title')).toBe('Print');
     });
 
-    it('button has proper disabled state styling', () => {
+  it('button has proper disabled state styling', async () => {
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      expect(printButton.className).toContain('disabled:opacity-50');
-      expect(printButton.className).toContain('disabled:cursor-not-allowed');
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  expect(printButton.className).toContain('disabled:opacity-50');
+  expect(printButton.className).toContain('disabled:cursor-not-allowed');
     });
 
-    it('menu options are keyboard accessible', () => {
+  it('menu options are keyboard accessible', async () => {
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const weekButton = screen.getByText('Last Week').closest('button');
       const monthButton = screen.getByText('Last Month').closest('button');
@@ -437,19 +437,19 @@ describe('PrintPrayerList', () => {
   });
 
   describe('Dark Mode Support', () => {
-    it('applies dark mode classes', () => {
+  it('applies dark mode classes', async () => {
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      expect(printButton.className).toContain('dark:bg-green-600');
-      expect(printButton.className).toContain('dark:hover:bg-green-700');
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  expect(printButton.className).toContain('dark:bg-green-600');
+  expect(printButton.className).toContain('dark:hover:bg-green-700');
     });
 
-    it('dropdown menu has dark mode styles', () => {
+  it('dropdown menu has dark mode styles', async () => {
       const { container } = render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       // Find the dropdown container div (not the inner flex div)
       const dropdown = container.querySelector('.absolute.left-0.mt-2');
@@ -457,11 +457,11 @@ describe('PrintPrayerList', () => {
       expect(dropdown?.className).toContain('dark:border-gray-700');
     });
 
-    it('dropdown options have dark mode hover states', () => {
+  it('dropdown options have dark mode hover states', async () => {
       render(<PrintPrayerList />);
       
-      const printButton = screen.getByRole('button', { name: /print/i });
-      fireEvent.click(printButton);
+  const printButton = await screen.findByRole('button', { name: /print/i });
+  fireEvent.click(printButton);
       
       const weekButton = screen.getByText('Last Week').closest('button');
       expect(weekButton?.className).toContain('dark:text-gray-300');
