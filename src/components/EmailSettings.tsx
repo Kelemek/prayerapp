@@ -10,7 +10,10 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [requireEmailVerification, setRequireEmailVerification] = useState<boolean>(false);
   const [verificationCodeLength, setVerificationCodeLength] = useState<number>(6);
   const [verificationCodeExpiryMinutes, setVerificationCodeExpiryMinutes] = useState<number>(15);
+  const [enableReminders, setEnableReminders] = useState<boolean>(false);
   const [reminderIntervalDays, setReminderIntervalDays] = useState<number>(7);
+  const [enableAutoArchive, setEnableAutoArchive] = useState<boolean>(false);
+  const [daysBeforeArchive, setDaysBeforeArchive] = useState<number>(7);
   const [appTitle, setAppTitle] = useState<string>('Church Prayer Manager');
   const [appSubtitle, setAppSubtitle] = useState<string>('Keeping our community connected in prayer');
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('require_email_verification, verification_code_length, verification_code_expiry_minutes, days_before_ongoing, reminder_interval_days, app_title, app_subtitle')
+        .select('require_email_verification, verification_code_length, verification_code_expiry_minutes, days_before_ongoing, enable_reminders, reminder_interval_days, enable_auto_archive, days_before_archive, app_title, app_subtitle')
         .eq('id', 1)
         .maybeSingle();
 
@@ -54,8 +57,20 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         setVerificationCodeExpiryMinutes(data.verification_code_expiry_minutes);
       }
 
+      if (data?.enable_reminders !== null && data?.enable_reminders !== undefined) {
+        setEnableReminders(data.enable_reminders);
+      }
+
       if (data?.reminder_interval_days !== null && data?.reminder_interval_days !== undefined) {
         setReminderIntervalDays(data.reminder_interval_days);
+      }
+
+      if (data?.enable_auto_archive !== null && data?.enable_auto_archive !== undefined) {
+        setEnableAutoArchive(data.enable_auto_archive);
+      }
+
+      if (data?.days_before_archive !== null && data?.days_before_archive !== undefined) {
+        setDaysBeforeArchive(data.days_before_archive);
       }
 
       if (data?.app_title) {
@@ -151,7 +166,10 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         .from('admin_settings')
         .upsert({
           id: 1,
+          enable_reminders: enableReminders,
           reminder_interval_days: reminderIntervalDays,
+          enable_auto_archive: enableAutoArchive,
+          days_before_archive: daysBeforeArchive,
           updated_at: new Date().toISOString()
         });
 
@@ -436,35 +454,89 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         </div>
 
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Send email reminders to prayer requesters when their prayers have had no updates for the specified number of days.
+          Automatically send email reminders to prayer requesters and optionally archive prayers without updates.
         </p>
 
         <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-          <div className="flex items-center gap-3 mb-3">
+          {/* Enable Reminders Checkbox */}
+          <label className="flex items-center gap-2 cursor-pointer mb-4">
             <input
-              type="number"
-              min="0"
-              max="90"
-              value={reminderIntervalDays}
-              onChange={(e) => setReminderIntervalDays(Math.max(0, Math.min(90, parseInt(e.target.value) || 0)))}
-              className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              type="checkbox"
+              checked={enableReminders}
+              onChange={(e) => setEnableReminders(e.target.checked)}
+              className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300">days of inactivity</span>
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Set to 0 to disable reminder emails. Only prayers with no recent updates will receive reminders.
-          </p>
-          <button
-            onClick={runReminderCheck}
-            disabled={sendingReminders}
-            className="mt-3 flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw size={16} className={sendingReminders ? 'animate-spin' : ''} />
-            {sendingReminders ? 'Sending...' : 'Send Reminders Now'}
-          </button>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            Manually trigger reminder emails. Only sends to prayers that haven't had updates in the specified number of days.
-          </p>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Enable prayer update reminders
+            </span>
+          </label>
+
+          {enableReminders && (
+            <>
+              {/* Reminder Interval Days */}
+              <div className="ml-6 mb-4 pb-4 border-b border-gray-300 dark:border-gray-600">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Days of inactivity before sending reminder email
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="1"
+                    max="90"
+                    value={reminderIntervalDays}
+                    onChange={(e) => setReminderIntervalDays(Math.max(1, Math.min(90, parseInt(e.target.value) || 7)))}
+                    className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">days</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Send reminder email after this many days without any updates to the prayer.
+                </p>
+              </div>
+
+              {/* Auto-Archive Setting */}
+              <div className="ml-6">
+                <label className="flex items-center gap-2 cursor-pointer mb-3">
+                  <input
+                    type="checkbox"
+                    checked={enableAutoArchive}
+                    onChange={(e) => setEnableAutoArchive(e.target.checked)}
+                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Auto-archive prayers after reminder if still no update
+                  </span>
+                </label>
+                
+                {enableAutoArchive && (
+                  <div className="ml-6 mb-3">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Days after reminder email before auto-archiving
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        min="1"
+                        max="90"
+                        value={daysBeforeArchive}
+                        onChange={(e) => setDaysBeforeArchive(Math.max(1, Math.min(90, parseInt(e.target.value) || 7)))}
+                        className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">days</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      After the reminder email is sent, if no update is received within this many days, the prayer will be automatically archived.
+                    </p>
+                    <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md">
+                      <p className="text-xs text-blue-800 dark:text-blue-200">
+                        <strong>Example:</strong> With {reminderIntervalDays} days for reminder and {daysBeforeArchive} days for archive, a prayer with no updates will receive a reminder after {reminderIntervalDays} days, then be archived {daysBeforeArchive} days later (total of {reminderIntervalDays + daysBeforeArchive} days) if still no update.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {successReminders && (

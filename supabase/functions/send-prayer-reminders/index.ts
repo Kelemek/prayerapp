@@ -39,7 +39,7 @@ serve(async (req) => {
     // Get the reminder_interval_days setting
     const { data: settings, error: settingsError } = await supabaseClient
       .from('admin_settings')
-      .select('reminder_interval_days')
+      .select('enable_reminders, reminder_interval_days, enable_auto_archive, days_before_archive')
       .eq('id', 1)
       .single()
 
@@ -54,9 +54,26 @@ serve(async (req) => {
       )
     }
 
+    const enableReminders = settings?.enable_reminders || false
     const reminderIntervalDays = settings?.reminder_interval_days || 0
+    const enableAutoArchive = settings?.enable_auto_archive || false
+    const daysBeforeArchive = settings?.days_before_archive || 7
 
-    // If disabled (0 or null), return early
+    // If reminders are disabled, return early
+    if (!enableReminders) {
+      return new Response(
+        JSON.stringify({ 
+          message: 'Prayer update reminders are disabled',
+          sent: 0,
+          archived: 0
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // If reminder interval is 0 or null, return early
     if (!reminderIntervalDays || reminderIntervalDays <= 0) {
       return new Response(
         JSON.stringify({ 
@@ -133,9 +150,18 @@ serve(async (req) => {
         lastActivityDate = new Date(prayer.created_at)
       }
 
-      // Check if the last activity was before the cutoff date
-      if (lastActivityDate < cutoffDate) {
+      // Only send reminder if:
+      // 1. Last activity was before the cutoff date AND
+      // 2. Either no reminder has been sent yet, OR the last activity is AFTER the last reminder
+      //    (meaning the counter has reset due to a new update)
+      const shouldSendReminder = lastActivityDate < cutoffDate && (
+        !prayer.last_reminder_sent || 
+        new Date(lastActivityDate) > new Date(prayer.last_reminder_sent)
+      )
+
+      if (shouldSendReminder) {
         prayersNeedingReminders.push(prayer)
+        console.log(`Prayer ${prayer.id} needs reminder: last activity ${lastActivityDate.toISOString()}, last reminder: ${prayer.last_reminder_sent || 'never'}`)
       }
     }
 
@@ -166,7 +192,7 @@ serve(async (req) => {
         const subject = `Reminder: Update Your Prayer Request - ${prayer.title}`
         const body = `Hello ${prayer.is_anonymous ? 'Friend' : prayer.requester},\n\nThis is a friendly reminder to update your prayer request if there have been any changes or answered prayers.\n\nPrayer: ${prayer.title}\nFor: ${prayer.prayer_for}\n\nYou can add an update by visiting the prayer app and clicking "Add Update" on your prayer.\n\nPraying with you,\nThe Prayer Team`
 
-        const html = generateReminderHTML(prayer)
+        const html = generateReminderHTML(prayer, enableAutoArchive, daysBeforeArchive)
 
         // Send the reminder email
         const { error: emailError } = await supabaseClient.functions.invoke('send-notification', {
@@ -205,10 +231,78 @@ serve(async (req) => {
       }
     }
 
+    // Handle auto-archiving if enabled
+    let prayersArchived = 0
+    if (enableAutoArchive && daysBeforeArchive > 0) {
+      // Calculate cutoff date for auto-archiving based on daysBeforeArchive
+      // If a prayer had a reminder sent more than daysBeforeArchive days ago, it should be archived
+      const archiveCutoffDate = new Date()
+      archiveCutoffDate.setDate(archiveCutoffDate.getDate() - daysBeforeArchive)
+
+      console.log(`Auto-archive enabled: checking for prayers with reminders sent before ${archiveCutoffDate.toISOString()}`)
+
+      // Find prayers that:
+      // 1. Have status 'current' or 'ongoing'
+      // 2. Have last_reminder_sent set
+      // 3. last_reminder_sent is before the archive cutoff date (more than daysBeforeArchive days ago)
+      // 4. Still have no updates since the reminder was sent
+      const { data: prayersToArchive, error: archiveQueryError } = await supabaseClient
+        .from('prayers')
+        .select('id, title, last_reminder_sent')
+        .in('status', ['current', 'ongoing'])
+        .eq('approval_status', 'approved')
+        .not('last_reminder_sent', 'is', null)
+        .lt('last_reminder_sent', archiveCutoffDate.toISOString())
+
+      if (archiveQueryError) {
+        console.error('Error querying prayers for auto-archive:', archiveQueryError)
+      } else if (prayersToArchive && prayersToArchive.length > 0) {
+        console.log(`Found ${prayersToArchive.length} prayers that may need to be archived`)
+        
+        // For each prayer, check if there have been any updates since the reminder was sent
+        for (const prayer of prayersToArchive) {
+          const { data: updatesAfterReminder, error: updateCheckError } = await supabaseClient
+            .from('prayer_updates')
+            .select('id, created_at')
+            .eq('prayer_id', prayer.id)
+            .gte('created_at', prayer.last_reminder_sent || '')
+            .limit(1)
+
+          if (updateCheckError) {
+            console.error(`Error checking updates for prayer ${prayer.id}:`, updateCheckError)
+            continue
+          }
+
+          // If no updates since reminder, archive the prayer
+          if (!updatesAfterReminder || updatesAfterReminder.length === 0) {
+            const daysSinceReminder = Math.floor((new Date().getTime() - new Date(prayer.last_reminder_sent || '').getTime()) / (1000 * 60 * 60 * 24))
+            console.log(`Archiving prayer ${prayer.id}: ${prayer.title} (reminder sent ${daysSinceReminder} days ago, threshold: ${daysBeforeArchive} days)`)
+            
+            const { error: archiveError } = await supabaseClient
+              .from('prayers')
+              .update({ status: 'archived' })
+              .eq('id', prayer.id)
+
+            if (archiveError) {
+              console.error(`Error archiving prayer ${prayer.id}:`, archiveError)
+            } else {
+              prayersArchived++
+              console.log(`Successfully auto-archived prayer ${prayer.id}: ${prayer.title}`)
+            }
+          } else {
+            console.log(`Prayer ${prayer.id} has updates since reminder - not archiving`)
+          }
+        }
+      } else {
+        console.log('No prayers found that need auto-archiving')
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
-        message: `Successfully sent ${emailsSent} reminder emails`,
+        message: `Successfully sent ${emailsSent} reminder emails${prayersArchived > 0 ? ` and archived ${prayersArchived} prayers` : ''}`,
         sent: emailsSent,
+        archived: prayersArchived,
         total: prayersNeedingReminders.length,
         errors: errors.length > 0 ? errors : undefined
       }),
@@ -232,7 +326,7 @@ serve(async (req) => {
   }
 })
 
-function generateReminderHTML(prayer: Prayer): string {
+function generateReminderHTML(prayer: Prayer, enableAutoArchive: boolean, daysBeforeArchive: number): string {
   const baseUrl = Deno.env.get('APP_URL') || 'http://localhost:5173'
   const appUrl = `${baseUrl}/`
   const requesterName = prayer.is_anonymous ? 'Friend' : prayer.requester
@@ -268,6 +362,14 @@ function generateReminderHTML(prayer: Prayer): string {
               • Encourage others by sharing God's faithfulness
             </p>
           </div>
+
+          ${enableAutoArchive ? `
+          <div style="background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #991b1b; font-size: 14px;">
+              <strong>⏰ Please Note:</strong> To keep our active prayer list current, if we don't receive an update within <strong>${daysBeforeArchive} days</strong>, this prayer will be automatically archived. You can always reactivate an archived prayer by adding a new update.
+            </p>
+          </div>
+          ` : ''}
 
           <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">To add an update, simply visit the prayer app and click the "Add Update" button on your prayer request.</p>
           
