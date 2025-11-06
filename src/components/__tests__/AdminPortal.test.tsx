@@ -388,9 +388,9 @@ describe('AdminPortal', () => {
       const statsGrid = document.querySelector('.grid.grid-cols-2');
       expect(statsGrid).toBeDefined();
       expect(statsGrid?.className).toContain('sm:grid-cols-3');
-      expect(statsGrid?.className).toContain('md:grid-cols-4');
-      expect(statsGrid?.className).toContain('lg:grid-cols-6');
-      expect(statsGrid?.className).toContain('xl:grid-cols-6');
+  expect(statsGrid?.className).toContain('md:grid-cols-5');
+  expect(statsGrid?.className).toContain('gap-2');
+  expect(statsGrid?.className).toContain('mb-8');
     });
 
     it('renders content within max-width container', () => {

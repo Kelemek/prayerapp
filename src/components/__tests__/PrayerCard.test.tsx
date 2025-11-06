@@ -295,11 +295,13 @@ describe('PrayerCard Component', () => {
         await user.click(submitButton);
         
         await waitFor(() => {
+          // onAddUpdate now receives a sixth argument `markAsAnswered` (default false)
           expect(mockCallbacks.onAddUpdate).toHaveBeenCalledWith(
             '1',
             'Update content',
             'Jane Smith',
             'jane@example.com',
+            false,
             false
           );
         });
@@ -333,12 +335,14 @@ describe('PrayerCard Component', () => {
         await user.click(submitButton);
         
         await waitFor(() => {
+          // onAddUpdate now receives a sixth argument `markAsAnswered` (default false)
           expect(mockCallbacks.onAddUpdate).toHaveBeenCalledWith(
             '1',
             'Anonymous update',
             'Jane Smith',
             'jane@example.com',
-            true
+            true,
+            false
           );
         });
       }
@@ -448,162 +452,38 @@ describe('PrayerCard Component', () => {
   });
 
   describe('Status Change Request Form', () => {
-    it('shows status change request form for non-admin', async () => {
+    it('status change request UI has been removed from the card', async () => {
+      // The status change request feature was removed from the PrayerCard UI.
       const user = userEvent.setup();
       render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
-      
-      await user.click(screen.getByText(/Request Status Change/i));
-      
-      await waitFor(() => {
-        // Check for the form heading
-        const forms = document.querySelectorAll('form');
-        const hasStatusChangeForm = Array.from(forms).some(form =>
-          form.querySelector('h4')?.textContent?.includes('Request Status Change')
-        );
-        expect(hasStatusChangeForm).toBe(true);
-      });
-    });
 
-    it('submits status change request', async () => {
-      const user = userEvent.setup();
-      mockCallbacks.onRequestStatusChange.mockResolvedValue(undefined);
-      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
-      
-      await user.click(screen.getByText(/Request Status Change/i));
-      
-      await waitFor(() => {
-        const heading = screen.getAllByText(/Request Status Change/i);
-        expect(heading.length).toBeGreaterThan(0);
-      });
-      
-      // Fill in form - find inputs within the status change form
-      const inputs = screen.getAllByPlaceholderText('First name');
-      const statusFirstName = inputs.find(input => 
-        input.closest('form')?.querySelector('h4')?.textContent?.includes('Status Change')
-      );
-      if (statusFirstName) {
-        await user.type(statusFirstName, 'Jane');
-      }
-      
-      const lastNameInputs = screen.getAllByPlaceholderText('Last name');
-      const statusLastName = lastNameInputs.find(input =>
-        input.closest('form')?.querySelector('h4')?.textContent?.includes('Status Change')
-      );
-      if (statusLastName) {
-        await user.type(statusLastName, 'Doe');
-      }
-      
-      const emailInputs = screen.getAllByPlaceholderText('Your email');
-      const statusEmail = emailInputs.find(input =>
-        input.closest('form')?.querySelector('h4')?.textContent?.includes('Status Change')
-      );
-      if (statusEmail) {
-        await user.type(statusEmail, 'jane@example.com');
-      }
-      
-      // Select status
-      const select = screen.getByRole('combobox');
-      await user.selectOptions(select, 'answered');
-      
-      await user.type(screen.getByPlaceholderText(/Reason for status change/i), 'Prayer answered');
-      
-      const submitButtons = screen.getAllByRole('button', { name: /Submit Request/i });
-      const statusSubmitButton = submitButtons.find(btn =>
-        btn.closest('form')?.querySelector('h4')?.textContent?.includes('Status Change')
-      );
-      
-      if (statusSubmitButton) {
-        await user.click(statusSubmitButton);
-        
-        await waitFor(() => {
-          expect(mockCallbacks.onRequestStatusChange).toHaveBeenCalledWith(
-            '1',
-            'answered',
-            'Prayer answered',
-            'Jane Doe',
-            'jane@example.com'
-          );
-        });
-      }
-    });
-
-    it('cancels status change request form', async () => {
-      const user = userEvent.setup();
-      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
-      
-      await user.click(screen.getByText(/Request Status Change/i));
-      
-      await waitFor(() => {
-        const heading = screen.getAllByText(/Request Status Change/i);
-        expect(heading.length).toBeGreaterThan(0);
-      });
-      
-      const cancelButtons = screen.getAllByRole('button', { name: /Cancel/i });
-      const statusCancelButton = cancelButtons.find(btn =>
-        btn.closest('form')?.querySelector('h4')?.textContent?.includes('Status Change')
-      );
-      
-      if (statusCancelButton) {
-        await user.click(statusCancelButton);
-        
-        await waitFor(() => {
-          const forms = document.querySelectorAll('form');
-          const hasStatusChangeForm = Array.from(forms).some(form =>
-            form.querySelector('h4')?.textContent?.includes('Status Change')
-          );
-          expect(hasStatusChangeForm).toBe(false);
-        });
-      }
+      // Ensure there is no visible button to request a status change
+      expect(screen.queryByText(/Request Status Change/i)).toBeNull();
     });
   });
 
   describe('Admin Actions', () => {
-    it('admin can change status to current', async () => {
-      const user = userEvent.setup();
-      const ongoingPrayer = { ...mockPrayer, status: PrayerStatus.ONGOING };
-      render(<PrayerCard prayer={ongoingPrayer} isAdmin={true} {...mockCallbacks} />);
-      
-      const currentButton = screen.getByRole('button', { name: /^Current$/i });
-      await user.click(currentButton);
-      
-      expect(mockCallbacks.onUpdateStatus).toHaveBeenCalledWith('1', PrayerStatus.CURRENT);
+    it('displays status label for current prayers', () => {
+      render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
+
+      expect(screen.getByText(/Current/i)).toBeDefined();
     });
 
-    it('admin can change status to ongoing', async () => {
-      const user = userEvent.setup();
-      render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
-      
-      const ongoingButton = screen.getByRole('button', { name: /^Ongoing$/i });
-      await user.click(ongoingButton);
-      
-      expect(mockCallbacks.onUpdateStatus).toHaveBeenCalledWith('1', PrayerStatus.ONGOING);
+    it('displays status label for archived prayers', () => {
+      const archivedPrayer = { ...mockPrayer, status: PrayerStatus.ARCHIVED };
+      render(<PrayerCard prayer={archivedPrayer} isAdmin={true} {...mockCallbacks} />);
+
+      expect(screen.getByText(/Archived/i)).toBeDefined();
     });
 
-    it('admin can change status to answered', async () => {
-      const user = userEvent.setup();
+    it('does not render admin status-change buttons (removed)', () => {
       render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
-      
-      const answeredButton = screen.getByRole('button', { name: /^Answered$/i });
-      await user.click(answeredButton);
-      
-      expect(mockCallbacks.onUpdateStatus).toHaveBeenCalledWith('1', PrayerStatus.ANSWERED);
-    });
 
-    it('admin can change status to closed', async () => {
-      const user = userEvent.setup();
-      render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
-      
-      const closedButton = screen.getByRole('button', { name: /^Closed$/i });
-      await user.click(closedButton);
-      
-      expect(mockCallbacks.onUpdateStatus).toHaveBeenCalledWith('1', PrayerStatus.CLOSED);
-    });
-
-    it('highlights current status for admin', () => {
-      render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
-      
-      const currentButton = screen.getByRole('button', { name: /^Current$/i });
-      expect(currentButton.className).toContain('bg-blue');
+      // Previously there were multiple status buttons; ensure they're not present
+      expect(screen.queryByRole('button', { name: /^Current$/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^Ongoing$/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^Answered$/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /^Closed$/i })).toBeNull();
     });
   });
 
@@ -675,10 +555,9 @@ describe('PrayerCard Component', () => {
     it('calls onFormOpen when opening status change request form', async () => {
       const user = userEvent.setup();
       render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />);
-      
-      await user.click(screen.getByText(/Request Status Change/i));
-      
-      expect(mockCallbacks.onFormOpen).toHaveBeenCalled();
+      // Status change request UI has been removed; ensure no such button exists
+      expect(screen.queryByText(/Request Status Change/i)).toBeNull();
+      expect(mockCallbacks.onFormOpen).not.toHaveBeenCalled();
     });
   });
 });

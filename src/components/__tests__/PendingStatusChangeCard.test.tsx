@@ -496,11 +496,11 @@ describe('PendingStatusChangeCard', () => {
       expect(statusElement).toBeDefined();
     });
 
-    it('applies gray color for closed status', () => {
-      const closedRequest = { ...mockRequest, requested_status: 'closed' as PrayerStatus };
+    it('applies gray color for archived status', () => {
+      const archivedRequest = { ...mockRequest, requested_status: 'archived' as PrayerStatus };
       const { container } = render(
         <PendingStatusChangeCard
-          statusChangeRequest={closedRequest}
+          statusChangeRequest={archivedRequest}
           onApprove={mockOnApprove}
           onDeny={mockOnDeny}
         />
