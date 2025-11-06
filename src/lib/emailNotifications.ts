@@ -289,54 +289,12 @@ interface ApprovedUpdatePayload {
 
 /**
  * Send email notifications when a prayer is approved
- * Uses Microsoft Graph API for all email delivery
+ * Sends to all active subscribers via Microsoft Graph API
  */
 export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayload): Promise<void> {
   try {
-    // Get admin settings including distribution preference and reply-to email
-    const { data: settings, error: settingsError} = await supabase
-      .from('admin_settings')
-      .select('notification_emails, email_distribution, reply_to_email')
-      .single();
-
-    if (settingsError) {
-      console.error('Error fetching admin settings:', settingsError);
-      return;
-    }
-
-    const replyToEmail = settings?.reply_to_email || 'markdlarson@me.com';
-
-    // Determine distribution method based on setting
-    if (settings?.email_distribution === 'all_users') {
-      // Send to all active subscribers
-      await sendBulkPrayerEmail(payload);
-    } else {
-      // Default to admin_only - use Resend for transactional emails
-      const recipients = settings?.notification_emails || [];
-
-      if (recipients.length === 0) {
-        console.warn('No admin recipients for approved prayer notification');
-        return;
-      }
-
-      const subject = `New Prayer Request: ${payload.title}`;
-      const body = `A new prayer request has been approved and is now live.\n\nTitle: ${payload.title}\nFor: ${payload.prayerFor}\nRequested by: ${payload.requester}\n\nDescription: ${payload.description}`;
-
-      const html = generateApprovedPrayerHTML(payload);
-
-      // Send email via Graph API
-      const { error: functionError } = await invokeSendNotification({
-        to: recipients,
-        subject,
-        body,
-        html,
-        replyTo: replyToEmail
-      });
-
-      if (functionError) {
-        console.error('Error sending approved prayer notification:', functionError);
-      }
-    }
+    // Send to all active subscribers via bulk email
+    await sendBulkPrayerEmail(payload);
   } catch (error) {
     console.error('Error in sendApprovedPrayerNotification:', error);
   }
