@@ -393,14 +393,32 @@ describe('EmailSubscribers Component', () => {
 
       const mockOrder = vi.fn(() => ({ limit: mockLimit }));
       const mockOr = vi.fn(() => ({ order: mockOrder }));
-      const mockSelect = vi.fn(() => ({ or: mockOr }));
+
+      // Mock for the delete flow: first checks is_admin, then deletes (for non-admin)
+      const mockMaybeSingle = vi.fn().mockResolvedValue({ 
+        data: { is_admin: false }, // Not an admin, so will delete
+        error: null 
+      });
+      const mockEqCheck = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));
 
       const mockEq = vi.fn().mockResolvedValue({ error: null });
       const mockDelete = vi.fn(() => ({ eq: mockEq }));
 
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        delete: mockDelete,
+      (supabase.from as any).mockImplementation((table: string) => {
+        if (table === 'email_subscribers') {
+          return {
+            select: (query: string) => {
+              // If selecting 'is_admin', it's the admin check
+              if (query === 'is_admin') {
+                return { eq: mockEqCheck };
+              }
+              // Otherwise it's the search query  
+              return { or: mockOr };
+            },
+            delete: mockDelete,
+          };
+        }
+        return {};
       });
 
       global.confirm = vi.fn(() => true);

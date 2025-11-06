@@ -7,6 +7,7 @@ interface EmailSubscriber {
   name: string;
   email: string;
   is_active: boolean;
+  is_admin?: boolean;
   created_at: string;
 }
 
@@ -255,24 +256,47 @@ export const EmailSubscribers: React.FC = () => {
   };
 
   const handleDelete = async (id: string, email: string) => {
-    if (!confirm(`Are you sure you want to delete ${email}?`)) {
+    if (!confirm(`Are you sure you want to remove ${email} from the subscriber list?`)) {
       return;
     }
 
     try {
-      const { error } = await supabase
+      // First check if this subscriber is an admin
+      const { data: subscriber, error: fetchError } = await supabase
         .from('email_subscribers')
-        .delete()
-        .eq('id', id);
+        .select('is_admin')
+        .eq('id', id)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
+
+      // If the subscriber is an admin, deactivate instead of deleting
+      // This preserves their admin privileges while removing them from the email list
+      if (subscriber?.is_admin) {
+        const { error: updateError } = await supabase
+          .from('email_subscribers')
+          .update({ is_active: false })
+          .eq('id', id);
+
+        if (updateError) throw updateError;
+        
+        setCSVSuccess(`Admin ${email} has been unsubscribed from emails but retains admin access to the portal.`);
+      } else {
+        // For non-admin subscribers, we can safely delete the record
+        const { error } = await supabase
+          .from('email_subscribers')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+      }
       
       // Refresh search results if user has searched (even with empty query)
       if (hasSearched) {
         await handleSearch();
       }
     } catch (err: unknown) {
-      console.error('Error deleting subscriber:', err);
+      console.error('Error removing subscriber:', err);
       const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; 
       setError(errorMessage);
     }
@@ -536,10 +560,15 @@ export const EmailSubscribers: React.FC = () => {
                 className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="font-medium text-gray-900 dark:text-gray-100">
                       {subscriber.name}
                     </h4>
+                    {subscriber.is_admin && (
+                      <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-xs rounded-full font-semibold">
+                        Admin
+                      </span>
+                    )}
                     {subscriber.is_active ? (
                       <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs rounded-full">
                         Active
@@ -553,9 +582,16 @@ export const EmailSubscribers: React.FC = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
                     {subscriber.email}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                    Added {new Date(subscriber.created_at).toLocaleDateString()}
-                  </p>
+                  {subscriber.is_admin && !subscriber.is_active && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                      Opted out of emails but retains admin portal access
+                    </p>
+                  )}
+                  {!subscriber.is_admin && (
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      Added {new Date(subscriber.created_at).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 ml-4">
                   <button
@@ -572,7 +608,7 @@ export const EmailSubscribers: React.FC = () => {
                   <button
                     onClick={() => handleDelete(subscriber.id, subscriber.email)}
                     className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                    title="Delete"
+                    title={subscriber.is_admin ? 'Unsubscribe from emails (keeps admin access)' : 'Delete subscriber'}
                   >
                     <Trash2 size={20} />
                   </button>
