@@ -580,7 +580,8 @@ export const useAdminData = () => {
       if (error) throw error;
       await fetchAdminData();
     } catch (error) {
-      handleSupabaseError(error);
+      console.error('Failed to edit prayer:', error);
+      throw error; // Re-throw to allow component to handle error state
     }
   }, [fetchAdminData]);
 
