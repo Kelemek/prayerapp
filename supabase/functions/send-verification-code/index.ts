@@ -1,8 +1,7 @@
 // @ts-nocheck - Deno Edge Function
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const RESEND_FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@yourdomain.com';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -11,19 +10,6 @@ function generateCode(length: number = 6): string {
   const min = Math.pow(10, length - 1);
   const max = Math.pow(10, length) - 1;
   return Math.floor(min + Math.random() * (max - min + 1)).toString();
-}
-
-// Get action description for email
-function getActionDescription(actionType: string): string {
-  const descriptions = {
-    'prayer_submission': 'submit a prayer request',
-    'prayer_update': 'add a prayer update',
-    'deletion_request': 'request a prayer deletion',
-    'update_deletion_request': 'request an update deletion',
-    'status_change_request': 'request a status change',
-    'preference_change': 'update your email preferences'
-  };
-  return descriptions[actionType] || 'perform an action';
 }
 
 serve(async (req) => {
@@ -42,7 +28,7 @@ serve(async (req) => {
     console.log('📧 Send verification code: Received request');
 
     // Validate environment variables
-    if (!RESEND_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       console.error('❌ Missing required environment variables');
       return new Response(JSON.stringify({
         error: 'Server configuration error',
@@ -98,7 +84,8 @@ serve(async (req) => {
     ];
     if (!validActionTypes.includes(actionType)) {
       return new Response(JSON.stringify({
-        error: 'Invalid action type'
+        error: 'Invalid action type',
+        details: `Action type must be one of: ${validActionTypes.join(', ')}`
       }), {
         status: 400,
         headers: {
@@ -108,183 +95,77 @@ serve(async (req) => {
       });
     }
 
-    // Fetch admin settings to get code length and expiry time
-    console.log('⚙️ Fetching admin settings for verification configuration...');
-    const settingsResponse = await fetch(`${SUPABASE_URL}/rest/v1/admin_settings?id=eq.1`, {
-      method: 'GET',
-      headers: {
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    // Get code length from settings (default: 6)
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    const { data: settings } = await supabase
+      .from('admin_settings')
+      .select('verification_code_length')
+      .eq('id', 1)
+      .maybeSingle();
 
-    let codeLength = 6; // Default to 6 digits
-    let expiryMinutes = 15; // Default to 15 minutes
-    if (settingsResponse.ok) {
-      const settings = await settingsResponse.json();
-      if (settings && settings.length > 0) {
-        if (settings[0].verification_code_length) {
-          codeLength = settings[0].verification_code_length;
-          console.log(`✅ Using code length from settings: ${codeLength}`);
-        }
-        if (settings[0].verification_code_expiry_minutes) {
-          expiryMinutes = settings[0].verification_code_expiry_minutes;
-          console.log(`✅ Using expiry time from settings: ${expiryMinutes} minutes`);
-        }
-      } else {
-        console.log(`⚠️ No settings found, using defaults: ${codeLength} digits, ${expiryMinutes} minutes`);
-      }
-    } else {
-      console.warn(`⚠️ Failed to fetch admin settings, using defaults: ${codeLength} digits, ${expiryMinutes} minutes`);
-    }
+    const codeLength = settings?.verification_code_length || 6;
 
-    // Generate code with specified length
+    // Generate verification code
     const code = generateCode(codeLength);
-    console.log(`🔢 Generated ${codeLength}-digit code for ${email}: ${code}`);
+    console.log(`✅ Generated ${codeLength}-digit code`);
 
-    // Calculate expiration time based on admin setting
-    const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();
-    console.log(`⏰ Code expires in ${expiryMinutes} minutes at ${expiresAt}`);
+    // Calculate expiry time (15 minutes from now)
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     // Store verification code in database
-    const insertResponse = await fetch(`${SUPABASE_URL}/rest/v1/verification_codes`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify({
+    const { data: codeRecord, error: insertError } = await supabase
+      .from('verification_codes')
+      .insert({
         email: email.toLowerCase().trim(),
         code,
         action_type: actionType,
         action_data: actionData,
         expires_at: expiresAt
       })
-    });
+      .select()
+      .single();
 
-    if (!insertResponse.ok) {
-      const error = await insertResponse.text();
-      console.error('❌ Failed to store verification code:', error);
-      throw new Error(`Database error: ${error}`);
+    if (insertError) {
+      console.error('❌ Database insert error:', insertError);
+      return new Response(JSON.stringify({
+        error: 'Failed to create verification code',
+        details: insertError.message
+      }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
     }
 
-    const [verificationRecord] = await insertResponse.json();
-    const codeId = verificationRecord.id;
-    console.log(`✅ Stored verification code with ID: ${codeId}`);
+    console.log(`✅ Verification code stored: ${codeRecord.id}`);
 
-    // Send email via Resend
-    const actionDescription = getActionDescription(actionType);
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-            .code-box { background: white; border: 2px solid #667eea; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
-            .code { font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #667eea; font-family: 'Courier New', monospace; }
-            .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }
-            .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1 style="margin: 0;">🙏 Prayer App</h1>
-              <p style="margin: 10px 0 0 0;">Email Verification</p>
-            </div>
-            <div class="content">
-              <h2>Verification Code</h2>
-              <p>You requested to <strong>${actionDescription}</strong> on the Prayer App.</p>
-              <p>Please use this verification code to complete your request:</p>
-              
-              <div class="code-box">
-                <div class="code">${code}</div>
-              </div>
-              
-              <div class="warning">
-                <strong>⏰ This code expires in 15 minutes</strong>
-              </div>
-              
-              <p style="color: #6b7280; font-size: 14px;">If you didn't request this code, you can safely ignore this email.</p>
-            </div>
-            <div class="footer">
-              <p>Prayer App - Connecting hearts in prayer</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const emailText = `
-Prayer App - Email Verification
-
-You requested to ${actionDescription} on the Prayer App.
-
-Your verification code is: ${code}
-
-This code will expire in 15 minutes.
-
-If you didn't request this code, you can safely ignore this email.
-
----
-Prayer App
-    `;
-
-    const emailResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: `Prayer App <${RESEND_FROM_EMAIL}>`,
+    // Send verification email via new unified email service
+    const { error: emailError } = await supabase.functions.invoke('send-email', {
+      body: {
         to: email,
-        subject: `Your Verification Code: ${code}`,
-        html: emailHtml,
-        text: emailText
-      })
+        subject: `Your verification code: ${code}`,
+        htmlBody: generateVerificationHTML(code, actionType),
+        textBody: generateVerificationText(code, actionType)
+      }
     });
 
-    if (!emailResponse.ok) {
-      const error = await emailResponse.json();
-      console.error('❌ Failed to send email:', error);
-      
-      // Provide helpful error messages for common Resend issues
-      if (emailResponse.status === 403) {
-        console.error('⚠️ Resend domain not verified! Email can only be sent to your Resend account email in development mode.');
-        throw new Error(
-          `Email domain not verified in Resend. ` +
-          `To fix: 1) Verify your domain at https://resend.com/domains, OR ` +
-          `2) Add "${email}" as a verified email in Resend, OR ` +
-          `3) Use your Resend account email for testing. ` +
-          `Error: ${JSON.stringify(error)}`
-        );
-      }
-      
-      if (emailResponse.status === 401) {
-        throw new Error(`Invalid Resend API key. Check your RESEND_API_KEY in Edge Function secrets.`);
-      }
-      
-      throw new Error(`Email service error (${emailResponse.status}): ${JSON.stringify(error)}`);
+    if (emailError) {
+      console.error('❌ Email send error:', emailError);
+      // Don't fail the whole request - code is already stored
+      // User can still use it even if email fails
+      console.warn('⚠️ Verification code created but email failed to send');
+    } else {
+      console.log('✅ Verification email sent');
     }
-
-    const emailResult = await emailResponse.json();
-    console.log(`✅ Email sent successfully: ${emailResult.id}`);
 
     return new Response(JSON.stringify({
       success: true,
-      codeId,
-      expiresAt,
-      message: `Verification code sent to ${email}`
+      codeId: codeRecord.id,
+      expiresAt: codeRecord.expires_at
     }), {
-      status: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
@@ -292,10 +173,10 @@ Prayer App
     });
 
   } catch (error) {
-    console.error('❌ Error in send-verification-code:', error);
+    console.error('❌ Unexpected error:', error);
     return new Response(JSON.stringify({
-      error: error instanceof Error ? error.message : 'Unknown error',
-      details: error instanceof Error ? error.stack : String(error)
+      error: 'Internal server error',
+      details: error.message
     }), {
       status: 500,
       headers: {
@@ -305,3 +186,71 @@ Prayer App
     });
   }
 });
+
+function getActionDescription(actionType: string): string {
+  const descriptions = {
+    'prayer_submission': 'submit a prayer request',
+    'prayer_update': 'add a prayer update',
+    'deletion_request': 'request a prayer deletion',
+    'update_deletion_request': 'request an update deletion',
+    'status_change_request': 'request a status change',
+    'preference_change': 'update your email preferences'
+  };
+  return descriptions[actionType] || 'perform an action';
+}
+
+function generateVerificationHTML(code: string, actionType: string): string {
+  const actionDescription = getActionDescription(actionType);
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #4F46E5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .code { font-size: 32px; font-weight: bold; color: #4F46E5; letter-spacing: 8px; text-align: center; padding: 20px; background-color: white; border-radius: 8px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Verification Code</h1>
+          </div>
+          <div class="content">
+            <p>You requested to ${actionDescription}. Please use the verification code below:</p>
+            <div class="code">${code}</div>
+            <p>This code will expire in 15 minutes.</p>
+            <p>If you didn't request this code, you can safely ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+function generateVerificationText(code: string, actionType: string): string {
+  const actionDescription = getActionDescription(actionType);
+  
+  return `
+Verification Code
+
+You requested to ${actionDescription}. Please use the verification code below:
+
+${code}
+
+This code will expire in 15 minutes.
+
+If you didn't request this code, you can safely ignore this email.
+
+---
+This is an automated message. Please do not reply to this email.
+  `.trim();
+}

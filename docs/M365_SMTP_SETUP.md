@@ -20,28 +20,40 @@ The Edge Function has been updated to use Microsoft 365 SMTP instead of Resend.
 
 ---
 
-### 2. Set Environment Variables in Supabase
+### 2. Set Environment Variables in Supabase (shared mailbox)
 
-Run these commands in your terminal:
+If you want messages to appear to come from a shared mailbox such as `prayer@yourchurch.org`, do NOT set `SMTP_USER` to the shared mailbox address unless that mailbox actually has login credentials (shared mailboxes normally do not). Instead use a licensed service account that can authenticate to SMTP and give it Send As permission on the shared mailbox.
+
+Run these commands in your terminal (example uses a service account `service@yourchurch.org` and a shared mailbox `prayer@yourchurch.org`):
 
 ```bash
 # Link to church Supabase project (if not already linked)
 npx supabase link --project-ref sywegvyxztwuikbzdphr
 
-# Set SMTP credentials
+# Set SMTP credentials (service account authenticates, mail will appear from the shared mailbox)
 npx supabase secrets set SMTP_HOST=smtp.office365.com
 npx supabase secrets set SMTP_PORT=587
-npx supabase secrets set SMTP_USER=your-email@yourchurch.org
-npx supabase secrets set SMTP_PASS=your-app-password-here
-npx supabase secrets set SMTP_FROM=your-email@yourchurch.org
+npx supabase secrets set SMTP_USER=service@yourchurch.org
+npx supabase secrets set SMTP_PASS=your-app-password-or-service-account-password
+npx supabase secrets set SMTP_FROM=prayer@yourchurch.org
 
-# Remove old Resend key
+# Remove old Resend key (if present)
 npx supabase secrets unset RESEND_API_KEY
 ```
 
-**Replace:**
-- `your-email@yourchurch.org` with your actual Microsoft 365 email
-- `your-app-password-here` with the app password you created
+Replace the example addresses/passwords with your real values. Important notes:
+- `SMTP_USER` should be a licensed user (service account) that can authenticate.
+- `SMTP_FROM` should be the shared mailbox address you want recipients to see (for example `prayer@yourchurch.org`).
+- If the service account has MFA, create an app password only if your tenant still allows app passwords; otherwise prefer a non-MFA service account for SMTP AUTH or use Microsoft Graph (recommended).
+
+Grant Send As permission to the service account so messages authenticated by the service account can be sent as the shared mailbox. You can do this in the Exchange admin center (Shared mailboxes → Manage mailbox delegation → Send as) or via Exchange PowerShell:
+
+```powershell
+# (after connecting with Connect-ExchangeOnline)
+Add-MailboxPermission -Identity "prayer@yourchurch.org" -User "service@yourchurch.org" -AccessRights SendAs
+```
+
+If SMTP AUTH is blocked in your tenant, you'll need to use Microsoft Graph (see notes below).
 
 ---
 

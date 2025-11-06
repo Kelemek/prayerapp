@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, UserPlus, Trash2, Mail, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { sendEmail } from '../lib/emailService';
 
 interface AdminUser {
   email: string;
@@ -102,11 +103,10 @@ export const AdminUserManagement: React.FC = () => {
 
       // Send invitation email
       try {
-        const { error: emailError } = await supabase.functions.invoke('send-notification', {
-          body: {
-            to: email,
-            subject: 'Admin Access Granted - Prayer App',
-            html: `
+        await sendEmail({
+          to: email,
+          subject: 'Admin Access Granted - Prayer App',
+          htmlBody: `
               <!DOCTYPE html>
               <html>
                 <head>
@@ -160,7 +160,7 @@ export const AdminUserManagement: React.FC = () => {
                 </body>
               </html>
             `,
-            text: `
+          textBody: `
 Welcome to Prayer App Admin Portal!
 
 Hi ${name},
@@ -178,13 +178,7 @@ Prayer App uses passwordless authentication for security.
 ---
 Prayer App Admin Portal
             `
-          }
         });
-
-        if (emailError) {
-          console.warn('Failed to send invitation email:', emailError);
-          // Don't fail the whole operation if email fails
-        }
       } catch (emailErr) {
         console.warn('Error sending invitation email:', emailErr);
       }

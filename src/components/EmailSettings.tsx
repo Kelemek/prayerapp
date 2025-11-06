@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Plus, X, Save, RefreshCw, Send, ChevronDown, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { sendEmailToAllSubscribers } from '../lib/emailService';
 
 interface EmailSettingsProps {
   onSave?: () => void;
@@ -338,28 +339,22 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #4A90E2;">Test Email from Prayer App</h1>
-          <p>This is a test email to verify your Mailchimp integration is working correctly.</p>
+          <p>This is a test email to verify your email integration is working correctly.</p>
           <p><strong>Reply-To Address:</strong> ${testReplyTo}</p>
-          <p>If you received this email, your Mailchimp setup is configured properly!</p>
+          <p>If you received this email, your email setup is configured properly!</p>
           <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
-          <p style="color: #666; font-size: 12px;">Sent from Prayer App - Mailchimp Integration Test</p>
+          <p style="color: #666; font-size: 12px;">Sent from Prayer App - Email Integration Test</p>
         </div>
       `;
-      const textContent = `Test Email from Prayer App\n\nThis is a test email to verify your Mailchimp integration is working correctly.\n\nReply-To Address: ${testReplyTo}\n\nIf you received this email, your Mailchimp setup is configured properly!`;
+      const textContent = `Test Email from Prayer App\n\nThis is a test email to verify your email integration is working correctly.\n\nReply-To Address: ${testReplyTo}\n\nIf you received this email, your email setup is configured properly!`;
 
-      const { error: functionError } = await supabase.functions.invoke('send-mass-prayer-email', {
-        body: {
-          subject,
-          htmlContent,
-          textContent,
-          fromName: 'Prayer App - Test',
-          replyTo: testReplyTo
-        }
+      await sendEmailToAllSubscribers({
+        subject,
+        htmlBody: htmlContent,
+        textBody: textContent,
+        fromName: 'Prayer App - Test',
+        replyTo: testReplyTo
       });
-
-      if (functionError) {
-        throw new Error(functionError.message || 'Failed to send test email');
-      }
 
       setSuccessTestEmail(true);
       setTimeout(() => setSuccessTestEmail(false), 5000);
@@ -611,7 +606,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Email address shown when recipients reply to notification emails (must be verified in Mailchimp)
+            Email address shown when recipients reply to notification emails
           </p>
         </div>
 
@@ -711,7 +706,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         {successTestEmail && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md p-4 mb-4">
             <p className="text-sm text-green-800 dark:text-green-200">
-              ✅ Test email sent successfully! Check your Mailchimp subscriber inboxes.
+              ✅ Test email sent successfully! Check subscriber inboxes.
             </p>
           </div>
         )}
@@ -721,7 +716,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
             onClick={sendTestEmail}
             disabled={sendingTestEmail || emailDistribution === 'admin_only'}
             className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title={emailDistribution === 'admin_only' ? 'Test email only works with "All Users" distribution mode' : 'Send a test email via Mailchimp'}
+            title={emailDistribution === 'admin_only' ? 'Test email only works with "All Users" distribution mode' : 'Send a test email to all active subscribers'}
           >
             {sendingTestEmail ? (
               <>

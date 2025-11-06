@@ -1,6 +1,6 @@
 # Email System Guide
 
-Complete guide for the Prayer App email notification system using Resend.
+Complete guide for the Prayer App email notification system using Microsoft Graph API.
 
 ## Overview
 
@@ -10,12 +10,13 @@ The Prayer App sends emails for:
 - ⏰ Prayer reminder emails (for inactive prayers)
 - ✅ Status change notifications
 - 📝 Email subscription preference changes
+- 🔐 Verification codes for prayer submissions
 
 ## Architecture
 
 ### Components
 
-1. **Edge Function**: `send-notification` - Handles all email sending via Resend API
+1. **Edge Function**: `send-email` - Handles all email sending via Microsoft Graph API
 2. **Email Subscribers**: Manages who receives emails
 3. **Preference System**: User opt-in/opt-out with admin approval
 4. **Automated Reminders**: Scheduled reminder emails
@@ -23,31 +24,40 @@ The Prayer App sends emails for:
 ### Email Flow
 
 ```
-User Action → Edge Function → Resend API → Email Delivered
+User Action → Edge Function → Microsoft Graph API → Email Delivered
               ↓
          Database Log (subscribers/preferences)
 ```
 
 ## Setup
 
-### 1. Get Resend API Key
+### 1. Create Azure AD App Registration
 
-1. Sign up at [resend.com](https://resend.com)
-2. Go to API Keys section
-3. Create new API key
-4. Copy the key (starts with `re_`)
+See [GRAPH_API_MIGRATION.md](./GRAPH_API_MIGRATION.md) for detailed setup steps.
+
+Quick summary:
+1. Azure Portal → Azure Active Directory → App registrations → New registration
+2. Create client secret
+3. Grant `Mail.Send` (Application) permission
+4. Grant admin consent
 
 ### 2. Add to Supabase
 
-In Supabase Dashboard:
-1. Go to Edge Functions → Send Notification → Settings
-2. Add secret: `RESEND_API_KEY`
-3. Paste your Resend API key
+```bash
+npx supabase link --project-ref sywegvyxztwuikbzdphr
+
+npx supabase secrets set AZURE_TENANT_ID=<your-tenant-id>
+npx supabase secrets set AZURE_CLIENT_ID=<your-app-client-id>
+npx supabase secrets set AZURE_CLIENT_SECRET=<your-client-secret>
+npx supabase secrets set MAIL_FROM_ADDRESS=prayer@yourchurch.org
+npx supabase secrets set MAIL_FROM_NAME="Your Church Prayers"
+```
 
 ### 3. Deploy Edge Function
 
 ```bash
-# Deploy with no JWT verification (allows anonymous sending)
+npx supabase functions deploy send-email
+npx supabase functions deploy send-verification-code
 supabase functions deploy send-notification --no-verify-jwt
 
 # Or use the deploy script

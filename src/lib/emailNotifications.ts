@@ -1,12 +1,23 @@
 import { supabase } from './supabase';
+import { sendEmail } from './emailService';
 
 /**
- * Helper function to invoke the send-notification Edge Function with proper auth
+ * Helper function to send email using new Graph API service
+ * Returns error object for backwards compatibility
  */
-async function invokeSendNotification(payload: { to: string[]; subject: string; body: string; html?: string; replyTo?: string }) {
-  return await supabase.functions.invoke('send-notification', {
-    body: payload
-  });
+async function invokeSendNotification(payload: { to: string[]; subject: string; body: string; html?: string; replyTo?: string }): Promise<{ error: Error | null }> {
+  try {
+    await sendEmail({
+      to: payload.to,
+      subject: payload.subject,
+      textBody: payload.body,
+      htmlBody: payload.html,
+      replyTo: payload.replyTo
+    });
+    return { error: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err : new Error(String(err)) };
+  }
 }
 
 interface EmailNotificationPayload {
@@ -276,7 +287,7 @@ interface ApprovedUpdatePayload {
 
 /**
  * Send email notifications when a prayer is approved
- * Uses Mailchimp for mass subscriber emails, Resend for admin-only notifications
+ * Uses Microsoft Graph API for all email delivery
  */
 export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayload): Promise<void> {
   try {
@@ -295,8 +306,8 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
 
     // Determine distribution method based on setting
     if (settings?.email_distribution === 'all_users') {
-      // Use Mailchimp for mass email to all subscribers
-      await sendMailchimpCampaign(payload);
+      // Send to all active subscribers
+      await sendBulkPrayerEmail(payload);
     } else {
       // Default to admin_only - use Resend for transactional emails
       const recipients = settings?.notification_emails || [];
@@ -311,7 +322,7 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
 
       const html = generateApprovedPrayerHTML(payload);
 
-      // Send email via Resend (transactional)
+      // Send email via Graph API
       const { error: functionError } = await invokeSendNotification({
         to: recipients,
         subject,
@@ -330,9 +341,9 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
 }
 
 /**
- * Send Mailchimp campaign for approved prayer to all subscribers
+ * Send email to all active subscribers via Microsoft Graph API
  */
-async function sendMailchimpCampaign(payload: ApprovedPrayerPayload): Promise<void> {
+async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void> {
   try {
     // Fetch reply-to email from admin_settings
     const { data: settings } = await supabase
@@ -347,25 +358,18 @@ async function sendMailchimpCampaign(payload: ApprovedPrayerPayload): Promise<vo
     const htmlContent = generateApprovedPrayerHTML(payload);
     const textContent = `A new prayer request has been approved and is now live.\n\nTitle: ${payload.title}\nFor: ${payload.prayerFor}\nRequested by: ${payload.requester}\n\nDescription: ${payload.description}`;
 
-    // Call Mailchimp Edge Function
-    const { data, error } = await supabase.functions.invoke('send-mass-prayer-email', {
-      body: {
-        subject,
-        htmlContent,
-        textContent,
-        fromName: 'Prayer App',
-        replyTo: replyToEmail
-      }
+    // Use new Graph API email service to send to all subscribers
+    const { sendEmailToAllSubscribers } = await import('./emailService');
+    const result = await sendEmailToAllSubscribers({
+      subject,
+      htmlBody: htmlContent,
+      textBody: textContent,
+      replyTo: replyToEmail
     });
 
-    if (error) {
-      console.error('Error sending Mailchimp campaign:', error);
-      throw error;
-    }
-
-    console.log('Mailchimp campaign sent successfully:', data);
+    console.log('Bulk email sent successfully:', result);
   } catch (error) {
-    console.error('Error in sendMailchimpCampaign:', error);
+    console.error('Error in sendBulkPrayerEmail:', error);
     throw error;
   }
 }
