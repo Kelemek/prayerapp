@@ -285,6 +285,7 @@ interface ApprovedUpdatePayload {
   prayerTitle: string;
   content: string;
   author: string;
+  markedAsAnswered?: boolean;
 }
 
 /**
@@ -330,40 +331,26 @@ async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void
  */
 export async function sendApprovedUpdateNotification(payload: ApprovedUpdatePayload): Promise<void> {
   try {
-    // Get all active subscribers from email_subscribers table
-    const { data: subscribers, error: subscribersError } = await supabase
-      .from('email_subscribers')
-      .select('email')
-      .eq('is_active', true);
+    const isAnswered = payload.markedAsAnswered || false;
+    const subject = isAnswered 
+      ? `🎉 Prayer Answered: ${payload.prayerTitle}`
+      : `Prayer Update: ${payload.prayerTitle}`;
+    
+    const textContent = isAnswered
+      ? `Great news! A prayer has been answered!\n\nPrayer: ${payload.prayerTitle}\nUpdate by: ${payload.author}\n\nUpdate: ${payload.content}\n\nLet's give thanks and praise for this answered prayer!`
+      : `A new update has been posted for a prayer.\n\nPrayer: ${payload.prayerTitle}\nUpdate by: ${payload.author}\n\nUpdate: ${payload.content}\n\nLet's continue to lift this prayer up together.`;
+    
+    const htmlContent = generateApprovedUpdateHTML(payload);
 
-    if (subscribersError) {
-      console.error('Error fetching subscribers:', subscribersError);
-      return;
-    }
-
-    if (!subscribers || subscribers.length === 0) {
-      console.warn('No active subscribers for approved update notification');
-      return;
-    }
-
-    const recipients = subscribers.map(s => s.email);
-
-    const subject = `Prayer Update: ${payload.prayerTitle}`;
-    const body = `A new update has been posted for a prayer.\n\nPrayer: ${payload.prayerTitle}\nUpdate by: ${payload.author}\n\nContent: ${payload.content}`;
-
-    const html = generateApprovedUpdateHTML(payload);
-
-    // Send email via Supabase Edge Function
-    const { error: functionError } = await invokeSendNotification({
-      to: recipients,
+    // Use new Graph API email service to send to all active subscribers
+    const { sendEmailToAllSubscribers } = await import('./emailService');
+    const result = await sendEmailToAllSubscribers({
       subject,
-      body,
-      html
+      htmlBody: htmlContent,
+      textBody: textContent
     });
 
-    if (functionError) {
-      console.error('Error sending approved update notification:', functionError);
-    }
+    console.log('Update notification sent successfully:', result);
   } catch (error) {
     console.error('Error in sendApprovedUpdateNotification:', error);
   }
@@ -415,6 +402,23 @@ function generateApprovedPrayerHTML(payload: ApprovedPrayerPayload): string {
 function generateApprovedUpdateHTML(payload: ApprovedUpdatePayload): string {
   const baseUrl = window.location.origin;
   const appUrl = `${baseUrl}/`;
+  const isAnswered = payload.markedAsAnswered || false;
+
+  // Different colors and messaging for answered vs regular update
+  const gradientColors = isAnswered 
+    ? '#10b981, #059669' // Green for answered
+    : '#3b82f6, #2563eb'; // Blue for regular update
+  
+  const icon = isAnswered ? '🎉' : '💬';
+  const title = isAnswered ? 'Prayer Answered!' : 'Prayer Update';
+  const borderColor = isAnswered ? '#10b981' : '#3b82f6';
+  const buttonColor = isAnswered ? '#10b981' : '#3b82f6';
+  const statusBadge = isAnswered 
+    ? '<div style="display: inline-block; background: #10b981; color: white; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 15px;">✓ Answered Prayer</div>'
+    : '';
+  const closingMessage = isAnswered
+    ? 'Let\'s give thanks and praise for this answered prayer!'
+    : 'Let\'s continue to lift this prayer up together.';
 
   return `
     <!DOCTYPE html>
@@ -422,23 +426,24 @@ function generateApprovedUpdateHTML(payload: ApprovedUpdatePayload): string {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Prayer Update</title>
+        <title>${title}</title>
       </head>
       <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">💬 Prayer Update</h1>
+        <div style="background: linear-gradient(to right, ${gradientColors}); padding: 20px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">${icon} ${title}</h1>
         </div>
         <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+          ${statusBadge}
           <h2 style="color: #1f2937; margin-top: 0;">Update for: ${payload.prayerTitle}</h2>
           <p style="margin: 5px 0 15px 0;"><strong>Posted by:</strong> ${payload.author}</p>
           <p><strong>Update:</strong></p>
-          <p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">${payload.content}</p>
+          <p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid ${borderColor};">${payload.content}</p>
           <div style="margin-top: 30px; text-align: center;">
-            <a href="${appUrl}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a>
+            <a href="${appUrl}" style="background: ${buttonColor}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a>
           </div>
         </div>
         <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
-          <p>A new update has been added to this prayer request.</p>
+          <p>${closingMessage}</p>
         </div>
       </body>
     </html>

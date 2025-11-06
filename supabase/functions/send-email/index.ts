@@ -74,6 +74,7 @@ async function sendEmail(
     textBody?: string
     replyTo?: string
     fromName?: string
+    useBcc?: boolean  // If true, use BCC instead of To (hides recipients from each other)
   }
 ): Promise<void> {
   const recipients = Array.isArray(options.to) ? options.to : [options.to]
@@ -91,9 +92,16 @@ async function sendEmail(
           name: options.fromName || MAIL_FROM_NAME
         }
       },
-      toRecipients: recipients.map(email => ({
-        emailAddress: { address: email }
-      })),
+      // Use BCC for bulk sends to hide recipients from each other
+      ...(options.useBcc ? {
+        bccRecipients: recipients.map(email => ({
+          emailAddress: { address: email }
+        }))
+      } : {
+        toRecipients: recipients.map(email => ({
+          emailAddress: { address: email }
+        }))
+      }),
       ...(options.replyTo && {
         replyTo: [{ emailAddress: { address: options.replyTo } }]
       })
@@ -117,11 +125,12 @@ async function sendEmail(
     throw new Error(`Graph API sendMail failed: ${response.status} ${error}`)
   }
   
-  console.log(`✅ Email sent to ${recipients.length} recipient(s)`)
+  console.log(`✅ Email sent to ${recipients.length} recipient(s)${options.useBcc ? ' via BCC' : ''}`)
 }
 
 /**
- * Send bulk emails with batching (respects M365 rate limits)
+ * Send bulk emails with BCC batching (respects M365 rate limits and hides recipients)
+ * Uses BCC to ensure recipients don't see each other's email addresses
  */
 async function sendBulkEmails(
   token: string,
@@ -134,45 +143,58 @@ async function sendBulkEmails(
     fromName?: string
   }
 ): Promise<{ sent: number; failed: number; errors: string[] }> {
-  const BATCH_SIZE = 30 // Microsoft 365 rate limit: ~30 emails/minute
-  const BATCH_DELAY = 60000 // 60 seconds between batches
+  // Microsoft 365 limits: 500 recipients per message, 30 messages per minute
+  const BCC_BATCH_SIZE = 500  // Max recipients per email
+  const TIME_BATCH_SIZE = 30  // Max emails per minute
+  const BATCH_DELAY = 60000   // 60 seconds between time batches
   
   let sent = 0
   let failed = 0
   const errors: string[] = []
   
-  console.log(`📧 Sending to ${recipients.length} recipients in batches of ${BATCH_SIZE}...`)
+  console.log(`📧 Sending to ${recipients.length} recipients using BCC...`)
   
-  for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-    const batch = recipients.slice(i, i + BATCH_SIZE)
-    const batchNum = Math.floor(i / BATCH_SIZE) + 1
-    const totalBatches = Math.ceil(recipients.length / BATCH_SIZE)
+  // Split into BCC batches of 500 recipients each
+  const bccBatches = []
+  for (let i = 0; i < recipients.length; i += BCC_BATCH_SIZE) {
+    bccBatches.push(recipients.slice(i, i + BCC_BATCH_SIZE))
+  }
+  
+  console.log(`📦 Created ${bccBatches.length} BCC batch(es) of up to ${BCC_BATCH_SIZE} recipients each`)
+  
+  // Send BCC batches in time-limited groups
+  for (let i = 0; i < bccBatches.length; i += TIME_BATCH_SIZE) {
+    const timeBatch = bccBatches.slice(i, i + TIME_BATCH_SIZE)
+    const timeBatchNum = Math.floor(i / TIME_BATCH_SIZE) + 1
+    const totalTimeBatches = Math.ceil(bccBatches.length / TIME_BATCH_SIZE)
     
-    console.log(`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} emails)...`)
+    console.log(`⏰ Processing time batch ${timeBatchNum}/${totalTimeBatches} (${timeBatch.length} BCC email(s))...`)
     
-    // Send emails in this batch
-    for (const recipient of batch) {
+    // Send all BCC batches in this time window
+    for (const bccBatch of timeBatch) {
       try {
         await sendEmail(token, {
-          to: recipient,
+          to: bccBatch,  // Array of recipients
           subject: options.subject,
           htmlBody: options.htmlBody,
           textBody: options.textBody,
           replyTo: options.replyTo,
-          fromName: options.fromName
+          fromName: options.fromName,
+          useBcc: true  // Use BCC to hide recipients from each other
         })
-        sent++
+        sent += bccBatch.length
+        console.log(`✅ Sent to ${bccBatch.length} recipients via BCC`)
       } catch (error) {
-        failed++
+        failed += bccBatch.length
         const errorMsg = error instanceof Error ? error.message : String(error)
-        errors.push(`${recipient}: ${errorMsg}`)
-        console.error(`❌ Failed to send to ${recipient}:`, errorMsg)
+        errors.push(`Batch of ${bccBatch.length}: ${errorMsg}`)
+        console.error(`❌ Failed to send BCC batch:`, errorMsg)
       }
     }
     
-    // Wait before next batch (unless this was the last batch)
-    if (i + BATCH_SIZE < recipients.length) {
-      console.log(`⏳ Waiting ${BATCH_DELAY / 1000}s before next batch...`)
+    // Wait before next time batch (unless this was the last one)
+    if (i + TIME_BATCH_SIZE < bccBatches.length) {
+      console.log(`⏳ Waiting ${BATCH_DELAY / 1000}s before next time batch...`)
       await new Promise(resolve => setTimeout(resolve, BATCH_DELAY))
     }
   }

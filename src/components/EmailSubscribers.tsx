@@ -137,10 +137,15 @@ export const EmailSubscribers: React.FC = () => {
 
       if (error) throw error;
       
-      // Refresh search results
-      if (searchQuery.trim()) {
-        await handleSearch();
-      }
+      // Update local state immediately for instant feedback
+      setSubscribers(prevSubscribers => 
+        prevSubscribers.map(sub => 
+          sub.id === id ? { ...sub, is_active: !currentStatus } : sub
+        )
+      );
+      
+      // Also refresh search results to ensure consistency
+      await handleSearch();
     } catch (err: unknown) {
       console.error('Error toggling subscriber status:', err);
       const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);

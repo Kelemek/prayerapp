@@ -13,7 +13,7 @@ export const seedTestPrayers = async () => {
     {
       title: "Job Search for Mark",
       description: "Pray that Mark finds the right job opportunity",
-      status: "ongoing",
+      status: "current",
       requester: "Mary Johnson",
       date_requested: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
     },

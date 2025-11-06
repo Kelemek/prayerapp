@@ -4,7 +4,6 @@ import { PendingPrayerCard } from './PendingPrayerCard';
 import { PendingUpdateCard } from './PendingUpdateCard';
 import { PendingDeletionCard } from './PendingDeletionCard';
 import { PendingUpdateDeletionCard } from './PendingUpdateDeletionCard';
-import { PendingStatusChangeCard } from './PendingStatusChangeCard';
 import { PendingPreferenceChangeCard } from './PendingPreferenceChangeCard';
 import { EmailSettings } from './EmailSettings';
 import { EmailSubscribers } from './EmailSubscribers';
@@ -19,7 +18,7 @@ import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
 import { supabase } from '../lib/supabase';
 import { sendApprovedPreferenceChangeNotification, sendDeniedPreferenceChangeNotification } from '../lib/emailNotifications';
 
-type AdminTab = 'prayers' | 'updates' | 'deletions' | 'status-changes' | 'preferences' | 'settings';
+type AdminTab = 'prayers' | 'updates' | 'deletions' | 'preferences' | 'settings';
 
 export const AdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('prayers');
@@ -72,10 +71,9 @@ export const AdminPortal: React.FC = () => {
   const [pendingPreferenceChanges, setPendingPreferenceChanges] = useState<PendingPreferenceChange[]>([]);
   const [loadingPreferenceChanges, setLoadingPreferenceChanges] = useState(true);
 
-  // Calculate total denied count (all 6 types)
+  // Calculate total denied count (all 5 types)
   const deniedCount = (deniedPrayers?.length || 0) + 
                       (deniedUpdates?.length || 0) + 
-                      (deniedStatusChangeRequests?.length || 0) + 
                       (deniedDeletionRequests?.length || 0) + 
                       (deniedUpdateDeletionRequests?.length || 0) + 
                       (deniedPreferenceChanges?.length || 0);
@@ -170,7 +168,7 @@ export const AdminPortal: React.FC = () => {
   // Auto-switch to next tab with pending items when current tab becomes empty
   useEffect(() => {
     // Only auto-switch for approval tabs (not settings, approved, or denied)
-    const approvalTabs: AdminTab[] = ['prayers', 'updates', 'deletions', 'status-changes', 'preferences'];
+    const approvalTabs: AdminTab[] = ['prayers', 'updates', 'deletions', 'preferences'];
     
     if (!approvalTabs.includes(activeTab)) return;
 
@@ -187,9 +185,6 @@ export const AdminPortal: React.FC = () => {
       case 'deletions':
         isCurrentTabEmpty = pendingDeletionRequests.length === 0 && pendingUpdateDeletionRequests.length === 0;
         break;
-      case 'status-changes':
-        isCurrentTabEmpty = pendingStatusChangeRequests.length === 0;
-        break;
       case 'preferences':
         isCurrentTabEmpty = pendingPreferenceChanges.length === 0;
         break;
@@ -201,7 +196,6 @@ export const AdminPortal: React.FC = () => {
         { tab: 'prayers' as AdminTab, count: pendingPrayers.length },
         { tab: 'updates' as AdminTab, count: pendingUpdates.length },
         { tab: 'deletions' as AdminTab, count: pendingDeletionRequests.length + pendingUpdateDeletionRequests.length },
-        { tab: 'status-changes' as AdminTab, count: pendingStatusChangeRequests.length },
         { tab: 'preferences' as AdminTab, count: pendingPreferenceChanges.length }
       ];
 
@@ -218,7 +212,6 @@ export const AdminPortal: React.FC = () => {
     pendingUpdates.length,
     pendingDeletionRequests.length,
     pendingUpdateDeletionRequests.length,
-    pendingStatusChangeRequests.length,
     pendingPreferenceChanges.length,
     loading,
     loadingPreferenceChanges
@@ -358,8 +351,6 @@ export const AdminPortal: React.FC = () => {
         setActiveTab('updates');
       } else if (pendingDeletionRequests.length > 0 || pendingUpdateDeletionRequests.length > 0) {
         setActiveTab('deletions');
-      } else if (pendingStatusChangeRequests.length > 0) {
-        setActiveTab('status-changes');
       } else if (pendingPreferenceChanges.length > 0) {
         setActiveTab('preferences');
       }
@@ -414,7 +405,7 @@ export const AdminPortal: React.FC = () => {
       {/* Content */}
       <main className="max-w-6xl mx-auto px-4 py-6">
         {/* Stats Grid - Clickable Filter Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-2 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-8">
           <button
             onClick={() => setActiveTab('prayers')}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
@@ -466,24 +457,6 @@ export const AdminPortal: React.FC = () => {
             </div>
           </button>
           
-          
-          <button
-            onClick={() => setActiveTab('status-changes')}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              activeTab === 'status-changes' ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-600'
-            }`}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <RefreshCw className="text-blue-500" size={20} />
-              <div className="text-center">
-                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                  {pendingStatusChangeRequests.length}
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-300">Status</div>
-              </div>
-            </div>
-          </button>
-          
           <button
             onClick={() => setActiveTab('preferences')}
             className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
@@ -522,13 +495,13 @@ export const AdminPortal: React.FC = () => {
         </div>
 
         {/* Alerts - Only show on pending tabs */}
-        {(activeTab === 'prayers' || activeTab === 'updates' || activeTab === 'deletions' || activeTab === 'status-changes' || activeTab === 'preferences') && 
-         (pendingPrayers.length > 0 || pendingUpdates.length > 0 || pendingDeletionRequests.length > 0 || pendingUpdateDeletionRequests.length > 0 || pendingStatusChangeRequests.length > 0 || pendingPreferenceChanges.length > 0) && (
+        {(activeTab === 'prayers' || activeTab === 'updates' || activeTab === 'deletions' || activeTab === 'preferences') && 
+         (pendingPrayers.length > 0 || pendingUpdates.length > 0 || pendingDeletionRequests.length > 0 || pendingUpdateDeletionRequests.length > 0 || pendingPreferenceChanges.length > 0) && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
             <div className="flex items-center gap-2">
               <AlertTriangle className="text-yellow-600 dark:text-yellow-400" size={20} />
               <p className="text-yellow-800 dark:text-yellow-200">
-                You have {pendingPrayers.length + pendingUpdates.length + pendingDeletionRequests.length + pendingUpdateDeletionRequests.length + pendingStatusChangeRequests.length + pendingPreferenceChanges.length} items pending approval.
+                You have {pendingPrayers.length + pendingUpdates.length + pendingDeletionRequests.length + pendingUpdateDeletionRequests.length + pendingPreferenceChanges.length} items pending approval.
               </p>
             </div>
           </div>
@@ -644,37 +617,6 @@ export const AdminPortal: React.FC = () => {
                 )}
               </div>
             </div>
-          </div>
-        )}
-
-        {activeTab === 'status-changes' && (
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
-              Pending Status Change Requests ({pendingStatusChangeRequests.length})
-            </h2>
-            
-            {pendingStatusChangeRequests.length === 0 ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
-                <CheckCircle className="mx-auto mb-4 text-gray-400 dark:text-gray-500" size={48} />
-                <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  No pending status change requests
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  All status change requests have been reviewed.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {pendingStatusChangeRequests.map((request) => (
-                  <PendingStatusChangeCard
-                    key={request.id}
-                    statusChangeRequest={request}
-                    onApprove={(id: string) => approveStatusChangeRequest(id)}
-                    onDeny={(id: string, reason: string) => denyStatusChangeRequest(id, reason)}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         )}
 
@@ -840,7 +782,7 @@ export const AdminPortal: React.FC = () => {
                   No denied items yet
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400">
-                  Denied prayers, updates, status changes, deletions, and preference changes will appear here.
+                  Denied prayers, updates, deletions, and preference changes will appear here.
                 </p>
               </div>
             ) : (
@@ -908,40 +850,6 @@ export const AdminPortal: React.FC = () => {
                                   <p className="text-red-600 dark:text-red-400 mt-2">
                                     Denial reason: {update.denial_reason}
                                   </p>
-                                )}
-                              </div>
-                            </div>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
-                              Denied
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {/* Denied Status Change Requests */}
-                {deniedStatusChangeRequests && deniedStatusChangeRequests.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 mb-4">
-                      Denied Status Change Requests ({deniedStatusChangeRequests.length})
-                    </h3>
-                    <div className="space-y-4">
-                      {deniedStatusChangeRequests.map((req) => (
-                        <div key={req.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                <RefreshCw size={14} />
-                                <span>Status change for: {req.prayer_title}</span>
-                              </div>
-                              <p className="text-gray-700 dark:text-gray-300 mb-2">
-                                Requested status: {req.requested_status}
-                              </p>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
-                                <p>Requested by: {req.requested_by}</p>
-                                {req.denial_reason && (
-                                  <p className="text-red-600 dark:text-red-400 mt-2">Denial reason: {req.denial_reason}</p>
                                 )}
                               </div>
                             </div>

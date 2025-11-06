@@ -442,10 +442,10 @@ export const useAdminData = () => {
 
   const approveUpdate = useCallback(async (updateId: string) => {
     try {
-      // First get the update details and prayer title before approving
+      // First get the update details, prayer title, and prayer status before approving
       const { data: update, error: fetchError } = await supabase
         .from('prayer_updates')
-        .select('*, prayers(title)')
+        .select('*, prayers(title, status)')
         .eq('id', updateId)
         .single();
 
@@ -463,14 +463,43 @@ export const useAdminData = () => {
       
       if (error) throw error;
 
-      // Send email notification
-      const prayerTitle = update.prayers && typeof update.prayers === 'object' && 'title' in update.prayers
-        ? String(update.prayers.title)
+      // Get the prayer's current status
+      const prayerData = update.prayers && typeof update.prayers === 'object' ? update.prayers : null;
+      const currentPrayerStatus = prayerData && 'status' in prayerData ? String(prayerData.status) : null;
+
+      // Update prayer status based on the logic:
+      // 1. If mark_as_answered is true, set to 'answered'
+      // 2. If current status is 'answered' or 'archived' and NOT marked as answered, set to 'current'
+      // 3. Otherwise, leave status unchanged
+      let newPrayerStatus: string | null = null;
+      
+      if (update.mark_as_answered) {
+        newPrayerStatus = 'answered';
+      } else if (currentPrayerStatus === 'answered' || currentPrayerStatus === 'archived') {
+        newPrayerStatus = 'current';
+      }
+
+      // Update the prayer status if needed
+      if (newPrayerStatus) {
+        const { error: prayerError } = await supabase
+          .from('prayers')
+          .update({ status: newPrayerStatus })
+          .eq('id', update.prayer_id);
+        
+        if (prayerError) {
+          console.error('Failed to update prayer status:', prayerError);
+        }
+      }
+
+      // Send mass email notification to all subscribers
+      const prayerTitle = prayerData && 'title' in prayerData
+        ? String(prayerData.title)
         : 'Prayer';
       await sendApprovedUpdateNotification({
         prayerTitle,
         content: update.content,
-        author: update.is_anonymous ? 'Anonymous' : (update.author || 'Anonymous')
+        author: update.is_anonymous ? 'Anonymous' : (update.author || 'Anonymous'),
+        markedAsAnswered: update.mark_as_answered || false
       });
 
       await fetchAdminData();

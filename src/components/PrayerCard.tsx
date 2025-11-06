@@ -10,7 +10,7 @@ import { VerificationDialog } from './VerificationDialog';
 interface PrayerCardProps {
   prayer: PrayerRequest;
   onUpdateStatus: (id: string, status: PrayerStatus) => void;
-  onAddUpdate: (id: string, content: string, author: string, authorEmail: string, isAnonymous: boolean) => void;
+  onAddUpdate: (id: string, content: string, author: string, authorEmail: string, isAnonymous: boolean, markAsAnswered?: boolean) => void;
   onDelete: (id: string) => void;
   onRequestDelete: (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
   onRequestStatusChange: (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
@@ -41,17 +41,12 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   const [updateLastName, setUpdateLastName] = useState('');
   const [updateAuthorEmail, setUpdateAuthorEmail] = useState('');
   const [updateIsAnonymous, setUpdateIsAnonymous] = useState(false);
+  const [updateMarkAsAnswered, setUpdateMarkAsAnswered] = useState(false);
   const [showDeleteRequest, setShowDeleteRequest] = useState(false);
   const [deleteReason, setDeleteReason] = useState('');
   const [deleteRequesterFirstName, setDeleteRequesterFirstName] = useState('');
   const [deleteRequesterLastName, setDeleteRequesterLastName] = useState('');
   const [deleteRequesterEmail, setDeleteRequesterEmail] = useState('');
-  const [showStatusChangeRequest, setShowStatusChangeRequest] = useState(false);
-  const [statusChangeReason, setStatusChangeReason] = useState('');
-  const [statusChangeRequesterFirstName, setStatusChangeRequesterFirstName] = useState('');
-  const [statusChangeRequesterLastName, setStatusChangeRequesterLastName] = useState('');
-  const [statusChangeRequesterEmail, setStatusChangeRequesterEmail] = useState('');
-  const [requestedStatus, setRequestedStatus] = useState<PrayerStatus>(prayer.status);
   // State for update deletion request UI
   const [isSubmittingUpdateDelete, setIsSubmittingUpdateDelete] = useState(false);
   const [updateDeleteError, setUpdateDeleteError] = useState<string | null>(null);
@@ -87,19 +82,16 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     if (userInfo.firstName) {
       setUpdateFirstName(userInfo.firstName);
       setDeleteRequesterFirstName(userInfo.firstName);
-      setStatusChangeRequesterFirstName(userInfo.firstName);
       setUpdateDeleteRequesterFirstName(userInfo.firstName);
     }
     if (userInfo.lastName) {
       setUpdateLastName(userInfo.lastName);
       setDeleteRequesterLastName(userInfo.lastName);
-      setStatusChangeRequesterLastName(userInfo.lastName);
       setUpdateDeleteRequesterLastName(userInfo.lastName);
     }
     if (userInfo.email) {
       setUpdateAuthorEmail(userInfo.email);
       setDeleteRequesterEmail(userInfo.email);
-      setStatusChangeRequesterEmail(userInfo.email);
       setUpdateDeleteRequesterEmail(userInfo.email);
     }
   }, []);
@@ -109,7 +101,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     const closeAllForms = () => {
       setShowAddUpdate(false);
       setShowDeleteRequest(false);
-      setShowStatusChangeRequest(false);
       setShowUpdateDeleteRequest(null);
     };
     
@@ -137,7 +128,8 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       content: updateText,
       author: fullName,
       authorEmail: updateAuthorEmail,
-      isAnonymous: updateIsAnonymous
+      isAnonymous: updateIsAnonymous,
+      markAsAnswered: updateMarkAsAnswered
     };
 
     // Check if email verification is required
@@ -175,14 +167,15 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   };
 
   const submitUpdate = (updateData: any) => {
-    // include author email and anonymous flag when adding an update
-    onAddUpdate(updateData.prayerId, updateData.content, updateData.author, updateData.authorEmail, updateData.isAnonymous);
+    // include author email, anonymous flag, and mark as answered when adding an update
+    onAddUpdate(updateData.prayerId, updateData.content, updateData.author, updateData.authorEmail, updateData.isAnonymous, updateData.markAsAnswered);
     setUpdateText('');
     // Don't reset name and email - keep them for next time
     // setUpdateFirstName('');
     // setUpdateLastName('');
     // setUpdateAuthorEmail('');
     setUpdateIsAnonymous(false);
+    setUpdateMarkAsAnswered(false);
     setShowAddUpdate(false);
     try { showToast('Update submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
   };
@@ -261,75 +254,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     }
   };
 
-  const handleStatusChangeRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!statusChangeReason.trim() || !statusChangeRequesterFirstName.trim() || !statusChangeRequesterLastName.trim() || !statusChangeRequesterEmail.trim()) return;
-    
-    // Concatenate first and last name
-    const fullName = `${statusChangeRequesterFirstName.trim()} ${statusChangeRequesterLastName.trim()}`;
-    
-    // Save user info to localStorage for future use
-    saveUserInfo(statusChangeRequesterFirstName, statusChangeRequesterLastName, statusChangeRequesterEmail);
-    
-    const statusChangeData = {
-      prayerId: prayer.id,
-      newStatus: requestedStatus,
-      reason: statusChangeReason,
-      requesterName: fullName,
-      requesterEmail: statusChangeRequesterEmail
-    };
-
-    // Check if email verification is required
-    if (isEnabled) {
-      try {
-        // Request verification code
-        const verificationResult = await requestCode(
-          statusChangeRequesterEmail,
-          'status_change_request',
-          statusChangeData
-        );
-        
-        // If null, user was recently verified - skip verification dialog
-        if (verificationResult === null) {
-          await submitStatusChange(statusChangeData);
-          return;
-        }
-        
-        // Show verification dialog
-        setVerificationState({
-          isOpen: true,
-          codeId: verificationResult.codeId,
-          expiresAt: verificationResult.expiresAt,
-          email: statusChangeRequesterEmail,
-          actionType: 'status_change',
-          actionData: statusChangeData
-        });
-      } catch (error) {
-        console.error('Failed to request verification code:', error);
-      }
-    } else {
-      // No verification required, submit directly
-      await submitStatusChange(statusChangeData);
-    }
-  };
-
-  const submitStatusChange = async (statusChangeData: any) => {
-    try {
-      await onRequestStatusChange(statusChangeData.prayerId, statusChangeData.newStatus, statusChangeData.reason, statusChangeData.requesterName, statusChangeData.requesterEmail);
-      setStatusChangeReason('');
-      // Don't reset name and email - keep them for next time
-      // setStatusChangeRequesterFirstName('');
-      // setStatusChangeRequesterLastName('');
-      // setStatusChangeRequesterEmail('');
-      setShowStatusChangeRequest(false);
-      try { showToast('Status change request submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
-    } catch (error) {
-      console.error('Error in handleStatusChangeRequest:', error);
-      // Don't reset the form on error so user can try again
-      throw error;
-    }
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -349,9 +273,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
           break;
         case 'prayer_deletion':
           await submitDeleteRequest(actionData);
-          break;
-        case 'status_change':
-          await submitStatusChange(actionData);
           break;
         case 'update_deletion':
           await submitUpdateDeletion(actionData);
@@ -501,8 +422,18 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <div className="relative">
+          <div className="relative flex items-center gap-2 flex-wrap">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-0 inline">Prayer for {prayer.prayer_for}</h3>
+            {/* Status Badge */}
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+              prayer.status === 'current' 
+                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                : prayer.status === 'answered'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+            }`}>
+              {prayer.status === 'current' ? 'Current' : prayer.status === 'answered' ? 'Answered' : 'Archived'}
+            </span>
             <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Requested by <span className="font-medium text-gray-800 dark:text-gray-100">{displayedRequester}</span></span>
           </div>
         </div>
@@ -526,49 +457,9 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
 
   {/* Prayer Details */}
   <p className="text-gray-600 dark:text-gray-300 mb-4">{prayer.description}</p>
-        {/* Status change buttons and info */}
+        {/* Action buttons */}
         {isAdmin ? (
           <div className="flex flex-wrap gap-1">
-            <button
-              onClick={() => onUpdateStatus(prayer.id, PrayerStatus.CURRENT)}
-              className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                prayer.status === PrayerStatus.CURRENT
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700'
-                  : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
-              }`}
-            >
-              Current
-            </button>
-            <button
-              onClick={() => onUpdateStatus(prayer.id, PrayerStatus.ONGOING)}
-              className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                prayer.status === PrayerStatus.ONGOING
-                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700'
-                  : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
-              }`}
-            >
-              Ongoing
-            </button>
-            <button
-              onClick={() => onUpdateStatus(prayer.id, PrayerStatus.ANSWERED)}
-              className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                prayer.status === PrayerStatus.ANSWERED
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
-                  : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-green-50 dark:hover:bg-green-900/20'
-              }`}
-            >
-              Answered
-            </button>
-            <button
-              onClick={() => onUpdateStatus(prayer.id, PrayerStatus.CLOSED)}
-              className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                prayer.status === PrayerStatus.CLOSED
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600'
-                  : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
-              }`}
-            >
-              Closed
-            </button>
               {/* Add Update for admins (same behavior as non-admin add update) */}
               <button
                 onClick={() => {
@@ -581,14 +472,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                openForm(() => setShowStatusChangeRequest(!showStatusChangeRequest));
-              }}
-              className="px-3 py-1 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
-            >
-              Request Status Change
-            </button>
             <button
               onClick={() => {
                 openForm(() => setShowAddUpdate(!showAddUpdate));
@@ -648,6 +531,15 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                 className="rounded border-gray-900 dark:border-white bg-white dark:bg-gray-800 text-blue-600 focus:ring-2 focus:ring-blue-500"
               />
               <span>Post update anonymously</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={updateMarkAsAnswered}
+                onChange={(e) => setUpdateMarkAsAnswered(e.target.checked)}
+                className="rounded border-gray-900 dark:border-white bg-white dark:bg-gray-800 text-green-600 focus:ring-2 focus:ring-green-500"
+              />
+              <span>Mark this prayer as answered</span>
             </label>
             <div className="flex gap-2">
               <button
@@ -716,77 +608,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               <button
                 type="button"
                 onClick={() => setShowDeleteRequest(false)}
-                className="px-3 py-1 text-sm bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </form>
-      )}
-
-      {/* Status Change Request Form */}
-      {showStatusChangeRequest && !isAdmin && (
-        <form onSubmit={handleStatusChangeRequest} className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-3">Request Status Change</h4>
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="text"
-                placeholder="First name"
-                value={statusChangeRequesterFirstName}
-                onChange={(e) => setStatusChangeRequesterFirstName(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <input
-                type="text"
-                placeholder="Last name"
-                value={statusChangeRequesterLastName}
-                onChange={(e) => setStatusChangeRequesterLastName(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <input
-              type="email"
-              placeholder="Your email"
-              value={statusChangeRequesterEmail}
-              onChange={(e) => setStatusChangeRequesterEmail(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-            <div className="relative">
-              <select
-                value={requestedStatus}
-                onChange={(e) => setRequestedStatus(e.target.value as PrayerStatus)}
-                className="w-full appearance-none px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
-                required
-              >
-                <option value={PrayerStatus.CURRENT}>Current</option>
-                <option value={PrayerStatus.ONGOING}>Ongoing</option>
-                <option value={PrayerStatus.ANSWERED}>Answered</option>
-                <option value={PrayerStatus.CLOSED}>Closed</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 dark:text-blue-400" size={20} />
-            </div>
-            <textarea
-              placeholder="Reason for status change request..."
-              value={statusChangeReason}
-              onChange={(e) => setStatusChangeReason(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 h-20"
-              required
-            />
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Submit Request
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowStatusChangeRequest(false)}
                 className="px-3 py-1 text-sm bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
               >
                 Cancel

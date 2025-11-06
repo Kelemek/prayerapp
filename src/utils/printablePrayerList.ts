@@ -140,29 +140,26 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
     year: 'numeric' 
   })} - ${today}`;
 
-  // Group prayers by status (exclude closed prayers)
+  // Group prayers by status (exclude archived prayers)
   const prayersByStatus = {
     current: prayers.filter(p => p.status === 'current'),
-    ongoing: prayers.filter(p => p.status === 'ongoing'),
     answered: prayers.filter(p => p.status === 'answered')
   };
 
   const statusLabels = {
     current: 'Current Prayer Requests',
-    ongoing: 'Ongoing Prayer Requests',
     answered: 'Answered Prayers'
   };
 
   const statusColors = {
     current: '#3b82f6',
-    ongoing: '#f59e0b',
     answered: '#10b981'
   };
 
   let prayerSectionsHTML = '';
 
-  // Generate sections for each status (excluding closed)
-  (['current', 'ongoing', 'answered'] as const).forEach(status => {
+  // Generate sections for each status (excluding archived)
+  (['current', 'answered'] as const).forEach(status => {
     const statusPrayers = prayersByStatus[status];
     if (statusPrayers.length > 0) {
       // Split into two columns (column-major ordering)
@@ -272,15 +269,11 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
             border-left: 3px solid #3b82f6;
           }
 
-          .prayer-item.ongoing {
-            border-left: 3px solid #f59e0b;
-          }
-
           .prayer-item.answered {
             border-left: 3px solid #10b981;
           }
 
-          .prayer-item.closed {
+          .prayer-item.archived {
             border-left: 3px solid #6b7280;
           }
 

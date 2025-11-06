@@ -122,6 +122,12 @@ export const PendingUpdateCard: React.FC<PendingUpdateCardProps> = ({
                 <User size={14} />
                 <span>By {update.author}</span>
               </div>
+              {update.mark_as_answered && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded font-medium">
+                  <CheckCircle size={14} />
+                  <span>Will mark prayer as answered</span>
+                </div>
+              )}
               {update.author_email && (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">

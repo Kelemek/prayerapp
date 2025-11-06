@@ -36,7 +36,7 @@ export async function seedDummyPrayers(): Promise<{ prayersCount: number; update
     'Longer note: We have been dealing with chronic illness for several years; prayer for complete restoration and peace would mean a lot to our family. Specific needs include clarity on treatment and emotional strength. Thank you for praying with us.'
   ];
 
-  const statuses = ['current', 'ongoing', 'answered'];
+  const statuses = ['current', 'answered'];
 
   const prayersToInsert: Array<{
     title: string;

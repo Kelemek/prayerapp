@@ -102,10 +102,10 @@ export const PrayerPresentation: React.FC = () => {
         *,
         prayer_updates(*)
       `)
-      .eq('approval_status', 'approved')
-      .neq('status', 'closed');
+      .eq('approval_status', 'approved');
 
-    // Apply status filter only when viewing prayers alone
+    // Only exclude archived prayers when a specific status filter is applied
+    // When statusFilter is 'all', show all prayers including archived
     if (contentType === 'prayers' && statusFilter !== 'all') {
       query = query.eq('status', statusFilter);
     }
@@ -319,11 +319,9 @@ export const PrayerPresentation: React.FC = () => {
     switch (status) {
       case 'current':
         return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700';
-      case 'ongoing':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700';
       case 'answered':
         return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700';
-      case 'closed':
+      case 'archived':
         return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600';
       default:
         return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600';
@@ -778,26 +776,6 @@ export const PrayerPresentation: React.FC = () => {
                   Shuffle the display order randomly
                 </p>
               </div>
-
-              {/* Status Filter - Only show for prayers */}
-              {contentType === 'prayers' && (
-                <div>
-                  <label className="block text-xl mb-3 text-gray-900 dark:text-white">Prayer Status</label>
-                  <div className="relative">
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full appearance-none px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="current">Current</option>
-                      <option value="ongoing">Ongoing</option>
-                      <option value="answered">Answered</option>
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={24} />
-                  </div>
-                </div>
-              )}
 
               {/* Time Filter - Only show for prayers */}
               {contentType === 'prayers' && (

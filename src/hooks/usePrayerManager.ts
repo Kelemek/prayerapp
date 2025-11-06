@@ -239,7 +239,7 @@ export const usePrayerManager = () => {
     }
   };
 
-  const addPrayerUpdate = async (prayerId: string, content: string, author: string, authorEmail?: string, isAnonymous?: boolean) => {
+  const addPrayerUpdate = async (prayerId: string, content: string, author: string, authorEmail?: string, isAnonymous?: boolean, markAsAnswered?: boolean) => {
     try {
       // Get prayer title for notification
       const prayer = prayers.find(p => p.id === prayerId);
@@ -256,6 +256,7 @@ export const usePrayerManager = () => {
           author: finalAuthor,
           author_email: authorEmail || null,
           is_anonymous: isAnonymous || false,
+          mark_as_answered: markAsAnswered || false,
           approval_status: 'pending' // Require admin approval
         });
 

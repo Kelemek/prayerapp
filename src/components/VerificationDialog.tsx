@@ -154,8 +154,18 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
       setIsVerifying(true);
       setError(null);
 
-      // Use the verifyCode function from the hook - this will save the session!
-      const result = await verifyCode(codeId, fullCode);
+      console.log('Verifying code:', { codeId, code: fullCode });
+
+      // Add a timeout to prevent infinite spinning
+      const verifyPromise = verifyCode(codeId, fullCode);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Verification timed out. Please try again.')), 30000)
+      );
+
+      // Race between verification and timeout
+      const result = await Promise.race([verifyPromise, timeoutPromise]) as { actionType: string; actionData: any; email: string };
+      
+      console.log('Verification successful:', result);
       
       // Pass the action data to the parent component
       onVerified(result.actionData);
@@ -163,9 +173,11 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
     } catch (err: unknown) {
       console.error('Verification error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to verify code. Please try again.';
+      console.error('Error message:', errorMessage);
       setError(errorMessage);
     } finally {
       setIsVerifying(false);
+      console.log('Verification process completed');
     }
   };
 

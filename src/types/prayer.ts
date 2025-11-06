@@ -25,6 +25,7 @@ export interface PrayerUpdate {
   author: string;
   author_email?: string | null;
   is_anonymous?: boolean;
+  mark_as_answered?: boolean;
   created_at: string;
   updated_at?: string;
   approval_status?: 'pending' | 'approved' | 'denied';
@@ -81,8 +82,7 @@ export interface StatusChangeRequest {
 export const PrayerStatus = {
   CURRENT: 'current',
   ANSWERED: 'answered',
-  ONGOING: 'ongoing',
-  CLOSED: 'closed'
+  ARCHIVED: 'archived'
 } as const;
 
 export type PrayerStatus = typeof PrayerStatus[keyof typeof PrayerStatus];

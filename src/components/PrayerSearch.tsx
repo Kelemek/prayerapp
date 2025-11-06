@@ -359,9 +359,8 @@ export const PrayerSearch: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'current': return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20';
-      case 'ongoing': return 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20';
       case 'answered': return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20';
-      case 'closed': return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20';
+      case 'archived': return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20';
       default: return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20';
     }
   };
@@ -434,9 +433,8 @@ export const PrayerSearch: React.FC = () => {
               <option value="">Select status...</option>
               <option value="all">All Statuses</option>
               <option value="current">Current</option>
-              <option value="ongoing">Ongoing</option>
               <option value="answered">Answered</option>
-              <option value="closed">Closed</option>
+              <option value="archived">Archived</option>
             </select>
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 dark:text-blue-400" size={18} />
           </div>
