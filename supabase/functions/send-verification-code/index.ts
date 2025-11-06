@@ -202,67 +202,8 @@ function getActionDescription(actionType: string): string {
 function generateVerificationHTML(code: string, actionType: string): string {
   const actionDescription = getActionDescription(actionType);
   
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f3f4f6; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(to right, #4F46E5, #6366f1); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
-          .header h1 { margin: 0; font-size: 24px; }
-          .content { background-color: #ffffff; padding: 40px 30px; border-radius: 0 0 8px 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-          .code-container { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px; margin: 30px 0; text-align: center; }
-          .code-label { color: #fff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; opacity: 0.9; }
-          .code { font-size: 48px; font-weight: bold; color: #ffffff; letter-spacing: 12px; font-family: 'Courier New', monospace; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all; cursor: pointer; padding: 10px; border-radius: 8px; background-color: rgba(255,255,255,0.1); display: inline-block; }
-          .instructions { background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px 20px; border-radius: 4px; margin: 20px 0; }
-          .instructions-title { font-weight: 600; color: #1e40af; margin: 0 0 8px 0; font-size: 14px; }
-          .instructions-text { margin: 0; font-size: 14px; color: #1e40af; }
-          .warning { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px 20px; border-radius: 4px; margin: 20px 0; }
-          .warning-text { margin: 0; font-size: 14px; color: #92400e; }
-          .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 13px; }
-          @media only screen and (max-width: 600px) {
-            .code { font-size: 36px; letter-spacing: 8px; }
-            .content { padding: 30px 20px; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🔐 Verification Code</h1>
-          </div>
-          <div class="content">
-            <p style="font-size: 16px; margin-top: 0;">You requested to ${actionDescription}. Please use the verification code below:</p>
-            
-            <div class="code-container">
-              <div class="code-label">Your Verification Code</div>
-              <div class="code" title="Click to select code">${code}</div>
-            </div>
-
-            <div class="instructions">
-              <p class="instructions-title">💡 Easy Code Entry:</p>
-              <p class="instructions-text">
-                <strong>Tap or click the code above to select it</strong>, then copy and paste it into the verification dialog. 
-                You can also paste the code directly into the first input field - it will auto-fill all digits.
-              </p>
-            </div>
-
-            <div class="warning">
-              <p class="warning-text">
-                ⏰ <strong>This code will expire in 15 minutes.</strong> If you didn't request this code, you can safely ignore this email.
-              </p>
-            </div>
-          </div>
-          <div class="footer">
-            <p>This is an automated message from your Prayer App.<br>Please do not reply to this email.</p>
-          </div>
-        </div>
-      </body>
-    </html>
-  `;
+  // Single-line HTML to avoid JSON encoding issues with Microsoft Graph API
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: Arial, Helvetica, sans-serif;"><table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f3f4f6;"><tr><td align="center" style="padding: 20px 0;"><table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background-color: #ffffff;"><tr><td style="background-color: #4F46E5; padding: 30px 20px; text-align: center;"><h1 style="margin: 0; font-size: 24px; color: #ffffff; font-weight: bold;">Verification Code</h1></td></tr><tr><td style="padding: 40px 30px;"><p style="font-size: 16px; color: #333333; margin: 0 0 20px 0; line-height: 1.6;">You requested to ${actionDescription}. Please use the verification code below:</p><table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 30px 0;"><tr><td style="background-color: #667eea; padding: 30px; text-align: center;"><p style="margin: 0 0 15px 0; font-size: 14px; color: #ffffff; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Your Verification Code</p><p style="margin: 0; font-size: 48px; font-weight: bold; color: #ffffff; letter-spacing: 12px; font-family: Courier New, Courier, monospace;">${code}</p></td></tr></table><table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0; background-color: #eff6ff; border-left: 4px solid #3b82f6;"><tr><td style="padding: 15px 20px;"><p style="margin: 0 0 8px 0; font-weight: 600; color: #1e40af; font-size: 14px;">Easy Code Entry:</p><p style="margin: 0; font-size: 14px; color: #1e40af; line-height: 1.5;"><strong>Select and copy the code above</strong>, then paste it into the verification dialog. You can also paste the code directly into the first input field - it will auto-fill all digits.</p></td></tr></table><table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 20px 0; background-color: #fef3c7; border-left: 4px solid #f59e0b;"><tr><td style="padding: 15px 20px;"><p style="margin: 0; font-size: 14px; color: #92400e; line-height: 1.5;"><strong>This code will expire in 15 minutes.</strong> If you did not request this code, you can safely ignore this email.</p></td></tr></table></td></tr><tr><td style="padding: 20px 30px; border-top: 1px solid #e5e7eb;"><p style="margin: 0; text-align: center; color: #6b7280; font-size: 13px; line-height: 1.5;">This is an automated message from your Prayer App.<br>Please do not reply to this email.</p></td></tr></table></td></tr></table></body></html>`;
 }
 
 function generateVerificationText(code: string, actionType: string): string {

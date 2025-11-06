@@ -83,7 +83,7 @@ async function sendEmail(
     message: {
       subject: options.subject,
       body: {
-        contentType: options.htmlBody ? 'HTML' : 'Text',
+        contentType: options.htmlBody ? 'html' : 'text',
         content: options.htmlBody || options.textBody || ''
       },
       from: {
@@ -111,6 +111,14 @@ async function sendEmail(
 
   const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(MAIL_FROM_ADDRESS)}/sendMail`
   
+  console.log('📤 Sending email via Graph API:', {
+    to: recipients,
+    subject: options.subject,
+    hasHtmlBody: !!options.htmlBody,
+    hasTextBody: !!options.textBody,
+    contentType: options.htmlBody ? 'html' : 'text'
+  })
+  
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -122,6 +130,11 @@ async function sendEmail(
 
   if (!response.ok) {
     const error = await response.text()
+    console.error('❌ Graph API error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error
+    })
     throw new Error(`Graph API sendMail failed: ${response.status} ${error}`)
   }
   
