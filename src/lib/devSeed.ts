@@ -89,6 +89,7 @@ export async function seedDummyPrayers(): Promise<{ prayersCount: number; update
     author: string;
     approval_status: string;
     is_seed_data: boolean;
+    mark_as_answered: boolean;
     created_at: string;
   }> = [];
   const updateContents = [
@@ -124,6 +125,7 @@ export async function seedDummyPrayers(): Promise<{ prayersCount: number; update
             author: people[Math.floor(Math.random() * people.length)],
             approval_status: 'approved',
             is_seed_data: true,
+            mark_as_answered: false, // Seed data updates don't mark prayers as answered
             created_at: updateDate.toISOString()
           });
         }
