@@ -31,8 +31,10 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Fetch code length from admin settings
+    // Fetch code length from admin settings
   useEffect(() => {
+    if (!isOpen) return; // Only fetch when dialog is open
+    
     const fetchCodeLength = async () => {
       try {
         const { data, error } = await supabase
@@ -46,18 +48,18 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
           setCodeLength(length);
           setCode(new Array(length).fill(''));
         } else {
+          setCodeLength(6);
           setCode(new Array(6).fill(''));
         }
       } catch (err) {
-        console.error('Failed to fetch code length:', err);
+        console.error('Error fetching code length:', err);
+        setCodeLength(6);
         setCode(new Array(6).fill(''));
       }
     };
 
-    if (isOpen) {
-      fetchCodeLength();
-    }
-  }, [isOpen]);
+    fetchCodeLength();
+  }, [isOpen, codeId]); // Re-fetch when dialog opens or new code is generated
 
   // Calculate time remaining
   useEffect(() => {
@@ -111,7 +113,7 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
     setError(null);
 
     // Auto-focus next input
-    if (value && index < 5) {
+    if (value && index < codeLength - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -130,10 +132,10 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text').replace(/\D/g, '');
     
-    if (pastedData.length === 6) {
+    if (pastedData.length === codeLength) {
       const newCode = pastedData.split('');
       setCode(newCode);
-      inputRefs.current[5]?.focus();
+      inputRefs.current[codeLength - 1]?.focus();
     }
   };
 
@@ -185,7 +187,7 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
     try {
       setIsResending(true);
       setError(null);
-      setCode(['', '', '', '', '', '']);
+      setCode(new Array(codeLength).fill(''));
       await onResend();
       inputRefs.current[0]?.focus();
     } catch (err: unknown) {
