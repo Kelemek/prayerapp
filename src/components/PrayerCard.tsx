@@ -166,18 +166,23 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     }
   };
 
-  const submitUpdate = (updateData: any) => {
-    // include author email, anonymous flag, and mark as answered when adding an update
-    onAddUpdate(updateData.prayerId, updateData.content, updateData.author, updateData.authorEmail, updateData.isAnonymous, updateData.markAsAnswered);
-    setUpdateText('');
-    // Don't reset name and email - keep them for next time
-    // setUpdateFirstName('');
-    // setUpdateLastName('');
-    // setUpdateAuthorEmail('');
-    setUpdateIsAnonymous(false);
-    setUpdateMarkAsAnswered(false);
-    setShowAddUpdate(false);
-    try { showToast('Update submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
+  const submitUpdate = async (updateData: any) => {
+    try {
+      // include author email, anonymous flag, and mark as answered when adding an update
+      await onAddUpdate(updateData.prayerId, updateData.content, updateData.author, updateData.authorEmail, updateData.isAnonymous, updateData.markAsAnswered);
+      setUpdateText('');
+      // Don't reset name and email - keep them for next time
+      // setUpdateFirstName('');
+      // setUpdateLastName('');
+      // setUpdateAuthorEmail('');
+      setUpdateIsAnonymous(false);
+      setUpdateMarkAsAnswered(false);
+      setShowAddUpdate(false);
+      try { showToast('Update submitted for admin approval', 'info'); } catch (err) { console.warn('Toast not available:', err); }
+    } catch (error) {
+      console.error('Failed to submit update:', error);
+      try { showToast('Failed to submit update. Please try again.', 'error'); } catch (err) { console.warn('Toast not available:', err); }
+    }
   };
 
   const handleDeleteRequest = async (e: React.FormEvent) => {

@@ -278,7 +278,8 @@ export const usePrayerManager = () => {
       // Update will appear after admin approval
       return null;
     } catch (error: unknown) {
-      handleSupabaseError(error);
+      console.error('Failed to add prayer update:', error);
+      throw error; // Re-throw to allow component to handle error state
     }
   };
 
