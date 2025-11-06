@@ -45,23 +45,25 @@ interface EmailNotificationPayload {
  */
 export async function sendAdminNotification(payload: EmailNotificationPayload): Promise<void> {
   try {
-    // Get admin email list from settings
-    const { data: settings, error: settingsError } = await supabase
-      .from('admin_settings')
-      .select('notification_emails')
-      .single();
+    // Get admin emails from email_subscribers table (admins who want notifications)
+    const { data: admins, error: adminsError } = await supabase
+      .from('email_subscribers')
+      .select('email')
+      .eq('is_admin', true)
+      .eq('is_active', true)
+      .eq('receive_admin_emails', true);
 
-    if (settingsError) {
-      console.error('Error fetching admin settings:', settingsError);
+    if (adminsError) {
+      console.error('Error fetching admin emails:', adminsError);
       return;
     }
 
-    if (!settings?.notification_emails || settings.notification_emails.length === 0) {
-      console.warn('No admin emails configured for notifications. Please add emails in Admin Portal → Settings.');
+    if (!admins || admins.length === 0) {
+      console.warn('No admins configured to receive notifications. Please enable admin email notifications in Admin User Management.');
       return;
     }
 
-    const emails = settings.notification_emails;
+    const emails = admins.map(admin => admin.email);
 
     // Prepare email content based on type
     let subject: string;
@@ -345,26 +347,16 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
  */
 async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void> {
   try {
-    // Fetch reply-to email from admin_settings
-    const { data: settings } = await supabase
-      .from('admin_settings')
-      .select('reply_to_email')
-      .eq('id', 1)
-      .maybeSingle();
-
-    const replyToEmail = settings?.reply_to_email || 'markdlarson@me.com';
-
     const subject = `New Prayer Request: ${payload.title}`;
     const htmlContent = generateApprovedPrayerHTML(payload);
     const textContent = `A new prayer request has been approved and is now live.\n\nTitle: ${payload.title}\nFor: ${payload.prayerFor}\nRequested by: ${payload.requester}\n\nDescription: ${payload.description}`;
 
-    // Use new Graph API email service to send to all subscribers
+    // Use new Graph API email service to send to all active subscribers
     const { sendEmailToAllSubscribers } = await import('./emailService');
     const result = await sendEmailToAllSubscribers({
       subject,
       htmlBody: htmlContent,
-      textBody: textContent,
-      replyTo: replyToEmail
+      textBody: textContent
     });
 
     console.log('Bulk email sent successfully:', result);
@@ -376,43 +368,27 @@ async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void
 
 /**
  * Send email notifications when a prayer update is approved
- * Sends to all users or just admins based on email_distribution setting
+ * Sends to all active email subscribers
  */
 export async function sendApprovedUpdateNotification(payload: ApprovedUpdatePayload): Promise<void> {
   try {
-    // Get admin settings including distribution preference
-    const { data: settings, error: settingsError } = await supabase
-      .from('admin_settings')
-      .select('notification_emails, email_distribution')
-      .single();
+    // Get all active subscribers from email_subscribers table
+    const { data: subscribers, error: subscribersError } = await supabase
+      .from('email_subscribers')
+      .select('email')
+      .eq('is_active', true);
 
-    if (settingsError) {
-      console.error('Error fetching admin settings:', settingsError);
+    if (subscribersError) {
+      console.error('Error fetching subscribers:', subscribersError);
       return;
     }
 
-    let recipients: string[] = [];
-
-    // Determine recipient list based on distribution setting
-    if (settings?.email_distribution === 'all_users') {
-      // Get all active subscribers from email_subscribers table (respects opt-in/opt-out)
-      const { data: subscribers, error: subscribersError } = await supabase
-        .from('email_subscribers')
-        .select('email')
-        .eq('is_active', true);
-
-      if (!subscribersError && subscribers) {
-        recipients = subscribers.map(s => s.email);
-      }
-    } else {
-      // Default to admin_only
-      recipients = settings?.notification_emails || [];
-    }
-
-    if (recipients.length === 0) {
-      console.warn('No recipients for approved update notification');
+    if (!subscribers || subscribers.length === 0) {
+      console.warn('No active subscribers for approved update notification');
       return;
     }
+
+    const recipients = subscribers.map(s => s.email);
 
     const subject = `Prayer Update: ${payload.prayerTitle}`;
     const body = `A new update has been posted for a prayer.\n\nPrayer: ${payload.prayerTitle}\nUpdate by: ${payload.author}\n\nContent: ${payload.content}`;

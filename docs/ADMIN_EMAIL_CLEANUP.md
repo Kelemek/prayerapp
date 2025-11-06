@@ -49,10 +49,38 @@ With the working Microsoft Graph API email notifications, we no longer need:
 
 ## Admin Email Notification Flow
 
-1. Admins are added via AdminUserManagement component
-2. By default, new admins have `receive_admin_emails = true`
-3. Admins can toggle their preference using the checkmark icon
-4. When sending admin notifications, query: `email_subscribers WHERE is_admin = true AND receive_admin_emails = true`
+### Two Types of Email Notifications:
+
+#### 1. Admin Notifications (For Approvals)
+**When**: New items require admin approval
+**Recipients**: Admins with `is_admin = true AND is_active = true AND receive_admin_emails = true`
+**Function**: `sendAdminNotification()`
+**Use Cases**:
+- New prayer request pending approval
+- New prayer update pending approval  
+- Deletion request pending approval
+- Status change request pending approval
+
+#### 2. Subscriber Notifications (For Approved Content)
+**When**: Content is approved and published
+**Recipients**: ALL users with `is_active = true` in `email_subscribers` table
+**Function**: `sendBulkPrayerEmail()` / `sendApprovedUpdateNotification()`
+**Use Cases**:
+- New prayer request approved and published
+- Prayer update approved and published
+
+### Managing Recipients
+
+1. **Admin Notifications**: Managed in AdminUserManagement component
+   - By default, new admins have `receive_admin_emails = true`
+   - Admins can toggle their preference using the checkmark icon
+   - Query: `SELECT email FROM email_subscribers WHERE is_admin = true AND is_active = true AND receive_admin_emails = true`
+
+2. **Subscriber Notifications**: Managed in EmailSubscribers component
+   - Users opt-in by subscribing via the prayer app
+   - Users can opt-out by toggling the green checkmark to gray X
+   - Query: `SELECT email FROM email_subscribers WHERE is_active = true`
+   - **Note**: This includes both regular subscribers AND admins (if they're also subscribers)
 
 ## Migration Instructions
 
@@ -76,15 +104,24 @@ COMMENT ON COLUMN email_subscribers.receive_admin_emails IS 'Whether this admin 
 
 ### Update Email Notification Code
 
-When sending admin notifications, use this query pattern:
+**Admin notifications** now query from `email_subscribers`:
 
 ```typescript
 const { data: admins } = await supabase
   .from('email_subscribers')
-  .select('email, name')
+  .select('email')
   .eq('is_admin', true)
   .eq('is_active', true)
   .eq('receive_admin_emails', true);
+```
+
+**Subscriber notifications** query all active subscribers:
+
+```typescript
+const { data: subscribers } = await supabase
+  .from('email_subscribers')
+  .select('email')
+  .eq('is_active', true);
 ```
 
 ## Testing Checklist
@@ -101,8 +138,9 @@ const { data: admins } = await supabase
 ## Files Changed
 
 1. `supabase/migrations/20251105000001_add_receive_admin_emails.sql` - NEW
-2. `src/components/EmailSettings.tsx` - MODIFIED
-3. `src/components/AdminUserManagement.tsx` - MODIFIED
+2. `src/components/EmailSettings.tsx` - MODIFIED (removed distribution/reply-to settings)
+3. `src/components/AdminUserManagement.tsx` - MODIFIED (added email toggle)
+4. `src/lib/emailNotifications.ts` - MODIFIED (updated to use email_subscribers queries)
 
 ## Backwards Compatibility
 
