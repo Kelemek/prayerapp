@@ -159,10 +159,11 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         });
       } catch (error) {
         console.error('Failed to request verification code:', error);
+        try { showToast('Failed to request verification code. Please try again.', 'error'); } catch (err) { console.warn('Toast not available:', err); }
       }
     } else {
       // No verification required, submit directly
-      submitUpdate(updateData);
+      await submitUpdate(updateData);
     }
   };
 
@@ -229,6 +230,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         });
       } catch (error) {
         console.error('Failed to request verification code:', error);
+        try { showToast('Failed to request verification code. Please try again.', 'error'); } catch (err) { console.warn('Toast not available:', err); }
       }
     } else {
       // No verification required, submit directly
@@ -385,6 +387,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       } catch (error) {
         console.error('Failed to request verification code:', error);
         setIsSubmittingUpdateDelete(false);
+        try { showToast('Failed to request verification code. Please try again.', 'error'); } catch (err) { console.warn('Toast not available:', err); }
       }
     } else {
       // No verification required, submit directly

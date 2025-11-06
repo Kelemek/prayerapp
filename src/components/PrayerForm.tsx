@@ -119,6 +119,7 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
     } catch (error) {
       console.error('Failed to initiate prayer submission:', error);
       setIsSubmitting(false);
+      alert('Failed to submit prayer request. Please try again.');
     }
   };
 
