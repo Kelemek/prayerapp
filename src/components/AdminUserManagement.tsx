@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, UserPlus, Trash2, Mail, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { Shield, UserPlus, Trash2, Mail, AlertCircle, CheckCircle, X, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { sendEmail } from '../lib/emailService';
 
@@ -8,6 +8,7 @@ interface AdminUser {
   name: string;
   created_at: string;
   last_sign_in_at: string | null;
+  receive_admin_emails: boolean;
 }
 
 export const AdminUserManagement: React.FC = () => {
@@ -38,7 +39,7 @@ export const AdminUserManagement: React.FC = () => {
       // Get admin emails from email_subscribers table
       const { data, error: fetchError } = await supabase
         .from('email_subscribers')
-        .select('email, name, created_at, last_sign_in_at')
+        .select('email, name, created_at, last_sign_in_at, receive_admin_emails')
         .eq('is_admin', true)
         .order('created_at', { ascending: true });
 
@@ -220,6 +221,25 @@ Prayer App Admin Portal
     } catch (err) {
       console.error('Error deleting admin:', err);
       setError('Failed to remove admin access');
+    }
+  };
+
+  const toggleReceiveEmails = async (email: string, currentStatus: boolean) => {
+    try {
+      setError(null);
+      setSuccess(null);
+
+      const { error: updateError } = await supabase
+        .from('email_subscribers')
+        .update({ receive_admin_emails: !currentStatus })
+        .eq('email', email);
+
+      if (updateError) throw updateError;
+
+      loadAdmins();
+    } catch (err) {
+      console.error('Error toggling email preference:', err);
+      setError('Failed to update email preference');
     }
   };
 
@@ -414,24 +434,50 @@ Prayer App Admin Portal
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => setDeletingEmail(admin.email)}
-                  disabled={admins.length === 1}
-                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={admins.length === 1 ? "Cannot delete the last admin" : "Remove admin access"}
-                >
-                  <Trash2 size={18} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Receive Admin Emails Toggle */}
+                  <button
+                    onClick={() => toggleReceiveEmails(admin.email, admin.receive_admin_emails)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      admin.receive_admin_emails
+                        ? 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30'
+                        : 'text-gray-400 dark:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                    title={admin.receive_admin_emails ? 'Receiving admin emails' : 'Not receiving admin emails'}
+                  >
+                    {admin.receive_admin_emails ? <CheckCircle size={20} /> : <XCircle size={20} />}
+                  </button>
+                  
+                  {/* Delete Admin Button */}
+                  <button
+                    onClick={() => setDeletingEmail(admin.email)}
+                    disabled={admins.length === 1}
+                    className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={admins.length === 1 ? "Cannot delete the last admin" : "Remove admin access"}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               )}
             </div>
           ))}
         </div>
       )}
 
+      {/* Summary and Notes */}
+      {admins.length > 0 && (
+        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-md">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            <strong>{admins.filter(a => a.receive_admin_emails).length}</strong> of <strong>{admins.length}</strong> admin{admins.length !== 1 ? 's' : ''} receiving email notifications
+          </p>
+        </div>
+      )}
+
       <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
         <p className="text-xs text-blue-800 dark:text-blue-200">
           <strong>Note:</strong> Admin users can sign in using magic links sent to their email. 
-          When you add a new admin, they'll receive an invitation email with instructions.
+          When you add a new admin, they'll receive an invitation email with instructions. 
+          Click the green checkmark to enable/disable admin email notifications.
         </p>
       </div>
     </div>

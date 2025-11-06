@@ -125,7 +125,11 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     setLoading(true);
     
     try {
+      // Use current origin, which works for any environment (localhost, preview, production)
+      // Just make sure to add each environment's URL to Supabase redirect URLs list
       const redirectUrl = `${window.location.origin}?redirect=admin`;
+      
+      console.log('🔗 Magic link redirect URL:', redirectUrl);
       
       const { error } = await supabase.auth.signInWithOtp({
         email,

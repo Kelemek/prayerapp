@@ -35,12 +35,15 @@ export const EmailSubscribers: React.FC = () => {
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
+    console.log('🔍 Starting search...', { searchQuery });
+    
     try {
       setSearching(true);
       setError(null);
       setHasSearched(true);
 
       const query = searchQuery.trim().toLowerCase();
+      console.log('📝 Cleaned query:', query);
       
       let dbQuery = supabase
         .from('email_subscribers')
@@ -51,16 +54,22 @@ export const EmailSubscribers: React.FC = () => {
         dbQuery = dbQuery.or(`name.ilike.%${query}%,email.ilike.%${query}%`);
       }
       
+      console.log('🔄 Executing query...');
       const { data, error } = await dbQuery
         .order('created_at', { ascending: false })
         .limit(50);
 
+      console.log('✅ Query complete:', { data, error });
+      
       if (error) throw error;
       setSubscribers(data || []);
+      console.log('✅ Search complete, found:', data?.length || 0, 'subscribers');
     } catch (err: unknown) {
-      console.error('Error searching subscribers:', err);
-      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
+      console.error('❌ Error searching subscribers:', err);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; 
+      setError(errorMessage);
     } finally {
+      console.log('🏁 Search done, setting searching to false');
       setSearching(false);
     }
   };
@@ -253,13 +262,14 @@ export const EmailSubscribers: React.FC = () => {
 
       if (error) throw error;
       
-      // Refresh search results
-      if (searchQuery.trim()) {
+      // Refresh search results if user has searched (even with empty query)
+      if (hasSearched) {
         await handleSearch();
       }
     } catch (err: unknown) {
       console.error('Error deleting subscriber:', err);
-      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; 
+      setError(errorMessage);
     }
   };
 
