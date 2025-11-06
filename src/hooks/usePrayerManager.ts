@@ -302,7 +302,8 @@ export const usePrayerManager = () => {
         throw error;
       }
     } catch (error: unknown) {
-      handleSupabaseError(error);
+      console.error('Failed to delete prayer:', error);
+      throw error; // Re-throw to allow component to handle error state
     }
   };
 
@@ -392,7 +393,8 @@ export const usePrayerManager = () => {
       if (error) throw error;
       loadPrayers();
     } catch (error: unknown) {
-      handleSupabaseError(error);
+      console.error('Failed to delete prayer update:', error);
+      throw error; // Re-throw to allow component to handle error state
     }
   };
 
