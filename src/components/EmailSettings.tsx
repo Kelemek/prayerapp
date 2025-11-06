@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, X, Save, RefreshCw, ChevronDown, Settings } from 'lucide-react';
+import { Mail, Save, RefreshCw, ChevronDown, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface EmailSettingsProps {
@@ -7,8 +7,6 @@ interface EmailSettingsProps {
 }
 
 export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
-  const [emails, setEmails] = useState<string[]>([]);
-  const [newEmail, setNewEmail] = useState('');
   const [requireEmailVerification, setRequireEmailVerification] = useState<boolean>(false);
   const [verificationCodeLength, setVerificationCodeLength] = useState<number>(6);
   const [verificationCodeExpiryMinutes, setVerificationCodeExpiryMinutes] = useState<number>(15);
@@ -21,7 +19,6 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [savingDistribution, setSavingDistribution] = useState(false);
   const [savingTransition, setSavingTransition] = useState(false);
   const [savingReminders, setSavingReminders] = useState(false);
-  const [savingEmails, setSavingEmails] = useState(false);
   const [runningTransition, setRunningTransition] = useState(false);
   const [sendingReminders, setSendingReminders] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +26,6 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [successDistribution, setSuccessDistribution] = useState(false);
   const [successTransition, setSuccessTransition] = useState(false);
   const [successReminders, setSuccessReminders] = useState(false);
-  const [successEmails, setSuccessEmails] = useState(false);
 
   // Load email list from Supabase
   useEffect(() => {
@@ -41,20 +37,13 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('notification_emails, email_distribution, reply_to_email, require_email_verification, verification_code_length, verification_code_expiry_minutes, days_before_ongoing, reminder_interval_days, app_title, app_subtitle')
+        .select('require_email_verification, verification_code_length, verification_code_expiry_minutes, days_before_ongoing, reminder_interval_days, app_title, app_subtitle')
         .eq('id', 1)
         .maybeSingle();
 
       if (error) {
         console.error('Error loading emails:', error);
         throw error;
-      }
-
-      if (data?.notification_emails) {
-        setEmails(data.notification_emails);
-      } else {
-        // No row exists yet, that's okay - we'll create it on save
-        setEmails([]);
       }
 
       if (data?.require_email_verification !== null && data?.require_email_verification !== undefined) {
@@ -89,54 +78,6 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setError('Failed to load email settings. Please make sure the database table is set up correctly.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const saveEmails = async () => {
-    try {
-      setSavingDistribution(true);
-      setSavingTransition(true);
-      setSavingReminders(true);
-      setSavingEmails(true);
-      setError(null);
-
-      const { error } = await supabase
-        .from('admin_settings')
-        .upsert({
-          id: 1, // Use a fixed ID for singleton settings
-          notification_emails: emails,
-          require_email_verification: requireEmailVerification,
-          verification_code_length: verificationCodeLength,
-          verification_code_expiry_minutes: verificationCodeExpiryMinutes,
-          days_before_ongoing: daysBeforeOngoing,
-          reminder_interval_days: reminderIntervalDays,
-          app_title: appTitle,
-          app_subtitle: appSubtitle,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
-      setSuccessDistribution(true);
-      setSuccessTransition(true);
-      setSuccessReminders(true);
-      setSuccessEmails(true);
-      setTimeout(() => {
-        setSuccessDistribution(false);
-        setSuccessTransition(false);
-        setSuccessReminders(false);
-        setSuccessEmails(false);
-      }, 3000);
-      
-      if (onSave) onSave();
-    } catch (err: unknown) {
-      console.error('Error saving emails:', err);
-      setError('Failed to save email settings');
-    } finally {
-      setSavingDistribution(false);
-      setSavingTransition(false);
-      setSavingReminders(false);
-      setSavingEmails(false);
     }
   };
 
@@ -260,64 +201,6 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setError('Failed to save reminder settings');
     } finally {
       setSavingReminders(false);
-    }
-  };
-
-  const saveEmailList = async () => {
-    try {
-      setSavingEmails(true);
-      setError(null);
-
-      const { error } = await supabase
-        .from('admin_settings')
-        .upsert({
-          id: 1,
-          notification_emails: emails,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
-      setSuccessEmails(true);
-      setTimeout(() => setSuccessEmails(false), 3000);
-      
-      if (onSave) onSave();
-    } catch (err: unknown) {
-      console.error('Error saving email list:', err);
-      setError('Failed to save email list');
-    } finally {
-      setSavingEmails(false);
-    }
-  };
-
-  const addEmail = () => {
-    const trimmedEmail = newEmail.trim();
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    if (emails.includes(trimmedEmail)) {
-      setError('This email is already in the list');
-      return;
-    }
-
-    setEmails([...emails, trimmedEmail]);
-    setNewEmail('');
-    setError(null);
-  };
-
-  const removeEmail = (emailToRemove: string) => {
-    setEmails(emails.filter(email => email !== emailToRemove));
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addEmail();
     }
   };
 
@@ -736,109 +619,6 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
               <>
                 <Save size={16} />
                 Save Reminder Settings
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Admin Email List Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Mail className="text-blue-600 dark:text-blue-400" size={24} />
-          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
-            Admin Email List
-          </h3>
-        </div>
-
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Manage the list of admin email addresses that receive notifications.
-        </p>
-
-        {/* Add Email Input */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Add Admin Email
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="admin@example.com"
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={addEmail}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-            >
-              <Plus size={16} />
-              Add
-            </button>
-          </div>
-        </div>
-
-        {/* Email List */}
-        {emails.length > 0 && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Current Admin Emails ({emails.length})
-            </label>
-            <div className="space-y-2">
-              {emails.map((email, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-3 rounded-md border border-gray-200 dark:border-gray-600"
-                >
-                  <div className="flex items-center gap-2">
-                    <Mail size={16} className="text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm text-gray-800 dark:text-gray-200">{email}</span>
-                  </div>
-                  <button
-                    onClick={() => removeEmail(email)}
-                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 focus:outline-none"
-                    title="Remove email"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {emails.length === 0 && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-md p-4 mb-4">
-            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              No email addresses configured. Add at least one admin email to receive notifications.
-            </p>
-          </div>
-        )}
-
-        {successEmails && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md p-4 mb-4">
-            <p className="text-sm text-green-800 dark:text-green-200">
-              Email list saved successfully!
-            </p>
-          </div>
-        )}
-
-        <div className="flex justify-end">
-          <button
-            onClick={saveEmailList}
-            disabled={savingEmails}
-            className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {savingEmails ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save size={16} />
-                Save Email List
               </>
             )}
           </button>
