@@ -56,8 +56,7 @@ export const usePrayerManager = () => {
           *,
           prayer_updates (*)
         `)
-        .eq('approval_status', 'approved')
-        .order('created_at', { ascending: false });
+        .eq('approval_status', 'approved');
 
       if (prayersError) throw prayersError;
 
@@ -68,7 +67,25 @@ export const usePrayerManager = () => {
         return convertDbPrayer(prayer, updates);
       }) || [];
 
-      setPrayers(formattedPrayers);
+      // Sort prayers by most recent activity (latest update or prayer creation)
+      const sortedPrayers = formattedPrayers.sort((a, b) => {
+        // Get the most recent update date for each prayer (only approved updates)
+        const aLatestUpdate = a.updates.length > 0 
+          ? Math.max(...a.updates.map(u => new Date(u.created_at).getTime()))
+          : 0;
+        const bLatestUpdate = b.updates.length > 0
+          ? Math.max(...b.updates.map(u => new Date(u.created_at).getTime()))
+          : 0;
+        
+        // Use the most recent date between prayer creation and latest update
+        const aLatestActivity = Math.max(new Date(a.created_at).getTime(), aLatestUpdate);
+        const bLatestActivity = Math.max(new Date(b.created_at).getTime(), bLatestUpdate);
+        
+        // Sort by most recent activity first (descending)
+        return bLatestActivity - aLatestActivity;
+      });
+
+      setPrayers(sortedPrayers);
     } catch (error: unknown) {
       const errorMessage = error && typeof error === 'object' && 'message' in error
         ? String(error.message)
