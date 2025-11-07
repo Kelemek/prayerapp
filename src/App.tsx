@@ -366,8 +366,10 @@ function AppContent() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <button
             onClick={() => { setShowPrompts(false); setFilters({...filters, status: 'current'}); }}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              !showPrompts && filters.status === 'current' ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-600'
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border-2 transition-all duration-200 ${
+              !showPrompts && filters.status === 'current' 
+                ? 'border-blue-500 ring-2 ring-blue-500 ring-offset-0' 
+                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg'
             }`}
           >
             <div className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -377,8 +379,10 @@ function AppContent() {
           </button>
           <button
             onClick={() => { setShowPrompts(false); setFilters({...filters, status: 'answered'}); }}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              !showPrompts && filters.status === 'answered' ? 'ring-2 ring-green-500 border-green-500' : 'hover:border-green-300 dark:hover:border-green-600'
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border-2 transition-all duration-200 ${
+              !showPrompts && filters.status === 'answered' 
+                ? 'border-green-500 ring-2 ring-green-500 ring-offset-0' 
+                : 'border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-600 hover:shadow-lg'
             }`}
           >
             <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
@@ -388,8 +392,10 @@ function AppContent() {
           </button>
           <button
             onClick={() => { setShowPrompts(false); setFilters({}); }}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              !showPrompts && !filters.status ? 'ring-2 ring-purple-500 border-purple-500' : 'hover:border-purple-300 dark:hover:border-purple-600'
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border-2 transition-all duration-200 ${
+              !showPrompts && !filters.status 
+                ? 'border-purple-500 ring-2 ring-purple-500 ring-offset-0' 
+                : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-lg'
             }`}
           >
             <div className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{prayers.length || 0}</div>
@@ -401,8 +407,10 @@ function AppContent() {
               setFilters({}); 
               setSelectedPromptTypes([]); // Reset type filter when opening prompts
             }}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              showPrompts ? 'ring-2 ring-yellow-500 border-yellow-500' : 'hover:border-yellow-300 dark:hover:border-yellow-600'
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border-2 transition-all duration-200 ${
+              showPrompts 
+                ? 'border-yellow-500 ring-2 ring-yellow-500 ring-offset-0' 
+                : 'border-gray-200 dark:border-gray-700 hover:border-yellow-300 dark:hover:border-yellow-600 hover:shadow-lg'
             }`}
           >
             <div className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">
