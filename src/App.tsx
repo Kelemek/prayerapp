@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
 import { Shield, LogOut, Settings } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 import { PrayerForm } from './components/PrayerForm';
 import { PrayerCard } from './components/PrayerCard';
 import { PromptCard } from './components/PromptCard';
@@ -730,6 +731,7 @@ function App() {
     <AdminAuthProvider>
       <ToastProvider>
         <AdminWrapper />
+        <Analytics />
       </ToastProvider>
     </AdminAuthProvider>
   );
