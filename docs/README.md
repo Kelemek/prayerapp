@@ -4,7 +4,7 @@ Complete documentation for the Church Prayer Management System built with React,
 
 ---
 
-## � Quick Start
+## 🚀 Quick Start
 
 New to the Prayer App? Start here:
 
@@ -84,55 +84,24 @@ New to the Prayer App? Start here:
 
 ---
 
-## 🔧 Technical Reference
-
-### Configuration
-
-- **[CONFIGURABLE_CODE_LENGTH.md](CONFIGURABLE_CODE_LENGTH.md)** - Verification code settings
-- **[CONFIGURABLE_VERIFICATION_SETTINGS.md](CONFIGURABLE_VERIFICATION_SETTINGS.md)** - Verification configuration
-- **[USER_INFO_LOCALSTORAGE.md](USER_INFO_LOCALSTORAGE.md)** - localStorage implementation
-
-### Admin Documentation
-
-- **[ADMIN_USER_MANAGEMENT.md](ADMIN_USER_MANAGEMENT.md)** - User management
-- **[ADMIN_USER_MANAGEMENT_SETUP.md](ADMIN_USER_MANAGEMENT_SETUP.md)** - Setup guide
-- **[ADMIN_SESSION_IMPLEMENTATION.md](ADMIN_SESSION_IMPLEMENTATION.md)** - Session management
-- **[ADMIN_SESSION_SECURITY.md](ADMIN_SESSION_SECURITY.md)** - Security guide
-- **[ADMIN_SETTINGS_TEST_PLAN.md](ADMIN_SETTINGS_TEST_PLAN.md)** - Testing plan
-- **[ADMIN_EMAIL_CLEANUP.md](ADMIN_EMAIL_CLEANUP.md)** - Email notifications
-
----
-
-## � Archive
-
-### Migrations (Historical)
-
-Completed migrations and implementation docs:
-
-- **[archive/migrations/](archive/migrations/)** - Completed migrations
-  - Graph API migration
-  - Table consolidation
-  - M365 SMTP switch
-  - Database migrations
-  - Code cleanup summaries
-
-### Implementation Archives
-
-Historical implementation docs:
-
-- **[archive/](archive/)** - Implementation history
-  - Feature implementations
-  - Debug procedures
-  - Test procedures
-  - Email system implementations
+## 📚 Additional Resources
 
 ### Backup & Restore
 
 - **[BACKUP_GUIDE.md](BACKUP_GUIDE.md)** - Complete backup and restore guide
-  - Automated daily backups
-  - Manual backups
+  - Automated daily backups (GitHub Actions)
+  - Manual backups from Admin Portal
   - Restore procedures
   - Troubleshooting
+
+### Quick Reference
+
+All technical details are consolidated in the main documentation files:
+
+- **Email Verification (2FA)** → [EMAIL_GUIDE.md](EMAIL_GUIDE.md) - Email Verification section
+- **Admin Features** → [FEATURES.md](FEATURES.md) - Admin Portal section  
+- **Data Persistence** → [FEATURES.md](FEATURES.md) - localStorage section
+- **Planning Center** → [SETUP_GUIDE.md](SETUP_GUIDE.md) - Planning Center section
 
 ---
 
@@ -150,28 +119,24 @@ Historical implementation docs:
 
 ## 📝 Recent Changes
 
-See [DOCUMENTATION_CONSOLIDATION.md](DOCUMENTATION_CONSOLIDATION.md) for consolidation history.
-
 **November 2025**:
-- ✅ Consolidated documentation structure
-- ✅ Created comprehensive setup guide
-- ✅ Enhanced features documentation
-- ✅ Unified email system guide
-- ✅ Archived migration documentation
-- ✅ Removed obsolete fix documentation
+- ✅ Consolidated documentation from 76 files to 9 core files
+- ✅ Created comprehensive SETUP_GUIDE.md
+- ✅ Enhanced FEATURES.md with all app features
+- ✅ Unified email system in EMAIL_GUIDE.md
+- ✅ Created BACKUP_GUIDE.md for backup procedures
+- ✅ Removed obsolete documentation and archived historical files
+- ✅ Updated all Microsoft Graph API references (removed Resend)
 
 ---
 
 ## 🔗 Quick Links
 
 - [Main README](../README.md)
-- [Archive (Old Docs)](archive/)
 - [SQL Migrations](../supabase/migrations/)
+- [Scripts](../scripts/)
 
 ---
 
 **Last Updated**: November 2025  
 **Documentation Version**: 2.0 (Consolidated)
-- **Testing docs**: Vitest, React Testing Library, CI/CD workflows
-- **Backup docs**: Complete backup system documentation in `backup/` subfolder
-- **Historical docs**: Debugging guides and implementation notes archived in `archive/` folder
