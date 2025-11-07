@@ -211,7 +211,29 @@ export const PrayerPresentation: React.FC = () => {
 
   // Show/hide controls based on mouse position
   useEffect(() => {
+    // Detect if device is non-mobile (has mouse/pointer)
+    const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    // Track whether the initial 5-second period has elapsed
+    let initialPeriodElapsed = false;
+    
+    // On non-mobile devices, show controls for 3 seconds initially
+    let initialTimer: NodeJS.Timeout | null = null;
+    if (!isMobile) {
+      initialTimer = setTimeout(() => {
+        initialPeriodElapsed = true;
+        setShowControls(false);
+      }, 5000);
+    } else {
+      initialPeriodElapsed = true; // Skip initial period on mobile
+    }
+
     const handleMouseMove = (e: MouseEvent) => {
+      // Don't apply auto-hide logic during the initial 5-second period
+      if (!initialPeriodElapsed) {
+        return;
+      }
+      
       const windowHeight = window.innerHeight;
       const mouseY = e.clientY;
       
@@ -225,7 +247,12 @@ export const PrayerPresentation: React.FC = () => {
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (initialTimer) {
+        clearTimeout(initialTimer);
+      }
+    };
   }, []);
 
   // Keyboard navigation
