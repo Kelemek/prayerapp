@@ -332,6 +332,7 @@ export const useAdminData = () => {
     } catch (error) {
       console.error('Failed to approve update deletion request:', error);
       alert('Failed to approve update deletion request. Please try again.');
+      throw error; // Re-throw so the UI knows the approval failed
     }
   }, [fetchAdminData]);
 
@@ -347,6 +348,7 @@ export const useAdminData = () => {
     } catch (error) {
       console.error('Failed to deny update deletion request:', error);
       alert('Failed to deny update deletion request. Please try again.');
+      throw error; // Re-throw so the UI knows the denial failed
     }
   }, [fetchAdminData]);
 
@@ -373,28 +375,30 @@ export const useAdminData = () => {
       
       if (error) throw error;
 
-      // Send broadcast email notification to distribution list (all users or admins)
-      await sendApprovedPrayerNotification({
+      // Send email notifications (don't let email failures block the approval)
+      // These run in parallel and failures are logged but don't stop the flow
+      sendApprovedPrayerNotification({
         title: prayer.title,
         description: prayer.description,
         requester: prayer.is_anonymous ? 'Anonymous' : prayer.requester,
         prayerFor: prayer.prayer_for,
         status: prayer.status
-      });
+      }).catch(err => console.error('Failed to send broadcast notification:', err));
 
-      // Send personal confirmation email to the requester
-      await sendRequesterApprovalNotification({
+      sendRequesterApprovalNotification({
         title: prayer.title,
         description: prayer.description,
         requester: prayer.is_anonymous ? 'Anonymous' : prayer.requester,
         requesterEmail: prayer.email,
         prayerFor: prayer.prayer_for
-      });
+      }).catch(err => console.error('Failed to send requester notification:', err));
 
+      // Refresh the admin data to remove this prayer from pending list
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to approve prayer:', error);
       alert('Failed to approve prayer. Please try again.');
+      throw error; // Re-throw so the UI knows the approval failed
     }
   }, [fetchAdminData]);
 
@@ -422,21 +426,23 @@ export const useAdminData = () => {
       
       if (error) throw error;
 
-      // Send email notification to the requester
+      // Send email notification to the requester (don't let email failures block the denial)
       if (prayer.email) {
-        await sendDeniedPrayerNotification({
+        sendDeniedPrayerNotification({
           title: prayer.title,
           description: prayer.description,
           requester: prayer.is_anonymous ? 'Anonymous' : prayer.requester,
           requesterEmail: prayer.email,
           denialReason: reason
-        });
+        }).catch(err => console.error('Failed to send denial notification:', err));
       }
 
+      // Refresh the admin data to update the UI
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to deny prayer:', error);
       alert('Failed to deny prayer. Please try again.');
+      throw error; // Re-throw so the UI knows the denial failed
     }
   }, [fetchAdminData]);
 
@@ -491,21 +497,23 @@ export const useAdminData = () => {
         }
       }
 
-      // Send mass email notification to all subscribers
+      // Send mass email notification to all subscribers (don't let email failures block the approval)
       const prayerTitle = prayerData && 'title' in prayerData
         ? String(prayerData.title)
         : 'Prayer';
-      await sendApprovedUpdateNotification({
+      sendApprovedUpdateNotification({
         prayerTitle,
         content: update.content,
         author: update.is_anonymous ? 'Anonymous' : (update.author || 'Anonymous'),
         markedAsAnswered: update.mark_as_answered || false
-      });
+      }).catch(err => console.error('Failed to send update notification:', err));
 
+      // Refresh the admin data to update the UI
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to approve update:', error);
       alert('Failed to approve update. Please try again.');
+      throw error; // Re-throw so the UI knows the approval failed
     }
   }, [fetchAdminData]);
 
@@ -533,24 +541,26 @@ export const useAdminData = () => {
       
       if (error) throw error;
 
-      // Send email notification to the author
+      // Send email notification to the author (don't let email failures block the denial)
       if (update.author_email) {
         const prayerTitle = update.prayers && typeof update.prayers === 'object' && 'title' in update.prayers
           ? String(update.prayers.title)
           : 'Prayer';
-        await sendDeniedUpdateNotification({
+        sendDeniedUpdateNotification({
           prayerTitle,
           content: update.content,
           author: update.is_anonymous ? 'Anonymous' : (update.author || 'Anonymous'),
           authorEmail: update.author_email,
           denialReason: reason
-        });
+        }).catch(err => console.error('Failed to send denial notification:', err));
       }
 
+      // Refresh the admin data to update the UI
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to deny update:', error);
       alert('Failed to deny update. Please try again.');
+      throw error; // Re-throw so the UI knows the denial failed
     }
   }, [fetchAdminData]);
 
@@ -612,6 +622,7 @@ export const useAdminData = () => {
     } catch (error) {
       console.error('Failed to approve deletion request:', error);
       alert('Failed to approve deletion request. Please try again.');
+      throw error; // Re-throw so the UI knows the approval failed
     }
   }, [fetchAdminData]);
 
@@ -630,6 +641,7 @@ export const useAdminData = () => {
     } catch (error) {
       console.error('Failed to deny deletion request:', error);
       alert('Failed to deny deletion request. Please try again.');
+      throw error; // Re-throw so the UI knows the denial failed
     }
   }, [fetchAdminData]);
 
@@ -671,16 +683,16 @@ export const useAdminData = () => {
         .eq('id', statusChangeRequest.prayer_id);
       if (updateError) throw updateError;
       
-      // Send approval email to requester
+      // Send approval email to requester (don't let email failures block the approval)
       if (statusChangeRequest.requested_email) {
-        await sendApprovedStatusChangeNotification({
+        sendApprovedStatusChangeNotification({
           prayerTitle: statusChangeRequest.prayers.title,
           requestedBy: statusChangeRequest.requested_by,
           requestedEmail: statusChangeRequest.requested_email,
           currentStatus: currentStatus,
           newStatus: newStatus,
           reason: statusChangeRequest.reason || undefined
-        });
+        }).catch(err => console.error('Failed to send status change approval notification:', err));
       }
       
       setData(prev => ({ ...prev, pendingStatusChangeRequests: prev.pendingStatusChangeRequests.filter(req => req.id !== requestId) }));
@@ -688,6 +700,7 @@ export const useAdminData = () => {
     } catch (error) {
       console.error('Error approving status change request:', error);
       handleSupabaseError(error);
+      throw error; // Re-throw so the UI knows the approval failed
     }
   }, [fetchAdminData]);
 
@@ -717,9 +730,9 @@ export const useAdminData = () => {
         .eq('id', requestId);
       if (error) throw error;
       
-      // Send denial email to requester
+      // Send denial email to requester (don't let email failures block the denial)
       if (statusChangeRequest.requested_email) {
-        await sendDeniedStatusChangeNotification({
+        sendDeniedStatusChangeNotification({
           prayerTitle: statusChangeRequest.prayers.title,
           requestedBy: statusChangeRequest.requested_by,
           requestedEmail: statusChangeRequest.requested_email,
@@ -727,13 +740,14 @@ export const useAdminData = () => {
           currentStatus: statusChangeRequest.prayers.status,
           reason: statusChangeRequest.reason || undefined,
           denialReason: reason
-        });
+        }).catch(err => console.error('Failed to send status change denial notification:', err));
       }
       
       setData(prev => ({ ...prev, pendingStatusChangeRequests: prev.pendingStatusChangeRequests.filter(req => req.id !== requestId) }));
       setTimeout(async () => { await fetchAdminData(); }, 1000);
     } catch (error) {
       handleSupabaseError(error);
+      throw error; // Re-throw so the UI knows the denial failed
     }
   }, [fetchAdminData]);
 
