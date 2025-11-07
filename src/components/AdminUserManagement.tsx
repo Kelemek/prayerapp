@@ -140,7 +140,7 @@ export const AdminUserManagement: React.FC = () => {
                       
                       <p>To sign in to the admin portal:</p>
                       <ol>
-                        <li>Go to the admin login page</li>
+                        <li>Go to the admin login page link at the bottom of the main site</li>
                         <li>Enter your email address: <strong>${email}</strong></li>
                         <li>Click "Send Magic Link"</li>
                         <li>Check your email for the secure sign-in link</li>
