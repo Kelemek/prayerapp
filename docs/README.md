@@ -1,41 +1,167 @@
 # Prayer App Documentation
 
-> Complete documentation for the Prayer App - a church prayer management system built with React, TypeScript, Supabase, and Resend.
+Complete documentation for the Church Prayer Management System built with React, TypeScript, Supabase, and Microsoft Graph API.
 
-## 📚 Documentation Index
+---
 
-### Getting Started
-- **[Setup Guide](SETUP.md)** - Initial installation and configuration
-- **[Database Guide](DATABASE.md)** - Schema, migrations, and RLS policies
-- **[Testing Guide](TESTING.md)** - Testing with Vitest, CI/CD, and Netlify previews
+## � Quick Start
+
+New to the Prayer App? Start here:
+
+1. **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Complete setup from scratch
+2. **[FEATURES.md](FEATURES.md)** - Learn all features and how to use them
+3. **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deploy to production
+
+---
+
+## 📚 Core Documentation
+
+### Setup & Configuration
+
+- **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Complete setup guide
+  - Supabase configuration
+  - Database migrations
+  - Edge functions deployment
+  - Microsoft 365 email setup
+  - Planning Center integration
+  - Analytics setup
 
 ### Features & Usage
-- **[Features Guide](FEATURES.md)** - All app features and how to use them
-- **[Email System](EMAIL.md)** - Email notifications, reminders, and setup
-- **[Backup System](backup/)** - Database backups, restore, and automation
 
-### Development
-- **[Testing Setup Complete](TESTING_SETUP_COMPLETE.md)** - Testing infrastructure overview
-- **[Backup Documentation](backup/README.md)** - Complete backup system docs
+- **[FEATURES.md](FEATURES.md)** - All app features
+  - Prayer request management
+  - Prayer prompts
+  - Prayer timer & printable lists
+  - Email notifications
+  - Theme settings
+  - Admin features
+  - Real-time updates
 
-### Deployment & Maintenance
-- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment and Edge Functions
-- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
+### Email System
 
-## 🚀 Quick Start
+- **[EMAIL_GUIDE.md](EMAIL_GUIDE.md)** - Email system guide
+  - Microsoft Graph API setup
+  - Email subscriber management
+  - Automated prayer reminders
+  - Email templates
+  - Bulk sending & rate limits
+  - Troubleshooting email issues
 
-1. Clone the repository
-2. Follow the [Setup Guide](SETUP.md)
-3. Configure [Email System](EMAIL.md)
-4. Deploy using [Deployment Guide](DEPLOYMENT.md)
+### Database
+
+- **[DATABASE.md](DATABASE.md)** - Database guide
+  - Schema overview
+  - Table relationships
+  - Row Level Security (RLS)
+  - Migrations
+  - Data management
+
+### Deployment
+
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment guide
+  - Edge functions deployment
+  - Environment variables
+  - Production checklist
+  - Vercel/Netlify deployment
+
+### Testing
+
+- **[TESTING.md](TESTING.md)** - Testing guide
+  - Running tests
+  - Smoke tests
+  - Verification testing
+  - Real-time feature testing
+
+### Troubleshooting
+
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues
+  - Connection errors
+  - Email problems
+  - Edge function debugging
+  - Netlify issues
+  - GitHub secrets
+  - Linter configuration
+
+---
+
+## 🔧 Technical Reference
+
+### Configuration
+
+- **[CONFIGURABLE_CODE_LENGTH.md](CONFIGURABLE_CODE_LENGTH.md)** - Verification code settings
+- **[CONFIGURABLE_VERIFICATION_SETTINGS.md](CONFIGURABLE_VERIFICATION_SETTINGS.md)** - Verification configuration
+- **[USER_INFO_LOCALSTORAGE.md](USER_INFO_LOCALSTORAGE.md)** - localStorage implementation
+
+### Admin Documentation
+
+- **[ADMIN_USER_MANAGEMENT.md](ADMIN_USER_MANAGEMENT.md)** - User management
+- **[ADMIN_USER_MANAGEMENT_SETUP.md](ADMIN_USER_MANAGEMENT_SETUP.md)** - Setup guide
+- **[ADMIN_SESSION_IMPLEMENTATION.md](ADMIN_SESSION_IMPLEMENTATION.md)** - Session management
+- **[ADMIN_SESSION_SECURITY.md](ADMIN_SESSION_SECURITY.md)** - Security guide
+- **[ADMIN_SETTINGS_TEST_PLAN.md](ADMIN_SETTINGS_TEST_PLAN.md)** - Testing plan
+- **[ADMIN_EMAIL_CLEANUP.md](ADMIN_EMAIL_CLEANUP.md)** - Email notifications
+
+---
+
+## � Archive
+
+### Migrations (Historical)
+
+Completed migrations and implementation docs:
+
+- **[archive/migrations/](archive/migrations/)** - Completed migrations
+  - Graph API migration
+  - Table consolidation
+  - M365 SMTP switch
+  - Database migrations
+  - Code cleanup summaries
+
+### Implementation Archives
+
+Historical implementation docs:
+
+- **[archive/](archive/)** - Implementation history
+  - Feature implementations
+  - Debug procedures
+  - Test procedures
+  - Email system implementations
+
+### Backup System
+
+Backup feature documentation:
+
+- **[backup/](backup/)** - Backup system docs
+  - Backup setup
+  - Restore procedures
+  - Manual backup implementation
+
+---
 
 ## 📦 Tech Stack
 
-- **Frontend**: React 18 + TypeScript + Vite
+- **Frontend**: React + TypeScript + Vite
 - **Backend**: Supabase (PostgreSQL + Edge Functions)
-- **Email**: Resend API
+- **Email**: Microsoft Graph API / Microsoft 365 SMTP
+- **Real-time**: Supabase Realtime
+- **Hosting**: Vercel / Netlify
 - **Styling**: Tailwind CSS
-- **Icons**: Lucide React
+- **Testing**: Vitest + React Testing Library
+
+---
+
+## 📝 Recent Changes
+
+See [DOCUMENTATION_CONSOLIDATION.md](DOCUMENTATION_CONSOLIDATION.md) for consolidation history.
+
+**November 2025**:
+- ✅ Consolidated documentation structure
+- ✅ Created comprehensive setup guide
+- ✅ Enhanced features documentation
+- ✅ Unified email system guide
+- ✅ Archived migration documentation
+- ✅ Removed obsolete fix documentation
+
+---
 
 ## 🔗 Quick Links
 
@@ -43,11 +169,10 @@
 - [Archive (Old Docs)](archive/)
 - [SQL Migrations](../supabase/migrations/)
 
-## 📝 Documentation Status
+---
 
-Last updated: October 18, 2025
-
-All documentation has been consolidated and organized:
+**Last Updated**: November 2025  
+**Documentation Version**: 2.0 (Consolidated)
 - **Testing docs**: Vitest, React Testing Library, CI/CD workflows
 - **Backup docs**: Complete backup system documentation in `backup/` subfolder
 - **Historical docs**: Debugging guides and implementation notes archived in `archive/` folder
