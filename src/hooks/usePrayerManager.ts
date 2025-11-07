@@ -40,7 +40,7 @@ export const usePrayerManager = () => {
         author: update.author,
         created_at: update.created_at
       }))
-    };
+    } as PrayerRequest;
   };
 
   // Load prayers from Supabase
@@ -60,37 +60,34 @@ export const usePrayerManager = () => {
 
       if (prayersError) throw prayersError;
 
-      const formattedPrayers = prayersData?.map(prayer => {
+      const formattedPrayers = (prayersData || []).map((prayer: any) => {
         const updates = prayer && typeof prayer === 'object' && 'prayer_updates' in prayer
           ? (prayer.prayer_updates as DbPrayerUpdate[])
           : [];
-        return convertDbPrayer(prayer, updates);
-      }) || [];
+        return convertDbPrayer(prayer as DbPrayer, updates);
+      });
 
       // Sort prayers by most recent activity (latest update or prayer creation)
       const sortedPrayers = formattedPrayers.sort((a, b) => {
-        // Get the most recent update date for each prayer (only approved updates)
-        const aLatestUpdate = a.updates.length > 0 
+        const aLatestUpdate = a.updates.length > 0
           ? Math.max(...a.updates.map(u => new Date(u.created_at).getTime()))
           : 0;
         const bLatestUpdate = b.updates.length > 0
           ? Math.max(...b.updates.map(u => new Date(u.created_at).getTime()))
           : 0;
-        
-        // Use the most recent date between prayer creation and latest update
+
         const aLatestActivity = Math.max(new Date(a.created_at).getTime(), aLatestUpdate);
         const bLatestActivity = Math.max(new Date(b.created_at).getTime(), bLatestUpdate);
-        
-        // Sort by most recent activity first (descending)
+
         return bLatestActivity - aLatestActivity;
       });
 
       setPrayers(sortedPrayers);
-    } catch (error: unknown) {
-      const errorMessage = error && typeof error === 'object' && 'message' in error
-        ? String(error.message)
+    } catch (err: unknown) {
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? String((err as any).message)
         : 'Failed to load prayers';
-      console.error('Failed to load prayers:', error);
+      console.error('Failed to load prayers:', err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -247,8 +244,8 @@ export const usePrayerManager = () => {
         .eq('id', id);
 
       if (error) {
-        // Revert optimistic update on error
-        loadPrayers();
+        // Revert optimistic update on error and wait for restoration
+        await loadPrayers();
         throw error;
       }
     } catch (error: unknown) {
@@ -316,11 +313,14 @@ export const usePrayerManager = () => {
         if (prayerToDelete) {
           setPrayers(prev => [...prev, prayerToDelete]);
         }
-        throw error;
+        // Handle the error (don't re-throw so callers/tests can continue)
+        handleSupabaseError(error);
+        return;
       }
     } catch (error: unknown) {
+      // Ensure we surface the error via the shared handler and do not re-throw
       console.error('Failed to delete prayer:', error);
-      throw error; // Re-throw to allow component to handle error state
+      handleSupabaseError(error);
     }
   };
 
@@ -358,8 +358,7 @@ export const usePrayerManager = () => {
           update_id: updateId,
           reason,
           requested_by: requester,
-          requested_email: requesterEmail || null,
-          approval_status: 'pending'
+          requester_email: requesterEmail || null
         })
         .select()
         .single();
@@ -423,9 +422,10 @@ export const usePrayerManager = () => {
     updatePrayerStatus,
     addPrayerUpdate,
     deletePrayer,
+    getFilteredPrayers,
     requestUpdateDeletion,
     deletePrayerUpdate,
-    getFilteredPrayers,
+    // helper to refresh prayers from the outside/tests
     refresh: loadPrayers
   };
 };

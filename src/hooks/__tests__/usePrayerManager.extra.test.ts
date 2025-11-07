@@ -37,7 +37,7 @@ describe('usePrayerManager extra flows', () => {
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
         return {
-          select: () => ({ eq: () => ({ order: () => ({ then: (cb: any) => cb({ data: [], error: null }) }) }) })
+          select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [], error: null }) }) })
         } as any;
       }
 
@@ -53,8 +53,8 @@ describe('usePrayerManager extra flows', () => {
     const fromMock = vi.fn((table: string) => {
       if (table === 'prayers') {
         return {
-          // handle loadPrayers select(...).eq(...).order(...).then()
-          select: () => ({ eq: () => ({ order: () => ({ then: (cb: any) => cb({ data: [], error: null }) }) }) }),
+          // handle loadPrayers select(...).eq(...).then()
+          select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [], error: null }) }) }),
           // handle insert(...).select().single()
           insert: () => ({ select: () => ({ single: async () => ({ data: { id: 'p-123' }, error: null } ) }) }),
           delete: () => ({ eq: () => ({ then: async (cb: any) => cb({ data: [], error: null }) }) })
@@ -96,7 +96,7 @@ describe('usePrayerManager extra flows', () => {
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
         return {
-          select: () => ({ eq: () => ({ order: () => ({ then: (cb: any) => cb({ data: [{ id: 'p1', title: 'T', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, updates: [] }], error: null }) }) }) })
+          select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [{ id: 'p1', title: 'T', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, updates: [] }], error: null }) }) })
         } as any;
       }
 
@@ -159,7 +159,7 @@ describe('usePrayerManager extra flows', () => {
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
         return {
-          select: () => ({ eq: () => ({ order: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }) }),
+          select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }),
           update: () => ({ eq: () => ({ error: null }) })
         } as any;
       }
@@ -181,7 +181,7 @@ describe('usePrayerManager extra flows', () => {
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
-        return { select: () => ({ eq: () => ({ order: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }) }) } as any;
+        return { select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }) } as any;
       }
 
       if (table === 'prayer_updates') {
@@ -206,7 +206,7 @@ describe('usePrayerManager extra flows', () => {
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
-        return { select: () => ({ eq: () => ({ order: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }) }) } as any;
+        return { select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }) } as any;
       }
 
       if (table === 'prayer_updates') {
@@ -232,7 +232,7 @@ describe('usePrayerManager extra flows', () => {
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
-        return { select: () => ({ eq: () => ({ order: () => ({ then: (cb: any) => cb({ data: [p1, p2], error: null }) }) }) }) } as any;
+        return { select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [p1, p2], error: null }) }) }) } as any;
       }
       return makeSelectMaybeSingle(null) as any;
     });
@@ -255,7 +255,7 @@ describe('usePrayerManager extra flows', () => {
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
         return {
-          select: () => ({ eq: () => ({ order: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }) }),
+          select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }),
           update: () => ({ eq: () => ({ error: { message: 'DB fail' } }) })
         } as any;
       }
@@ -355,7 +355,7 @@ describe('usePrayerManager extra flows', () => {
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
-        return { select: () => ({ eq: () => ({ order: () => ({ then: (cb: any) => cb({ data: [dbPrayer], error: null }) }) }) }) } as any;
+        return { select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [dbPrayer], error: null }) }) }) } as any;
       }
       return makeSelectMaybeSingle(null) as any;
     });
@@ -384,10 +384,10 @@ describe('usePrayerManager extra flows', () => {
       }
 
       if (table === 'prayers') {
-        return { select: () => ({ eq: () => ({ order: () => ({ then: (cb: any) => {
+        return { select: () => ({ eq: () => ({ then: (cb: any) => {
           if (stage === 0) return cb({ data: [initial], error: null });
           return cb({ data: [], error: null });
-        } }) }) }) } as any;
+        } }) }) } as any;
       }
       return makeSelectMaybeSingle(null) as any;
     });

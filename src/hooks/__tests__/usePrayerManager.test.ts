@@ -141,16 +141,61 @@ describe('usePrayerManager', () => {
     expect(mockChain2?.eq).toHaveBeenCalled();
   });
 
-  it('orders prayers by creation date descending', async () => {
-    const mockChain = createMockChain([]);
+  it('orders prayers by latest activity (latest update or creation) descending', async () => {
+    const now = Date.now();
+    const olderCreated = new Date(now - 100000).toISOString();
+    const recentUpdate = new Date(now - 1000).toISOString();
+    const midCreated = new Date(now - 50000).toISOString();
+
+    // older prayer has a very recent approved update -> should be first
+    const pOld = {
+      id: '1',
+      title: 'Old Prayer',
+      description: 'Old but updated',
+      status: 'current',
+      requester: 'A',
+      prayer_for: 'X',
+      email: null,
+      is_anonymous: false,
+      approval_status: 'approved',
+      created_at: olderCreated,
+      updated_at: olderCreated,
+      date_requested: olderCreated,
+      prayer_updates: [
+        { id: 'u1', prayer_id: '1', content: 'recent update', author: 'A', approval_status: 'approved', created_at: recentUpdate }
+      ]
+    } as any;
+
+    // newer prayer with no updates should come after pOld
+    const pNew = {
+      id: '2',
+      title: 'New Prayer',
+      description: 'New',
+      status: 'current',
+      requester: 'B',
+      prayer_for: 'Y',
+      email: null,
+      is_anonymous: false,
+      approval_status: 'approved',
+      created_at: midCreated,
+      updated_at: midCreated,
+      date_requested: midCreated,
+      prayer_updates: []
+    } as any;
+
+    const mockChain = createMockChain([pOld, pNew]);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
-    renderHook(() => usePrayerManager());
+    const { result } = renderHook(() => usePrayerManager());
 
     await waitFor(() => {
-      const mockChain2 = vi.mocked(supabase.from).mock.results[0]?.value;
-      expect(mockChain2?.order).toHaveBeenCalled();
+      expect(result.current.loading).toBe(false);
+      expect(result.current.prayers.length).toBeGreaterThanOrEqual(2);
     });
+
+    // pOld has a recent update so it should appear first
+    expect(result.current.prayers[0].id).toBe('1');
+    expect(result.current.prayers[1].id).toBe('2');
   });
 
   it('sets up realtime subscriptions', () => {
