@@ -5,6 +5,8 @@
 /* Override Tailwind base to fix overscroll background */
 html {
   background-color: rgb(249 250 251) !important; /* gray-50 */
+  /* Force scrollbar to always show to prevent layout shift */
+  overflow-y: scroll;
 }
 
 html.dark {
