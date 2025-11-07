@@ -7,6 +7,7 @@ import { PromptCard } from './components/PromptCard';
 import { PrayerFiltersComponent } from './components/PrayerFilters';
 import { ToastProvider } from './components/ToastProvider';
 import { UserSettings } from './components/UserSettings';
+import { SkeletonLoader } from './components/SkeletonLoader';
 import { AdminAuthProvider } from './hooks/useAdminAuth';
 import { useAdminAuth } from './hooks/useAdminAuthHook';
 import type { PrayerStatus, PrayerPrompt } from './types/prayer';
@@ -188,9 +189,8 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center transition-colors">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Loading prayers...</p>
+        <div className="w-full max-w-6xl px-4">
+          <SkeletonLoader count={5} type="card" />
         </div>
       </div>
     );
@@ -472,9 +472,7 @@ function AppContent() {
               )}
               
               {promptsLoading ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
-                <p className="text-gray-500 dark:text-gray-400">Loading prayer prompts...</p>
-              </div>
+              <SkeletonLoader count={3} type="card" />
             ) : prompts.length === 0 ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
@@ -686,14 +684,22 @@ function AdminWrapper() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="w-full max-w-6xl px-4">
+          <SkeletonLoader count={5} type="card" />
+        </div>
       </div>
     );
   }
   
   if (currentView === 'presentation') {
     return (
-      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+      <Suspense fallback={
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="w-full max-w-6xl px-4">
+            <SkeletonLoader count={3} type="card" />
+          </div>
+        </div>
+      }>
         <PrayerPresentation />
       </Suspense>
     );
@@ -701,7 +707,13 @@ function AdminWrapper() {
   
   if (currentView === 'mobile-presentation') {
     return (
-      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+      <Suspense fallback={
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="w-full max-w-6xl px-4">
+            <SkeletonLoader count={3} type="card" />
+          </div>
+        </div>
+      }>
         <MobilePresentation />
       </Suspense>
     );
@@ -709,7 +721,11 @@ function AdminWrapper() {
   
   if (currentView === 'admin-login') {
     return (
-      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+      <Suspense fallback={
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="skeleton h-96 w-96 rounded-lg"></div>
+        </div>
+      }>
         <AdminLogin />
       </Suspense>
     );
@@ -717,7 +733,13 @@ function AdminWrapper() {
   
   if (currentView === 'admin-portal' && isAdmin) {
     return (
-      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+      <Suspense fallback={
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="w-full max-w-6xl px-4">
+            <SkeletonLoader count={5} type="card" />
+          </div>
+        </div>
+      }>
         <AdminPortal />
       </Suspense>
     );

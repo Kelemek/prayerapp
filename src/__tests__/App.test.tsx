@@ -142,7 +142,11 @@ describe('App', () => {
       });
 
       render(<App />);
-      expect(screen.getByText('Loading prayers...')).toBeDefined();
+      // Check for skeleton loader instead of text
+      const skeletonElements = screen.getAllByRole('generic').filter(el => 
+        el.className.includes('skeleton')
+      );
+      expect(skeletonElements.length).toBeGreaterThan(0);
     });
 
     it('displays error state when prayer loading fails', () => {

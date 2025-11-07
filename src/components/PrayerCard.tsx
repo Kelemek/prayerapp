@@ -426,7 +426,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   };
 
   return (
-  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-4 transition-colors relative">
+  <div className="prayer-card bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-4 transition-colors relative">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
