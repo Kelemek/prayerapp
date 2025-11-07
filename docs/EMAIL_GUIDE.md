@@ -557,6 +557,91 @@ Use subdomain for prayer app:
 - Separate reputation
 - Custom branding
 
+### Email Verification (2FA) Configuration
+
+Configure verification code settings for enhanced security when enabled.
+
+#### Verification Code Length
+
+**Location:** Admin Portal → Settings → Email Settings → "Verification Code Length"
+
+**Options:**
+- 4 digits (10,000 combinations)
+- **6 digits (1,000,000 combinations)** ⭐ Recommended
+- 8 digits (100,000,000 combinations)
+
+**Security Analysis:**
+
+| Length | Combinations | Brute Force Time* |
+|--------|--------------|-------------------|
+| 4 digits | 10,000 | ~2.8 hours |
+| **6 digits** | **1,000,000** | **~11.6 days** ⭐ |
+| 8 digits | 100,000,000 | ~3.2 years |
+
+*Assuming 1 attempt per second with no rate limiting
+
+**Recommendation:** 6 digits provides excellent security while being easy for users to type. This is the industry standard (used by Google, Microsoft, etc.).
+
+#### Code Expiration Time
+
+**Location:** Admin Portal → Settings → Email Settings → "Code Expiration Time"
+
+**Options:**
+- 5 minutes
+- 10 minutes
+- **15 minutes** ⭐ Recommended
+- 20 minutes
+- 30 minutes
+- 45 minutes
+- 60 minutes
+
+**Trade-offs:**
+
+| Duration | User Experience | Security |
+|----------|----------------|----------|
+| 5 min | Rushed, may need resends | Excellent |
+| 10 min | Tight but reasonable | Very good |
+| **15 min** | **Comfortable for most** | **Good** ⭐ |
+| 20-30 min | Relaxed | Fair |
+| 45-60 min | Very relaxed | Lower |
+
+**Recommendation:** 15 minutes is the sweet spot - enough time for users to check email and enter code, but short enough to maintain security.
+
+#### Combined Security Analysis
+
+Total security depends on **both** settings:
+
+| Configuration | Risk Level |
+|--------------|------------|
+| 4 digits, 60 min | ⚠️ High risk |
+| 4 digits, 15 min | ⚠️ Moderate risk |
+| 6 digits, 60 min | ✓ Low risk |
+| **6 digits, 15 min** | **✓✓ Very low risk** ⭐ |
+| 8 digits, 5 min | ✓✓✓ Minimal risk |
+
+**Additional Security Layers:**
+- Single-use codes (can't be reused)
+- Stored in database for audit trail
+- Email delivery adds verification step
+
+#### Configuration Recommendations by Use Case
+
+**Standard Security (Recommended):**
+- 6 digits, 15 minutes
+- Best balance of security and usability
+
+**High Security:**
+- 8 digits, 10 minutes
+- For sensitive organizations
+
+**User-Friendly:**
+- 6 digits, 20 minutes
+- For less tech-savvy users
+
+**Not Recommended:**
+- 4 digits with any expiry time
+- Any setting with 60-minute expiry (too long)
+
 ---
 
 ## Related Documentation

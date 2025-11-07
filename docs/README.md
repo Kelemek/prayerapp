@@ -126,14 +126,13 @@ Historical implementation docs:
   - Test procedures
   - Email system implementations
 
-### Backup System
+### Backup & Restore
 
-Backup feature documentation:
-
-- **[backup/](backup/)** - Backup system docs
-  - Backup setup
+- **[BACKUP_GUIDE.md](BACKUP_GUIDE.md)** - Complete backup and restore guide
+  - Automated daily backups
+  - Manual backups
   - Restore procedures
-  - Manual backup implementation
+  - Troubleshooting
 
 ---
 
