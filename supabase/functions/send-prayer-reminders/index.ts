@@ -194,13 +194,13 @@ serve(async (req) => {
 
         const html = generateReminderHTML(prayer, enableAutoArchive, daysBeforeArchive)
 
-        // Send the reminder email
-        const { error: emailError } = await supabaseClient.functions.invoke('send-notification', {
+        // Send the reminder email using send-email function
+        const { error: emailError } = await supabaseClient.functions.invoke('send-email', {
           body: {
-            to: [prayer.email],
+            to: prayer.email,
             subject,
-            body,
-            html
+            textBody: body,
+            htmlBody: html
           }
         })
 
