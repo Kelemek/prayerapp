@@ -12,9 +12,12 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [sessionStart, setSessionStart] = useState<number | null>(null);
   
   // Inactivity timeout: 30 minutes
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
+  // Maximum session duration: 8 hours (even if active)
+  const MAX_SESSION_DURATION = 8 * 60 * 60 * 1000;
 
   // Check if the current user is an admin
   const checkAdminStatus = async (currentUser: User | null) => {
@@ -71,6 +74,17 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         await checkAdminStatus(session?.user ?? null);
         setLoading(false);
         
+        // Set session start time on sign in
+        if (event === 'SIGNED_IN') {
+          setSessionStart(Date.now());
+          setLastActivity(Date.now());
+        }
+        
+        // Clear session start on sign out
+        if (event === 'SIGNED_OUT') {
+          setSessionStart(null);
+        }
+        
         // Clean up URL hash after magic link authentication
         if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
           console.log('🧹 Cleaning URL hash...');
@@ -97,9 +111,9 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     };
   }, []);
 
-  // Auto-logout on inactivity
+  // Auto-logout on inactivity or max session duration
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin || !sessionStart) return;
 
     // Track user activity
     const updateActivity = () => setLastActivity(Date.now());
@@ -107,10 +121,17 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
     events.forEach(event => window.addEventListener(event, updateActivity));
 
-    // Check for inactivity every minute
+    // Check for inactivity AND max session duration every minute
     const interval = setInterval(() => {
-      if (Date.now() - lastActivity > INACTIVITY_TIMEOUT) {
-        console.log('Auto-logout due to inactivity');
+      const now = Date.now();
+      const inactive = now - lastActivity > INACTIVITY_TIMEOUT;
+      const sessionTooOld = now - sessionStart > MAX_SESSION_DURATION;
+      
+      if (inactive) {
+        console.log('Auto-logout due to inactivity (30 minutes)');
+        logout();
+      } else if (sessionTooOld) {
+        console.log('Auto-logout due to maximum session duration (8 hours)');
         logout();
       }
     }, 60000); // Check every minute
@@ -119,7 +140,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       events.forEach(event => window.removeEventListener(event, updateActivity));
       clearInterval(interval);
     };
-  }, [isAdmin, lastActivity]);
+  }, [isAdmin, lastActivity, sessionStart]);
 
   const sendMagicLink = async (email: string): Promise<boolean> => {
     setLoading(true);
