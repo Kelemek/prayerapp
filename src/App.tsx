@@ -186,16 +186,6 @@ function AppContent() {
     return getFilteredPrayers(filters.status, filters.searchTerm);
   }, [filters, getFilteredPrayers]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center transition-colors">
-        <div className="w-full max-w-6xl px-4">
-          <SkeletonLoader count={5} type="card" />
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center transition-colors">
@@ -515,6 +505,8 @@ function AppContent() {
               ))
             )}
             </>
+          ) : loading ? (
+            <SkeletonLoader count={5} type="card" />
           ) : filteredPrayers.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-2">
