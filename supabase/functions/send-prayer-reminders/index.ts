@@ -91,7 +91,7 @@ serve(async (req) => {
     cutoffDate.setDate(cutoffDate.getDate() - reminderIntervalDays)
 
     // Find prayers that need reminders:
-    // - Status is 'current' or 'ongoing'
+    // - Status is 'current' (active prayers only)
     // - Approval status is 'approved'
     // - Has NOT had any updates in the last X days (where X = reminderIntervalDays)
     
@@ -99,7 +99,7 @@ serve(async (req) => {
     const { data: potentialPrayers, error: fetchError } = await supabaseClient
       .from('prayers')
       .select('id, title, description, prayer_for, requester, email, is_anonymous, created_at, last_reminder_sent')
-      .in('status', ['current', 'ongoing'])
+      .eq('status', 'current')
       .eq('approval_status', 'approved')
 
     if (fetchError) {
@@ -116,7 +116,7 @@ serve(async (req) => {
     if (!potentialPrayers || potentialPrayers.length === 0) {
       return new Response(
         JSON.stringify({ 
-          message: 'No approved current/ongoing prayers found',
+          message: 'No approved current prayers found',
           sent: 0
         }),
         { 
@@ -242,14 +242,14 @@ serve(async (req) => {
       console.log(`Auto-archive enabled: checking for prayers with reminders sent before ${archiveCutoffDate.toISOString()}`)
 
       // Find prayers that:
-      // 1. Have status 'current' or 'ongoing'
+      // 1. Have status 'current' (active prayers only)
       // 2. Have last_reminder_sent set
       // 3. last_reminder_sent is before the archive cutoff date (more than daysBeforeArchive days ago)
       // 4. Still have no updates since the reminder was sent
       const { data: prayersToArchive, error: archiveQueryError } = await supabaseClient
         .from('prayers')
         .select('id, title, last_reminder_sent')
-        .in('status', ['current', 'ongoing'])
+        .eq('status', 'current')
         .eq('approval_status', 'approved')
         .not('last_reminder_sent', 'is', null)
         .lt('last_reminder_sent', archiveCutoffDate.toISOString())
