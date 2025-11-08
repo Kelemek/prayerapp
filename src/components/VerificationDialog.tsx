@@ -107,10 +107,14 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
     // Handle autofill on iOS/Chromium which pastes the full code into the first input
     if (value.length > 1) {
       const digits = value.replace(/\D/g, '').slice(0, codeLength);
-      if (digits.length === codeLength) {
-        const newCode = digits.split('');
+      if (digits.length >= codeLength) {
+        const newCode = digits.slice(0, codeLength).split('');
         setCode(newCode);
         setError(null);
+        // Reset the first input to show only its digit
+        if (index === 0 && inputRefs.current[0]) {
+          inputRefs.current[0].value = newCode[0];
+        }
         inputRefs.current[codeLength - 1]?.focus();
         return;
       }
@@ -264,9 +268,10 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
               ref={el => { inputRefs.current[index] = el; }}
               type="text"
               inputMode="numeric"
-              maxLength={1}
+              maxLength={index === 0 ? codeLength : 1}
               value={digit}
               onChange={(e) => handleCodeChange(index, e.target.value)}
+              onInput={(e) => handleCodeChange(index, (e.target as HTMLInputElement).value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
               disabled={isExpired}
               autoComplete={index === 0 ? "one-time-code" : "off"}
