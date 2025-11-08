@@ -261,21 +261,40 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
         </div>
 
         {/* Code inputs */}
-        <div className="flex gap-2 justify-center mb-6" onPaste={handlePaste}>
-          {code.map((digit, index) => (
-            <input
-              key={index}
-              ref={el => { inputRefs.current[index] = el; }}
-              type="text"
-              inputMode="numeric"
-              maxLength={index === 0 ? codeLength : 1}
-              value={digit}
-              onChange={(e) => handleCodeChange(index, e.target.value)}
-              onInput={(e) => handleCodeChange(index, (e.target as HTMLInputElement).value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              disabled={isExpired}
-              autoComplete={index === 0 ? "one-time-code" : "off"}
-              className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg
+        <div className="relative">
+          {/* Hidden input for iOS/Chromium autofill */}
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            aria-hidden="true"
+            className="absolute opacity-0 w-0 h-0 pointer-events-none"
+            tabIndex={-1}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, '');
+              if (value.length === codeLength) {
+                const newCode = value.split('');
+                setCode(newCode);
+                setError(null);
+                inputRefs.current[codeLength - 1]?.focus();
+              }
+            }}
+          />
+          
+          <div className="flex gap-2 justify-center mb-6" onPaste={handlePaste}>
+            {code.map((digit, index) => (
+              <input
+                key={index}
+                ref={el => { inputRefs.current[index] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleCodeChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                disabled={isExpired}
+                autoComplete="off"
+                className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg
                 ${isExpired
                   ? 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
                   : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400'
@@ -285,6 +304,7 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
                 transition-colors`}
             />
           ))}
+        </div>
         </div>
 
         {/* Error message */}
