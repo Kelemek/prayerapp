@@ -12,6 +12,8 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage"
+    ,"coverage:summary": "node scripts/coverage-summary.js",
+    "coverage:open": "open coverage/index.html || true"
   },
   "dependencies": {
     "@planningcenter/api-client": "^3.0.1",

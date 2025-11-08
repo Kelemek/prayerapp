@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PendingUpdateDeletionCard } from '../PendingUpdateDeletionCard';
 
 // Mock the Planning Center lookup
@@ -59,6 +59,11 @@ describe('PendingUpdateDeletionCard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(async () => {
+    // wait for any pending async state updates to settle to avoid act(...) warnings
+    await waitFor(() => {});
   });
 
   describe('Rendering', () => {

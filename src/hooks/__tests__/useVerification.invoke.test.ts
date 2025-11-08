@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useVerification } from '../useVerification';
 
@@ -53,7 +53,10 @@ describe('useVerification - edge function integration', () => {
       expect(result.current.isEnabled).toBe(false);
     });
 
-    const response = await result.current.requestCode('user@example.com', 'test', { foo: 'bar' });
+    let response: any;
+    await act(async () => {
+      response = await result.current.requestCode('user@example.com', 'test', { foo: 'bar' });
+    });
     expect(response).toBeNull();
   });
 
@@ -73,7 +76,10 @@ describe('useVerification - edge function integration', () => {
       expect(result.current.isEnabled).toBe(true);
     });
 
-    const resp = await result.current.requestCode('USER@EXAMPLE.COM', 'action', { x: 1 });
+    let resp: any;
+    await act(async () => {
+      resp = await result.current.requestCode('USER@EXAMPLE.COM', 'action', { x: 1 });
+    });
 
     expect(resp).toMatchObject({ codeId: 'code-123', expiresAt: '2030-01-01T00:00:00Z' });
     // verificationState should be set with normalized email (wait for state update)
@@ -100,7 +106,9 @@ describe('useVerification - edge function integration', () => {
       expect(result.current.isEnabled).toBe(true);
     });
 
-    await expect(result.current.requestCode('user@example.com', 'action', {})).rejects.toThrow();
+    await act(async () => {
+      await expect(result.current.requestCode('user@example.com', 'action', {})).rejects.toThrow();
+    });
     await waitFor(() => {
       expect(result.current.error).toBeTruthy();
     });
@@ -128,10 +136,16 @@ describe('useVerification - edge function integration', () => {
     });
 
     // Request code first to populate state
-    const req = await result.current.requestCode('me@ex.COM', 'act', {});
+    let req: any;
+    await act(async () => {
+      req = await result.current.requestCode('me@ex.COM', 'act', {});
+    });
     expect(req).not.toBeNull();
 
-    const verified = await result.current.verifyCode('c1', '000000');
+    let verified: any;
+    await act(async () => {
+      verified = await result.current.verifyCode('c1', '000000');
+    });
     expect(verified.actionType).toBe('doThing');
     expect(verified.email).toBe('me@ex.com');
 
@@ -155,7 +169,9 @@ describe('useVerification - edge function integration', () => {
       expect(result.current.isEnabled).toBe(true);
     });
 
-    await expect(result.current.verifyCode('bogus', '123456')).rejects.toThrow();
+    await act(async () => {
+      await expect(result.current.verifyCode('bogus', '123456')).rejects.toThrow();
+    });
     await waitFor(() => {
       expect(result.current.error).toBeTruthy();
     });

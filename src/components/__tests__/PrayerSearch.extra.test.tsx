@@ -33,7 +33,7 @@ describe('PrayerSearch component - extra tests', () => {
     const input = screen.getByPlaceholderText(/Search by title, requester, email/i) as HTMLInputElement;
 
     // Press Enter with empty input
-    await act(async () => {
+  act(() => {
       fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
     });
 
@@ -74,7 +74,7 @@ describe('PrayerSearch component - extra tests', () => {
 
     const input = screen.getByPlaceholderText(/Search by title, requester, email/i) as HTMLInputElement;
     // Type a search term and press Enter
-    await act(async () => {
+  act(() => {
       fireEvent.change(input, { target: { value: 'Alice' } });
       fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
     });
@@ -120,7 +120,7 @@ describe('PrayerSearch component - extra tests', () => {
     const approvalSelect = selects[1] as HTMLSelectElement;
 
     // Change approval filter to 'denied' which triggers an auto-search
-    await act(async () => {
+  act(() => {
       fireEvent.change(approvalSelect, { target: { value: 'denied' } });
     });
 

@@ -1,4 +1,4 @@
-/// <reference types="vitest" />
+import 'vitest';
 import { expect, it, vi } from 'vitest'
 
 // createClientMock must live at module scope because vi.mock calls are hoisted by

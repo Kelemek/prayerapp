@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PrayerForm } from '../PrayerForm';
 import * as userInfoStorage from '../../utils/userInfoStorage';
@@ -62,7 +63,7 @@ describe('PrayerForm', () => {
     expect(screen.getByPlaceholderText('Describe the prayer request in detail')).toBeDefined();
   });
 
-  it('loads saved user info on mount', () => {
+  it('loads saved user info on mount', async () => {
     vi.mocked(userInfoStorage.getUserInfo).mockReturnValue({
       firstName: 'John',
       lastName: 'Doe',
@@ -77,13 +78,15 @@ describe('PrayerForm', () => {
       />
     );
 
-    const firstNameInput = screen.getByPlaceholderText('First name') as HTMLInputElement;
-    const lastNameInput = screen.getByPlaceholderText('Last name') as HTMLInputElement;
-    const emailInput = screen.getByPlaceholderText('Your email address') as HTMLInputElement;
+    await waitFor(() => {
+      const firstNameInput = screen.getByPlaceholderText('First name') as HTMLInputElement;
+      const lastNameInput = screen.getByPlaceholderText('Last name') as HTMLInputElement;
+      const emailInput = screen.getByPlaceholderText('Your email address') as HTMLInputElement;
 
-    expect(firstNameInput.value).toBe('John');
-    expect(lastNameInput.value).toBe('Doe');
-    expect(emailInput.value).toBe('john@example.com');
+      expect(firstNameInput.value).toBe('John');
+      expect(lastNameInput.value).toBe('Doe');
+      expect(emailInput.value).toBe('john@example.com');
+    });
   });
 
   it('updates form fields when user types', () => {
@@ -120,7 +123,7 @@ describe('PrayerForm', () => {
     expect(checkbox.checked).toBe(false);
   });
 
-  it('calls onCancel when Done button is clicked', () => {
+  it('calls onCancel when Done button is clicked', async () => {
     render(
       <PrayerForm
         onSubmit={mockOnSubmit}
@@ -130,7 +133,10 @@ describe('PrayerForm', () => {
     );
 
     const doneButton = screen.getByRole('button', { name: /done/i });
-    fireEvent.click(doneButton);
+    // wrap the click in act to ensure React state updates are flushed during the test
+  act(() => {
+      fireEvent.click(doneButton);
+    });
 
     expect(mockOnCancel).toHaveBeenCalledTimes(1);
   });
@@ -164,7 +170,10 @@ describe('PrayerForm', () => {
     });
 
     const submitButton = screen.getByRole('button', { name: /submit/i });
-    fireEvent.click(submitButton);
+    // clicking the submit button triggers async state updates; wrap in act
+  act(() => {
+      fireEvent.click(submitButton);
+    });
 
     await waitFor(() => {
       expect(mockOnSubmit).toHaveBeenCalled();
@@ -202,7 +211,10 @@ describe('PrayerForm', () => {
 
     // Submit the form
     const submitButton = screen.getByRole('button', { name: /submit/i });
-    fireEvent.click(submitButton);
+    // wrap submission to ensure component state updates are flushed
+  act(() => {
+      fireEvent.click(submitButton);
+    });
 
     // saveUserInfo should be called during submission
     await waitFor(() => {
@@ -235,7 +247,9 @@ describe('PrayerForm', () => {
     fireEvent.change(descriptionInput, { target: { value: 'Test description' } });
 
     const submitButton = screen.getByRole('button', { name: /submit/i });
-    fireEvent.click(submitButton);
+  act(() => {
+      fireEvent.click(submitButton);
+    });
 
     // Wait for submission to complete and form to reset
     await waitFor(() => {
@@ -273,7 +287,9 @@ describe('PrayerForm', () => {
     });
 
     const submitButton = screen.getByRole('button', { name: /submit/i });
-    fireEvent.click(submitButton);
+  act(() => {
+      fireEvent.click(submitButton);
+    });
 
     // Wait for error handling
     await waitFor(() => {

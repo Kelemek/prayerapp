@@ -14,17 +14,12 @@ const createMockChain = (resolveData: any = [], resolveError: any = null) => ({
   then: vi.fn((callback: any) => callback({ data: resolveData, error: resolveError }))
 });
 
-vi.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(),
-    channel: vi.fn(() => ({
-      on: vi.fn().mockReturnThis(),
-      subscribe: vi.fn()
-    })),
-    removeChannel: vi.fn()
-  },
-  handleSupabaseError: vi.fn((err) => err?.message || 'Unknown error')
-}));
+vi.mock('../../lib/supabase', async () => {
+  const mod = await import('../../testUtils/supabaseMock')
+  const sup = mod.createSupabaseMock({ fromData: {} }) as any
+  sup.removeChannel = vi.fn()
+  return { supabase: sup, handleSupabaseError: vi.fn((err: any) => err?.message || 'Unknown error') }
+});
 
 // Mock email notifications
 vi.mock('../../lib/emailNotifications', () => ({

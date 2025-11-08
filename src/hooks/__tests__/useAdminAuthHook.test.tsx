@@ -2,18 +2,17 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock supabase used by AdminAuthProvider
-vi.mock('../../lib/supabase', () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
-      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
-      signInWithOtp: vi.fn(),
-      signOut: vi.fn()
-    },
-    from: vi.fn(),
-    rpc: vi.fn()
-  }
-}))
+vi.mock('../../lib/supabase', async () => {
+  const mod = await import('../../testUtils/supabaseMock')
+  const sup = mod.createSupabaseMock({ fromData: {} }) as any
+  sup.auth.getSession = vi.fn().mockResolvedValue({ data: { session: null }, error: null })
+  sup.auth.onAuthStateChange = vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } }))
+  sup.auth.signInWithOtp = vi.fn()
+  sup.auth.signOut = vi.fn()
+  sup.rpc = vi.fn()
+  sup.removeChannel = vi.fn()
+  return { supabase: sup }
+})
 
 import { useAdminAuth } from '../useAdminAuthHook'
 import { AdminAuthProvider } from '../useAdminAuth'

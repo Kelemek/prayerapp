@@ -1,5 +1,11 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Mock Planning Center to avoid noisy errors in tests that exercise error paths
+vi.mock('../../lib/planningcenter', () => ({
+  lookupPersonByEmail: vi.fn().mockResolvedValue({ people: [], count: 0 }),
+  formatPersonName: vi.fn((person: any) => `${person.attributes.first_name} ${person.attributes.last_name}`),
+}));
 import { PendingPrayerCard } from '../PendingPrayerCard';
 import type { PrayerRequest } from '../../types/prayer';
 import { PrayerStatus } from '../../types/prayer';
@@ -166,7 +172,9 @@ describe('PendingPrayerCard', () => {
       );
 
       const approveButton = screen.getByText('Approve');
-      fireEvent.click(approveButton);
+  act(() => {
+        fireEvent.click(approveButton);
+      });
 
       await waitFor(() => {
         expect(mockOnApprove).toHaveBeenCalledWith('prayer-1');
@@ -189,7 +197,9 @@ describe('PendingPrayerCard', () => {
       );
 
       const approveButton = screen.getByText('Approve');
-      fireEvent.click(approveButton);
+  act(() => {
+        fireEvent.click(approveButton);
+      });
 
       await waitFor(() => {
         expect(screen.getByText('Approving...')).toBeDefined();
@@ -212,7 +222,9 @@ describe('PendingPrayerCard', () => {
       );
 
       const approveButton = screen.getByText('Approve');
-      fireEvent.click(approveButton);
+  act(() => {
+        fireEvent.click(approveButton);
+      });
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -239,7 +251,7 @@ describe('PendingPrayerCard', () => {
       expect(screen.getByText('Deny')).toBeDefined();
     });
 
-    it('shows deny form when deny button clicked', () => {
+  it('shows deny form when deny button clicked', async () => {
       render(
         <PendingPrayerCard
           prayer={mockPrayer}
@@ -250,13 +262,15 @@ describe('PendingPrayerCard', () => {
       );
 
       const denyButton = screen.getByText('Deny');
-      fireEvent.click(denyButton);
+      act(() => {
+        fireEvent.click(denyButton);
+      });
 
       expect(screen.getByText('Reason for denial (required):')).toBeDefined();
       expect(screen.getByPlaceholderText('Explain why this prayer request cannot be approved...')).toBeDefined();
     });
 
-    it('hides deny form when deny button clicked again', () => {
+  it('hides deny form when deny button clicked again', async () => {
       render(
         <PendingPrayerCard
           prayer={mockPrayer}
@@ -268,14 +282,18 @@ describe('PendingPrayerCard', () => {
 
       const denyButton = screen.getByText('Deny');
       
-      fireEvent.click(denyButton);
+      act(() => {
+        fireEvent.click(denyButton);
+      });
       expect(screen.getByText('Reason for denial (required):')).toBeDefined();
       
-      fireEvent.click(denyButton);
+      act(() => {
+        fireEvent.click(denyButton);
+      });
       expect(screen.queryByText('Reason for denial (required):')).toBeNull();
     });
 
-    it('can input deny reason', () => {
+  it('can input deny reason', async () => {
       render(
         <PendingPrayerCard
           prayer={mockPrayer}
@@ -286,7 +304,9 @@ describe('PendingPrayerCard', () => {
       );
 
       const denyButton = screen.getByText('Deny');
-      fireEvent.click(denyButton);
+      act(() => {
+        fireEvent.click(denyButton);
+      });
 
       const textarea = screen.getByPlaceholderText('Explain why this prayer request cannot be approved...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: 'Inappropriate content' } });
@@ -305,20 +325,24 @@ describe('PendingPrayerCard', () => {
       );
 
       const denyButton = screen.getByText('Deny');
-      fireEvent.click(denyButton);
+  act(() => {
+        fireEvent.click(denyButton);
+      });
 
       const textarea = screen.getByPlaceholderText('Explain why this prayer request cannot be approved...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: 'Not appropriate' } });
 
       const confirmButton = screen.getByText('Confirm Denial');
-      fireEvent.click(confirmButton);
+      act(() => {
+        fireEvent.click(confirmButton);
+      });
 
       await waitFor(() => {
         expect(mockOnDeny).toHaveBeenCalledWith('prayer-1', 'Not appropriate');
       });
     });
 
-    it('does not submit empty deny reason', () => {
+  it('does not submit empty deny reason', async () => {
       render(
         <PendingPrayerCard
           prayer={mockPrayer}
@@ -329,13 +353,15 @@ describe('PendingPrayerCard', () => {
       );
 
       const denyButton = screen.getByText('Deny');
-      fireEvent.click(denyButton);
+      act(() => {
+        fireEvent.click(denyButton);
+      });
 
       const confirmButton = screen.getByText('Confirm Denial') as HTMLButtonElement;
       expect(confirmButton.disabled).toBe(true);
     });
 
-    it('can cancel deny form', () => {
+  it('can cancel deny form', async () => {
       render(
         <PendingPrayerCard
           prayer={mockPrayer}
@@ -346,18 +372,22 @@ describe('PendingPrayerCard', () => {
       );
 
       const denyButton = screen.getByText('Deny');
-      fireEvent.click(denyButton);
+  act(() => {
+        fireEvent.click(denyButton);
+      });
 
       const textarea = screen.getByPlaceholderText('Explain why this prayer request cannot be approved...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: 'Some reason' } });
 
       const cancelButton = screen.getAllByText('Cancel')[0];
-      fireEvent.click(cancelButton);
+      act(() => {
+        fireEvent.click(cancelButton);
+      });
 
       expect(screen.queryByText('Reason for denial (required):')).toBeNull();
     });
 
-    it('clears deny reason when form is cancelled', () => {
+  it('clears deny reason when form is cancelled', async () => {
       render(
         <PendingPrayerCard
           prayer={mockPrayer}
@@ -374,9 +404,13 @@ describe('PendingPrayerCard', () => {
       fireEvent.change(textarea, { target: { value: 'Some reason' } });
 
       const cancelButton = screen.getAllByText('Cancel')[0];
-      fireEvent.click(cancelButton);
+  act(() => {
+        fireEvent.click(cancelButton);
+      });
 
-      fireEvent.click(denyButton);
+      act(() => {
+        fireEvent.click(denyButton);
+      });
       const newTextarea = screen.getByPlaceholderText('Explain why this prayer request cannot be approved...') as HTMLTextAreaElement;
       expect(newTextarea.value).toBe('');
     });
@@ -396,14 +430,19 @@ describe('PendingPrayerCard', () => {
         />
       );
 
+
       const denyButton = screen.getByText('Deny');
-      fireEvent.click(denyButton);
+  act(() => {
+        fireEvent.click(denyButton);
+      });
 
       const textarea = screen.getByPlaceholderText('Explain why this prayer request cannot be approved...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: 'Test reason' } });
 
       const confirmButton = screen.getByText('Confirm Denial');
-      fireEvent.click(confirmButton);
+      act(() => {
+        fireEvent.click(confirmButton);
+      });
 
       await waitFor(() => {
         expect(screen.getByText('Denying...')).toBeDefined();
@@ -412,7 +451,7 @@ describe('PendingPrayerCard', () => {
       resolveDeny!();
     });
 
-    it('handles denial error gracefully', async () => {
+  it('handles denial error gracefully', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockOnDeny.mockRejectedValue(new Error('Denial failed'));
 
@@ -426,13 +465,17 @@ describe('PendingPrayerCard', () => {
       );
 
       const denyButton = screen.getByText('Deny');
-      fireEvent.click(denyButton);
+      act(() => {
+        fireEvent.click(denyButton);
+      });
 
       const textarea = screen.getByPlaceholderText('Explain why this prayer request cannot be approved...') as HTMLTextAreaElement;
       fireEvent.change(textarea, { target: { value: 'Test reason' } });
 
       const confirmButton = screen.getByText('Confirm Denial');
-      fireEvent.click(confirmButton);
+      act(() => {
+        fireEvent.click(confirmButton);
+      });
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -470,7 +513,9 @@ describe('PendingPrayerCard', () => {
       );
 
       const editButton = screen.getByText('Edit');
-      fireEvent.click(editButton);
+      act(() => {
+        fireEvent.click(editButton);
+      });
 
       expect(screen.getByText('Prayer Request Details *')).toBeDefined();
       expect(screen.getByText('Requester *')).toBeDefined();
@@ -489,7 +534,9 @@ describe('PendingPrayerCard', () => {
       );
 
       const editButton = screen.getByText('Edit');
-      fireEvent.click(editButton);
+      act(() => {
+        fireEvent.click(editButton);
+      });
 
       const descriptionField = screen.getByDisplayValue('Please pray for healing and strength') as HTMLTextAreaElement;
       const requesterField = screen.getByDisplayValue('Jane Doe') as HTMLInputElement;
@@ -513,7 +560,9 @@ describe('PendingPrayerCard', () => {
       );
 
       const editButton = screen.getByText('Edit');
-      fireEvent.click(editButton);
+      act(() => {
+        fireEvent.click(editButton);
+      });
 
       const descriptionField = screen.getByDisplayValue('Please pray for healing and strength') as HTMLTextAreaElement;
       fireEvent.change(descriptionField, { target: { value: 'Updated prayer request' } });
@@ -532,7 +581,9 @@ describe('PendingPrayerCard', () => {
       );
 
       const editButton = screen.getByText('Edit');
-      fireEvent.click(editButton);
+      act(() => {
+        fireEvent.click(editButton);
+      });
 
       const requesterField = screen.getByDisplayValue('Jane Doe') as HTMLInputElement;
       fireEvent.change(requesterField, { target: { value: 'John Smith' } });
@@ -576,7 +627,9 @@ describe('PendingPrayerCard', () => {
       fireEvent.change(descriptionField, { target: { value: 'Updated description' } });
 
       const saveButton = screen.getByText('Save Changes');
-      fireEvent.click(saveButton);
+      act(() => {
+        fireEvent.click(saveButton);
+      });
 
       await waitFor(() => {
         expect(mockOnEdit).toHaveBeenCalledWith('prayer-1', {
@@ -600,13 +653,17 @@ describe('PendingPrayerCard', () => {
       );
 
       const editButton = screen.getByText('Edit');
-      fireEvent.click(editButton);
+      act(() => {
+        fireEvent.click(editButton);
+      });
 
       const prayerForField = screen.getByDisplayValue('John') as HTMLInputElement;
       fireEvent.change(prayerForField, { target: { value: 'Sarah' } });
 
       const saveButton = screen.getByText('Save Changes');
-      fireEvent.click(saveButton);
+      act(() => {
+        fireEvent.click(saveButton);
+      });
 
       await waitFor(() => {
         expect(mockOnEdit).toHaveBeenCalledWith('prayer-1', expect.objectContaining({
@@ -633,7 +690,9 @@ describe('PendingPrayerCard', () => {
       fireEvent.change(emailField, { target: { value: '' } });
 
       const saveButton = screen.getByText('Save Changes');
-      fireEvent.click(saveButton);
+      act(() => {
+        fireEvent.click(saveButton);
+      });
 
       await waitFor(() => {
         expect(mockOnEdit).toHaveBeenCalledWith('prayer-1', expect.objectContaining({
@@ -659,7 +718,9 @@ describe('PendingPrayerCard', () => {
       fireEvent.change(descriptionField, { target: { value: 'Changed but cancelled' } });
 
       const cancelButton = screen.getAllByText('Cancel')[0];
-      fireEvent.click(cancelButton);
+      act(() => {
+        fireEvent.click(cancelButton);
+      });
 
       expect(screen.queryByText('Prayer Request Details *')).toBeNull();
       expect(screen.getByText('Please pray for healing and strength')).toBeDefined();
@@ -709,7 +770,9 @@ describe('PendingPrayerCard', () => {
       fireEvent.click(editButton);
 
       const saveButton = screen.getByText('Save Changes');
-      fireEvent.click(saveButton);
+      act(() => {
+        fireEvent.click(saveButton);
+      });
 
       await waitFor(() => {
         expect(screen.getByText('Saving...')).toBeDefined();
@@ -735,7 +798,9 @@ describe('PendingPrayerCard', () => {
       fireEvent.click(editButton);
 
       const saveButton = screen.getByText('Save Changes');
-      fireEvent.click(saveButton);
+      act(() => {
+        fireEvent.click(saveButton);
+      });
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -758,7 +823,9 @@ describe('PendingPrayerCard', () => {
       );
 
       const editButton = screen.getByText('Edit');
-      fireEvent.click(editButton);
+      act(() => {
+        fireEvent.click(editButton);
+      });
 
       const descriptionField = screen.getByDisplayValue('Please pray for healing and strength') as HTMLTextAreaElement;
       fireEvent.change(descriptionField, { target: { value: '' } });

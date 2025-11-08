@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { createSupabaseMock } from '../../testUtils/supabaseMock';
 import userEvent from '@testing-library/user-event';
 import { UserSettings } from '../UserSettings';
 import { supabase } from '../../lib/supabase';
 
 // Mock dependencies
-vi.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(),
-  },
-}));
+// Use the shared chainable supabase mock so .maybeSingle/.order exist in tests
+vi.mock('../../lib/supabase', async () => {
+  const mod = await import('../../testUtils/supabaseMock');
+  const sup = mod.createSupabaseMock({ fromData: { admin_settings: [{ id: 1, require_email_verification: false }] } }) as any;
+  return { supabase: sup };
+});
 
 vi.mock('../../lib/emailNotifications', () => ({
   sendPreferenceChangeNotification: vi.fn(),

@@ -4,19 +4,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AdminAuthProvider } from '../useAdminAuth';
 import { AdminAuthContext } from '../../contexts/AdminAuthContext';
 
-// Mock Supabase auth and queries
-vi.mock('../../lib/supabase', () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
-      signInWithOtp: vi.fn(),
-      signOut: vi.fn()
-    },
-    from: vi.fn(),
-    rpc: vi.fn()
-  }
-}));
+// Mock Supabase auth and queries using shared mock (preserves auth helpers)
+vi.mock('../../lib/supabase', async () => {
+  const mod = await import('../../testUtils/supabaseMock');
+  const sup = mod.createSupabaseMock({ fromData: {} }) as any;
+  // Provide signInWithOtp / signOut spies used by the provider tests
+  sup.auth.getSession = vi.fn();
+  sup.auth.onAuthStateChange = vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } }));
+  sup.auth.signInWithOtp = vi.fn();
+  sup.auth.signOut = vi.fn();
+  sup.rpc = vi.fn();
+  sup.removeChannel = vi.fn();
+  return { supabase: sup };
+});
 
 import { supabase } from '../../lib/supabase';
 

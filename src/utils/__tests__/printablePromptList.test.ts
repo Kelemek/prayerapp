@@ -1,4 +1,4 @@
-/// <reference types="vitest" />
+import 'vitest';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock the supabase module with a hoist-safe async factory, then import the module under test
@@ -22,7 +22,7 @@ describe('downloadPrintablePromptList', () => {
 
   afterEach(() => {
     if ((window.open as any).mockRestore) {
-      try { (window.open as any).mockRestore() } catch (e) {}
+      try { (window.open as any).mockRestore() } catch (e) { /* ignore */ }
     }
   });
 

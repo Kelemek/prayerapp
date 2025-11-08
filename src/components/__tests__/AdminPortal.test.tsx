@@ -1,39 +1,34 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach } from 'vitest';
 import { AdminPortal } from '../AdminPortal';
+
+// Mock Planning Center to keep tests quiet when child components look up people
+vi.mock('../../lib/planningcenter', () => ({
+  lookupPersonByEmail: vi.fn().mockResolvedValue({ people: [], count: 0 }),
+  formatPersonName: vi.fn((person: any) => `${person.attributes.first_name} ${person.attributes.last_name}`),
+}));
 
 // Mock the hooks
 vi.mock('../../hooks/useAdminData', () => ({
   useAdminData: vi.fn()
 }));
 
+  afterEach(async () => {
+    // wait for any pending async updates to settle
+    await waitFor(() => {});
+  });
 vi.mock('../../hooks/useAdminAuthHook', () => ({
   useAdminAuth: vi.fn()
 }));
 
-// Mock Supabase with an inline chain (vi.mock factories are hoisted so avoid referencing
-// external variables from inside the factory)
-vi.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          gte: () => ({
-            order: async () => ({ data: [], error: null })
-          }),
-          order: async () => ({ data: [], error: null })
-        }),
-        gte: async () => ({ count: 0 }),
-        order: async () => ({ data: [], error: null })
-      }),
-      // allow other chains to safely call order/limit/single/maybeSingle
-      order: async () => ({ data: [], error: null }),
-      limit: async () => ({ data: [], error: null }),
-      single: async () => ({ data: [], error: null }),
-      maybeSingle: async () => ({ data: null, error: null })
-    })
-  }
-}));
+// Use the shared supabase mock so chain methods are consistent across tests.
+vi.mock('../../lib/supabase', async () => {
+  const mod = await import('../../testUtils/supabaseMock');
+  const sup = mod.createSupabaseMock({ fromData: {} }) as any;
+  return { supabase: sup };
+});
 
 // Mock email notifications
 vi.mock('../../lib/emailNotifications', () => ({
@@ -197,7 +192,9 @@ describe('AdminPortal', () => {
       render(<AdminPortal />);
       
       const backButton = screen.getByText('Back to Main Page');
-      fireEvent.click(backButton);
+      act(() => {
+        fireEvent.click(backButton);
+      });
       
       expect(window.location.hash).toBe('');
       
@@ -253,7 +250,9 @@ describe('AdminPortal', () => {
       render(<AdminPortal />);
       
       const updatesButton = screen.getByText('Updates').closest('button');
-      fireEvent.click(updatesButton!);
+      act(() => {
+        fireEvent.click(updatesButton!);
+      });
       
       await waitFor(() => {
         expect(updatesButton?.className).toContain('ring-blue-500');
@@ -264,7 +263,9 @@ describe('AdminPortal', () => {
       render(<AdminPortal />);
       
       const deletionsButton = screen.getByText('Deletions').closest('button');
-      fireEvent.click(deletionsButton!);
+      act(() => {
+        fireEvent.click(deletionsButton!);
+      });
       
       await waitFor(() => {
         expect(deletionsButton?.className).toContain('ring-red-500');
@@ -275,7 +276,9 @@ describe('AdminPortal', () => {
       render(<AdminPortal />);
       
       const settingsButton = screen.getByText('Settings').closest('button');
-      fireEvent.click(settingsButton!);
+      act(() => {
+        fireEvent.click(settingsButton!);
+      });
       
       await waitFor(() => {
         expect(settingsButton?.className).toContain('ring-gray-500');
@@ -330,7 +333,9 @@ describe('AdminPortal', () => {
       render(<AdminPortal />);
       
       const updatesButton = screen.getByText('Updates').closest('button');
-      fireEvent.click(updatesButton!);
+      act(() => {
+        fireEvent.click(updatesButton!);
+      });
       
       await waitFor(() => {
         expect(screen.getByTestId('pending-update-update-1')).toBeDefined();
@@ -346,7 +351,9 @@ describe('AdminPortal', () => {
       render(<AdminPortal />);
       
       const updatesButton = screen.getByText('Updates').closest('button');
-      fireEvent.click(updatesButton!);
+      act(() => {
+        fireEvent.click(updatesButton!);
+      });
       
       await waitFor(() => {
         expect(screen.getByText('No pending prayer updates')).toBeDefined();
@@ -359,7 +366,9 @@ describe('AdminPortal', () => {
       render(<AdminPortal />);
       
       const settingsButton = screen.getByText('Settings').closest('button');
-      fireEvent.click(settingsButton!);
+      act(() => {
+        fireEvent.click(settingsButton!);
+      });
       
       // Check that the settings header is visible (child components are mocked elsewhere)
       await waitFor(() => {
@@ -371,7 +380,9 @@ describe('AdminPortal', () => {
       render(<AdminPortal />);
       
       const settingsButton = screen.getByText('Settings').closest('button');
-      fireEvent.click(settingsButton!);
+      act(() => {
+        fireEvent.click(settingsButton!);
+      });
       
       await waitFor(() => {
         expect(screen.getByTestId('prayer-search')).toBeDefined();

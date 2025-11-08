@@ -1,4 +1,4 @@
-/// <reference types="vitest" />
+import 'vitest';
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock the supabase module used by planningcenter

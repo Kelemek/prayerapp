@@ -2,26 +2,16 @@ import '@testing-library/jest-dom'
 import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
-// Mock Supabase client
+// Mock Supabase client using the shared test factory so chainable methods (.select/.eq/.order
+// .maybeSingle/.single/etc) are available by default in all tests. Individual test files may
+// still override `vi.mock('../../lib/supabase')` with custom behavior when needed.
+import { createSupabaseMock } from './testUtils/supabaseMock'
+
+const defaultSupabase = createSupabaseMock()
+
 vi.mock('./lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null }))
-        }))
-      })),
-      insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
-      update: vi.fn(() => Promise.resolve({ data: null, error: null })),
-      delete: vi.fn(() => Promise.resolve({ data: null, error: null }))
-    })),
-    functions: {
-      invoke: vi.fn(() => Promise.resolve({ data: null, error: null }))
-    },
-    auth: {
-      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null }))
-    }
-  }
+  supabase: defaultSupabase,
+  handleSupabaseError: (e: any) => e?.message || 'Unknown'
 }))
 
 // Cleanup after each test
@@ -70,4 +60,21 @@ declare module 'vitest' {
     toHaveTextContent(text: string | RegExp): void
     toHaveClass(className: string): void
   }
+}
+
+// Suppress noisy React act(...) warnings during test runs while we incrementally fix tests.
+// These warnings are benign here (tests exercise async effects) but flood CI logs.
+// We'll keep this temporary suppression to make triage manageable; individual tests should
+// still be updated to await async updates or wrap in act() as a follow-up.
+const _consoleError = console.error.bind(console)
+console.error = (...args: any[]) => {
+  try {
+    const joined = args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')
+    if (joined.includes('not wrapped in act(') || joined.includes('wrap-tests-with-act')) {
+      return
+    }
+  } catch (e) {
+    // fall through to original
+  }
+  _consoleError(...args)
 }

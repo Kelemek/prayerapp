@@ -1,54 +1,44 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import BackupStatus from '../BackupStatus'
 
-// Mock Supabase
-vi.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        order: vi.fn(() => ({
-          limit: vi.fn(() => Promise.resolve({
-            data: [
-              {
-                id: '1',
-                backup_date: '2025-10-18T08:00:00Z',
-                status: 'success',
-                tables_backed_up: {
-                  prayers: 50,
-                  prayer_updates: 25,
-                  prayer_types: 5
-                },
-                total_records: 80,
-                duration_seconds: 45,
-                created_at: '2025-10-18T08:00:00Z'
-              },
-              {
-                id: '2',
-                backup_date: '2025-10-17T08:00:00Z',
-                status: 'success',
-                tables_backed_up: {
-                  prayers: 48,
-                  prayer_updates: 23,
-                  prayer_types: 5
-                },
-                total_records: 76,
-                duration_seconds: 42,
-                created_at: '2025-10-17T08:00:00Z'
-              }
-            ],
-            error: null
-          }))
-        }))
-      }))
-    }))
-  }
-}))
+// Mock Supabase using the shared supabase mock so chainable methods are available
+vi.mock('../../lib/supabase', async () => {
+  const mod = await import('../../testUtils/supabaseMock');
+  const sup = mod.createSupabaseMock({ fromData: {
+    backup_logs: [
+      {
+        id: '1',
+        backup_date: '2025-10-18T08:00:00Z',
+        status: 'success',
+        tables_backed_up: { prayers: 50, prayer_updates: 25, prayer_types: 5 },
+        total_records: 80,
+        duration_seconds: 45,
+        created_at: '2025-10-18T08:00:00Z'
+      },
+      {
+        id: '2',
+        backup_date: '2025-10-17T08:00:00Z',
+        status: 'success',
+        tables_backed_up: { prayers: 48, prayer_updates: 23, prayer_types: 5 },
+        total_records: 76,
+        duration_seconds: 42,
+        created_at: '2025-10-17T08:00:00Z'
+      }
+    ]
+  } }) as any;
+  return { supabase: sup };
+});
 
 describe('BackupStatus Component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(async () => {
+    // allow pending state updates to settle to avoid act(...) warnings
+    await waitFor(() => {})
   })
 
   it('renders backup status section', async () => {

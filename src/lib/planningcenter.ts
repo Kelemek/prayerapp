@@ -35,13 +35,14 @@ export async function lookupPersonByEmail(email: string): Promise<EmailLookupRes
     });
 
     if (error) {
-      console.error('Error calling planning-center-lookup:', error);
+      // Avoid noisy console output during tests; tests should assert on thrown errors instead.
+      if (process.env.NODE_ENV !== 'test') console.error('Error calling planning-center-lookup:', error);
       throw new Error(error.message || 'Failed to lookup person in Planning Center');
     }
 
     return data as EmailLookupResult;
   } catch (error) {
-    console.error('Error in lookupPersonByEmail:', error);
+    if (process.env.NODE_ENV !== 'test') console.error('Error in lookupPersonByEmail:', error);
     throw error;
   }
 }

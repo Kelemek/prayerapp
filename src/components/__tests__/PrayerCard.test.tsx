@@ -1,3 +1,97 @@
+import React from 'react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { vi } from 'vitest'
+
+// Mocks for hooks and utils used by PrayerCard
+vi.mock('../../hooks/useVerification', () => ({
+  useVerification: () => ({ isEnabled: false, requestCode: vi.fn() })
+}))
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ showToast: vi.fn() })
+}))
+vi.mock('../../utils/userInfoStorage', () => ({
+  getUserInfo: () => ({ firstName: '', lastName: '', email: '' }),
+  saveUserInfo: vi.fn()
+}))
+
+import { PrayerCard } from '../PrayerCard'
+import type { PrayerRequest } from '../../types/prayer'
+
+describe('PrayerCard', () => {
+  const basePrayer: PrayerRequest = {
+    id: 'p1',
+    prayer_for: 'Community',
+    description: 'Please pray for our neighborhood',
+    requester: 'Jane Doe',
+    is_anonymous: false,
+    status: 'current',
+    created_at: new Date().toISOString(),
+    updates: [
+      { id: 'u1', content: 'Update 1', author: 'Admin', is_anonymous: false, created_at: new Date().toISOString() }
+    ]
+  }
+
+  it('renders basic information and opens Add Update form and submits', async () => {
+    const onAddUpdate = vi.fn(() => Promise.resolve())
+    const onUpdateStatus = vi.fn()
+    const onDelete = vi.fn()
+    const onRequestDelete = vi.fn(() => Promise.resolve())
+    const onRequestStatusChange = vi.fn(() => Promise.resolve())
+    const onDeleteUpdate = vi.fn(() => Promise.resolve())
+    const onRequestUpdateDelete = vi.fn(() => Promise.resolve({ ok: true }))
+    const registerCloseCallback = vi.fn(() => () => {})
+    const onFormOpen = vi.fn()
+
+    render(
+      <PrayerCard
+        prayer={basePrayer}
+        onAddUpdate={onAddUpdate as any}
+        onUpdateStatus={onUpdateStatus as any}
+        onDelete={onDelete as any}
+        onRequestDelete={onRequestDelete as any}
+        onRequestStatusChange={onRequestStatusChange as any}
+        onDeleteUpdate={onDeleteUpdate as any}
+        onRequestUpdateDelete={onRequestUpdateDelete as any}
+        registerCloseCallback={registerCloseCallback as any}
+        onFormOpen={onFormOpen}
+        isAdmin={false}
+      />
+    )
+
+    // Basic static content
+    expect(screen.getByText(/Prayer for Community/)).toBeTruthy()
+    expect(screen.getByText(/Requested by/)).toBeTruthy()
+    expect(screen.getByText('Jane Doe')).toBeTruthy()
+    expect(screen.getByText(/Current/)).toBeTruthy()
+
+    // Open Add Update form
+    const addButton = screen.getAllByText('Add Update')[0]
+    fireEvent.click(addButton)
+
+    // Form fields should appear
+    expect(screen.getByPlaceholderText('First name')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Last name')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Your email')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Prayer update...')).toBeInTheDocument()
+
+    // Fill the form
+    fireEvent.change(screen.getByPlaceholderText('First name'), { target: { value: 'Test' } })
+    fireEvent.change(screen.getByPlaceholderText('Last name'), { target: { value: 'User' } })
+    fireEvent.change(screen.getByPlaceholderText('Your email'), { target: { value: 'test@example.com' } })
+    fireEvent.change(screen.getByPlaceholderText('Prayer update...'), { target: { value: 'We prayed' } })
+
+    // Submit: scope to the form's submit button to avoid hitting the top-level "Add Update" opener
+    const textarea = screen.getByPlaceholderText('Prayer update...')
+    const form = textarea.closest('form') as HTMLFormElement
+    const { getByRole } = await import('@testing-library/dom')
+  const submit = getByRole(form as unknown as HTMLElement, 'button', { name: 'Add Update' }) as HTMLButtonElement
+    fireEvent.click(submit)
+
+    await waitFor(() => {
+      expect(onAddUpdate).toHaveBeenCalled()
+    })
+  })
+})
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

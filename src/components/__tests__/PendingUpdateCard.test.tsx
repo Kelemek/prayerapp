@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+// Mock Planning Center to avoid noisy errors when lookup fails in components
+vi.mock('../../lib/planningcenter', () => ({
+  lookupPersonByEmail: vi.fn().mockResolvedValue({ people: [], count: 0 }),
+  formatPersonName: vi.fn((person: any) => `${person.attributes.first_name} ${person.attributes.last_name}`),
+}));
 import { PendingUpdateCard } from '../PendingUpdateCard';
 import type { PrayerUpdate } from '../../types/prayer';
 

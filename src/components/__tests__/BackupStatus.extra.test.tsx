@@ -1,11 +1,16 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, vi, beforeEach, expect } from 'vitest';
+import { describe, it, vi, beforeEach, afterEach, expect } from 'vitest';
 
 describe('BackupStatus component - extra tests', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+  });
+
+  afterEach(async () => {
+    // allow pending state updates to settle to avoid act warnings
+    await waitFor(() => {});
   });
 
   it('shows loading spinner initially', async () => {
