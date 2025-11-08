@@ -30,7 +30,6 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const hiddenInputRef = useRef<HTMLInputElement | null>(null);
 
     // Fetch code length from admin settings
   useEffect(() => {
@@ -85,11 +84,8 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
 
   // Focus first input when dialog opens
   useEffect(() => {
-    if (isOpen && hiddenInputRef.current) {
-      // Focus the hidden input first to catch autofill
-      setTimeout(() => {
-        hiddenInputRef.current?.focus();
-      }, 100);
+    if (isOpen && inputRefs.current[0]) {
+      inputRefs.current[0]?.focus();
     }
   }, [isOpen]);
 
@@ -265,56 +261,20 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
         </div>
 
         {/* Code inputs */}
-        <div className="relative">
-          {/* Hidden input for iOS/Chromium autofill - positioned off-screen but focusable */}
-          <input
-            ref={hiddenInputRef}
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              left: '-9999px',
-              width: '1px',
-              height: '1px',
-            }}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, '');
-              if (value.length === codeLength) {
-                const newCode = value.split('');
-                setCode(newCode);
-                setError(null);
-                // Focus the last visible input after autofill
-                setTimeout(() => {
-                  inputRefs.current[codeLength - 1]?.focus();
-                }, 50);
-              }
-            }}
-            onBlur={() => {
-              // If hidden input loses focus without filling, focus first visible input
-              if (code.every(c => !c)) {
-                setTimeout(() => {
-                  inputRefs.current[0]?.focus();
-                }, 50);
-              }
-            }}
-          />
-          
-          <div className="flex gap-2 justify-center mb-6" onPaste={handlePaste}>
-            {code.map((digit, index) => (
-              <input
-                key={index}
-                ref={el => { inputRefs.current[index] = el; }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleCodeChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                disabled={isExpired}
-                autoComplete="off"
-                className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg
+        <div className="flex gap-2 justify-center mb-6" onPaste={handlePaste}>
+          {code.map((digit, index) => (
+            <input
+              key={index}
+              ref={el => { inputRefs.current[index] = el; }}
+              type="text"
+              inputMode="numeric"
+              maxLength={codeLength}
+              value={digit}
+              onChange={(e) => handleCodeChange(index, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(index, e)}
+              disabled={isExpired}
+              autoComplete={index === 0 ? "one-time-code" : "off"}
+              className={`w-12 h-14 text-center text-2xl font-bold border-2 rounded-lg
                 ${isExpired
                   ? 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
                   : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400'
@@ -324,7 +284,6 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
                 transition-colors`}
             />
           ))}
-        </div>
         </div>
 
         {/* Error message */}
