@@ -17,7 +17,7 @@ export interface Database {
           status: string
           requester: string
           prayer_for: string
-          email: string | null
+          email: string
           is_anonymous: boolean
           date_requested: string
           date_answered: string | null
@@ -35,7 +35,7 @@ export interface Database {
           status: string
           requester: string
           prayer_for: string
-          email?: string | null
+          email: string
           is_anonymous?: boolean
           date_requested?: string
           date_answered?: string | null
@@ -53,7 +53,7 @@ export interface Database {
           status?: string
           requester?: string
           prayer_for?: string
-          email?: string | null
+          email?: string
           is_anonymous?: boolean
           date_requested?: string
           date_answered?: string | null
@@ -71,7 +71,7 @@ export interface Database {
           prayer_id: string
           content: string
           author: string
-          author_email: string | null
+          author_email: string
           is_anonymous: boolean
           approval_status: string
           approved_by: string | null
@@ -84,7 +84,7 @@ export interface Database {
           prayer_id: string
           content: string
           author: string
-          author_email?: string | null
+          author_email: string
           is_anonymous?: boolean
           approval_status?: string
           approved_by?: string | null
@@ -97,7 +97,7 @@ export interface Database {
           prayer_id?: string
           content?: string
           author?: string
-          author_email?: string | null
+          author_email?: string
           is_anonymous?: boolean
           approval_status?: string
           approved_by?: string | null
@@ -112,7 +112,7 @@ export interface Database {
           prayer_id: string
           reason: string | null
           requested_by: string
-          requested_email: string | null
+          requested_email: string
           approval_status: string
           reviewed_by: string | null
           reviewed_at: string | null
@@ -125,7 +125,7 @@ export interface Database {
           prayer_id: string
           reason?: string | null
           requested_by: string
-          requested_email?: string | null
+          requested_email: string
           approval_status?: string
           reviewed_by?: string | null
           reviewed_at?: string | null
@@ -138,7 +138,7 @@ export interface Database {
           prayer_id?: string
           reason?: string | null
           requested_by?: string
-          requested_email?: string | null
+          requested_email?: string
           approval_status?: string
           reviewed_by?: string | null
           reviewed_at?: string | null

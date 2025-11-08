@@ -5,7 +5,7 @@ export interface PrayerRequest {
   status: PrayerStatus;
   requester: string;
   prayer_for: string;
-  email?: string | null;
+  email: string;
   is_anonymous?: boolean;
   date_requested: string;
   date_answered?: string | null;
@@ -23,7 +23,7 @@ export interface PrayerUpdate {
   prayer_id: string;
   content: string;
   author: string;
-  author_email?: string | null;
+  author_email: string;
   is_anonymous?: boolean;
   mark_as_answered?: boolean;
   created_at: string;
@@ -39,7 +39,7 @@ export interface DeletionRequest {
   prayer_id: string;
   reason?: string | null;
   requested_by: string;
-  requested_email?: string | null;
+  requested_email: string;
   approval_status: 'pending' | 'approved' | 'denied';
   reviewed_by?: string | null;
   reviewed_at?: string | null;
