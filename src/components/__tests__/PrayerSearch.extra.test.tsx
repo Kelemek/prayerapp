@@ -27,17 +27,60 @@ describe('PrayerSearch component - extra tests', () => {
     vi.clearAllMocks();
   });
 
-  it('shows validation error when pressing Enter with no criteria', async () => {
-    render(<PrayerSearch />);
+  it('performs wildcard search when pressing Enter with no criteria', async () => {
+    // Mock supabase to return prayers for wildcard search
+    const mockPrayers = [
+      {
+        id: 'r1',
+        title: 'Prayer One',
+        requester: 'Alice',
+        email: 'alice@example.com',
+        status: 'current',
+        created_at: new Date().toISOString(),
+        description: 'First prayer',
+        approval_status: 'approved',
+        prayer_updates: []
+      },
+      {
+        id: 'r2',
+        title: 'Prayer Two',
+        requester: 'Bob',
+        email: 'bob@example.com',
+        status: 'answered',
+        created_at: new Date().toISOString(),
+        description: 'Second prayer',
+        approval_status: 'approved',
+        prayer_updates: []
+      }
+    ];
+
+    vi.doMock('../../lib/supabase', () => {
+      const chain: any = {};
+      chain.or = () => chain;
+      chain.eq = () => chain;
+      chain.order = () => chain;
+      chain.limit = async () => ({ data: mockPrayers, error: null });
+
+      return {
+        supabase: {
+          from: (_table: string) => ({ select: () => chain })
+        }
+      };
+    });
+
+    const { PrayerSearch: PS } = await import('../PrayerSearch');
+    render(<PS />);
 
     const input = screen.getByPlaceholderText(/Search by title, requester, email/i) as HTMLInputElement;
 
-    // Press Enter with empty input
-  act(() => {
+    // Press Enter with empty input (wildcard search)
+    act(() => {
       fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
     });
 
-    await waitFor(() => expect(screen.getByText(/Please enter a search term or select a filter/i)).toBeTruthy());
+    // Should show the prayers returned by wildcard search
+    await waitFor(() => expect(screen.getByText(/Prayer One/)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/Prayer Two/)).toBeTruthy());
   });
 
   it('performs search and renders results when search term provided', async () => {
