@@ -115,7 +115,7 @@ describe('useAdminAuth (session expiry)', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    try { vi.useRealTimers(); } catch {}
+    try { vi.useRealTimers(); } catch { /* ignore */ }
   });
 
   it('registers auto-logout interval when admin session exists', async () => {
