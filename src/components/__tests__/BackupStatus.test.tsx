@@ -720,9 +720,10 @@ describe('BackupStatus Component', () => {
         expect(screen.getByText(/Oct 18, 2025/)).toBeDefined()
       })
 
-      // Click to expand backup details
+      // Click to expand backup details - find the clickable row containing the date
       const user = userEvent.setup()
-      const backupRow = screen.getByText('Oct 18, 2025, 03:00 AM CDT').closest('div')
+      const dateElement = screen.getByText(/Oct 18, 2025/)
+      const backupRow = dateElement.closest('[onClick]') || dateElement.closest('div')
       if (backupRow) {
         await user.click(backupRow)
       }
