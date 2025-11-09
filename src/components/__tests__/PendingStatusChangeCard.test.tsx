@@ -3,6 +3,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { PendingStatusChangeCard } from '../PendingStatusChangeCard';
 import type { StatusChangeRequest, PrayerStatus } from '../../types/prayer';
 
+// Mock the planning center lookup
+vi.mock('../../lib/planningcenter', () => ({
+  lookupPersonByEmail: vi.fn(),
+  formatPersonName: vi.fn((person) => person?.attributes?.name || 'Unknown')
+}));
+
+import { lookupPersonByEmail } from '../../lib/planningcenter';
+
 describe('PendingStatusChangeCard', () => {
   const mockOnApprove = vi.fn();
   const mockOnDeny = vi.fn();
@@ -22,6 +30,23 @@ describe('PendingStatusChangeCard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock the planning center lookup to return a person
+    (lookupPersonByEmail as any).mockResolvedValue({
+      people: [{
+        id: 'pc-person-1',
+        type: 'person',
+        attributes: {
+          first_name: 'John',
+          last_name: 'Doe',
+          name: 'John Doe',
+          avatar: '',
+          status: 'active',
+          created_at: '2023-01-01T00:00:00Z',
+          updated_at: '2023-01-01T00:00:00Z'
+        }
+      }],
+      count: 1
+    });
   });
 
   describe('Rendering', () => {

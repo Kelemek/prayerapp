@@ -598,10 +598,11 @@ export default function BackupStatus() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label htmlFor="backup-file-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Select backup file (.json)
               </label>
               <input
+                id="backup-file-input"
                 type="file"
                 accept=".json"
                 onChange={(e) => {

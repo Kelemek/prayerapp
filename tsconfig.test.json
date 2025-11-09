@@ -1,7 +1,8 @@
 {
   "extends": "./tsconfig.app.json",
   "compilerOptions": {
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals", "vite/client"]
   },
-  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/testUtils/**"]
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/testUtils/**/*"],
+  "exclude": ["supabase/functions"]
 }

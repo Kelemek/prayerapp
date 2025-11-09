@@ -3,6 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PendingDeletionCard } from '../PendingDeletionCard';
 import type { DeletionRequest } from '../../types/prayer';
 
+// Mock the planning center lookup
+vi.mock('../../lib/planningcenter', () => ({
+  lookupPersonByEmail: vi.fn(),
+  formatPersonName: vi.fn((person) => person?.attributes?.name || 'Unknown')
+}));
+
+import { lookupPersonByEmail } from '../../lib/planningcenter';
+
 vi.mock('../DeletionStyleCard', () => ({
   DeletionStyleCard: ({ title, subtitle, content, metaLeft, metaRight, reason, actions }: {
     title: string;
@@ -31,6 +39,7 @@ describe('PendingDeletionCard', () => {
     prayer_id: 'prayer-1',
     prayer_title: 'Test Prayer Title',
     requested_by: 'user@test.com',
+    requested_email: 'user@test.com',
     reason: 'Prayer request is no longer needed',
     approval_status: 'pending',
     created_at: '2024-01-15T10:30:00Z',
@@ -42,6 +51,23 @@ describe('PendingDeletionCard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock the planning center lookup to return a person
+    (lookupPersonByEmail as any).mockResolvedValue({
+      people: [{
+        id: 'pc-person-1',
+        type: 'person',
+        attributes: {
+          first_name: 'John',
+          last_name: 'Doe',
+          name: 'John Doe',
+          avatar: '',
+          status: 'active',
+          created_at: '2023-01-01T00:00:00Z',
+          updated_at: '2023-01-01T00:00:00Z'
+        }
+      }],
+      count: 1
+    });
   });
 
   describe('Rendering', () => {
@@ -93,7 +119,7 @@ describe('PendingDeletionCard', () => {
         />
       );
 
-      expect(screen.getByText(/user@test.com/)).toBeDefined();
+      expect(screen.getByText('Email: user@test.com')).toBeDefined();
     });
 
     it('displays deletion reason', () => {

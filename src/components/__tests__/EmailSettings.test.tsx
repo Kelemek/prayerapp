@@ -13,7 +13,9 @@ vi.mock('../../lib/supabase', () => ({
           maybeSingle: vi.fn(),
         })),
       })),
-      upsert: vi.fn(),
+      upsert: vi.fn(() => ({
+        select: vi.fn(() => Promise.resolve({ data: null, error: null }))
+      })),
     })),
     functions: {
       invoke: vi.fn(),

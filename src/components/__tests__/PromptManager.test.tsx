@@ -40,7 +40,7 @@ describe('PromptManager Component', () => {
 
   describe('Rendering', () => {
     it('renders the component with header', async () => {
-      const mockTypesOrder = vi.fn().mockResolvedValue({
+      const mockOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
       });
@@ -59,7 +59,7 @@ describe('PromptManager Component', () => {
     });
 
     it('displays the description text', async () => {
-      const mockTypesOrder = vi.fn().mockResolvedValue({
+      const mockOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
       });
@@ -78,7 +78,7 @@ describe('PromptManager Component', () => {
     });
 
     it('renders search input field', async () => {
-      const mockTypesOrder = vi.fn().mockResolvedValue({
+      const mockOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
       });
@@ -98,7 +98,7 @@ describe('PromptManager Component', () => {
     });
 
     it('renders Upload CSV button', async () => {
-      const mockTypesOrder = vi.fn().mockResolvedValue({
+      const mockOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
       });
@@ -117,7 +117,7 @@ describe('PromptManager Component', () => {
     });
 
     it('renders Add Prompt button', async () => {
-      const mockTypesOrder = vi.fn().mockResolvedValue({
+      const mockOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
       });

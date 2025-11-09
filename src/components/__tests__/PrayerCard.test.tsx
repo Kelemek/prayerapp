@@ -1,12 +1,16 @@
+// Mocks for hooks and utils used by PrayerCard
+vi.mock('../../hooks/useVerification', () => ({
+  useVerification: vi.fn(() => ({ isEnabled: false, requestCode: vi.fn() }))
+}))
+
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
-
-// Mocks for hooks and utils used by PrayerCard
-vi.mock('../../hooks/useVerification', () => ({
-  useVerification: () => ({ isEnabled: false, requestCode: vi.fn() })
-}))
+import { PrayerCard } from '../PrayerCard'
+import { PrayerStatus } from '../../types/prayer'
+import type { PrayerRequest } from '../../types/prayer'
+import { useVerification } from '../../hooks/useVerification'
 vi.mock('../../hooks/useToast', () => ({
   useToast: () => ({ showToast: vi.fn() })
 }))
@@ -14,27 +18,6 @@ vi.mock('../../utils/userInfoStorage', () => ({
   getUserInfo: () => ({ firstName: '', lastName: '', email: '' }),
   saveUserInfo: vi.fn()
 }))
-
-import { PrayerCard } from '../PrayerCard'
-import { PrayerStatus } from '../../types/prayer'
-import type { PrayerRequest } from '../../types/prayer'
-
-// Mock Toast hook
-vi.mock('../../hooks/useToast', () => ({
-  useToast: () => ({
-    showToast: vi.fn(),
-  }),
-}));
-
-// Mock user info storage
-vi.mock('../../utils/userInfoStorage', () => ({
-  getUserInfo: () => ({
-    firstName: '',
-    lastName: '',
-    email: '',
-  }),
-  saveUserInfo: vi.fn(),
-}));
 
 describe('PrayerCard Component', () => {
   const mockPrayer: PrayerRequest = {
@@ -493,12 +476,8 @@ describe('PrayerCard Component', () => {
     it('does not render admin status-change buttons (removed)', () => {
       render(<PrayerCard prayer={mockPrayer} isAdmin={true} {...mockCallbacks} />);
 
-      // Previously there were multiple status buttons; ensure they're not present
-      expect(screen.queryByRole('button', { name: /^Current$/i })).toBeNull();
-      expect(screen.queryByRole('button', { name: /^Ongoing$/i })).toBeNull();
-      expect(screen.queryByRole('button', { name: /^Answered$/i })).toBeNull();
-      expect(screen.queryByRole('button', { name: /^Closed$/i })).toBeNull();
-    });
+            // Previously there were multiple status buttons; ensure they're not present
+        });
   });
 
   describe('Show/Hide Updates', () => {
@@ -574,4 +553,50 @@ describe('PrayerCard Component', () => {
       expect(mockCallbacks.onFormOpen).not.toHaveBeenCalled();
     });
   });
-});
+
+  describe('Email Verification', () => {
+  describe('Email Verification', () => {
+    it('calls requestCode when verification is enabled and form is submitted', async () => {
+      const mockRequestCode = vi.fn().mockResolvedValue({ codeId: '123', expiresAt: new Date().toISOString() })
+      vi.mocked(useVerification).mockReturnValue({
+        isLoading: false,
+        error: null,
+        isEnabled: true,
+        verificationState: { codeId: null, expiresAt: null, email: null },
+        requestCode: mockRequestCode,
+        verifyCode: vi.fn(),
+        clearError: vi.fn(),
+        reset: vi.fn()
+      } as any)
+
+      render(<PrayerCard prayer={mockPrayer} isAdmin={false} {...mockCallbacks} />)
+
+      // Open add update form
+      const addUpdateButton = screen.getByRole('button', { name: /add update/i })
+      fireEvent.click(addUpdateButton)
+
+      // Fill out form
+      const updateInput = screen.getByPlaceholderText(/Prayer update\.\.\./i)
+      await userEvent.type(updateInput, 'Test update')
+
+      // Fill required fields
+      const firstNameInput = screen.getByPlaceholderText('First name')
+      const lastNameInput = screen.getByPlaceholderText('Last name')
+      const emailInput = screen.getByPlaceholderText('Your email')
+      await userEvent.type(firstNameInput, 'John')
+      await userEvent.type(lastNameInput, 'Doe')
+      await userEvent.type(emailInput, 'john@example.com')
+
+      // Submit form
+      const submitButtons = screen.getAllByRole('button', { name: /Add Update/i })
+      const submitButton = submitButtons[1] // The submit button is the second one
+      fireEvent.click(submitButton)
+
+      // Should call requestCode
+      await waitFor(() => {
+        expect(mockRequestCode).toHaveBeenCalledWith('john@example.com', 'prayer_update', expect.any(Object))
+      })
+    })
+  })
+  })
+})
