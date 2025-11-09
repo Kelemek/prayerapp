@@ -25,7 +25,7 @@ serve(async (req) => {
       }
     )
 
-    // Get the days_before_ongoing setting
+    // Get the days_before_ongoing setting (now controls transition to archived)
     const { data: settings, error: settingsError } = await supabaseClient
       .from('admin_settings')
       .select('days_before_ongoing')
@@ -62,7 +62,7 @@ serve(async (req) => {
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - daysBeforeOngoing)
 
-    // Find prayers that are 'current' and older than the cutoff date
+    // Find prayers that are 'current' and older than the cutoff date (will be transitioned to archived)
     const { data: prayersToTransition, error: fetchError } = await supabaseClient
       .from('prayers')
       .select('id, title, created_at')
@@ -93,11 +93,11 @@ serve(async (req) => {
       )
     }
 
-    // Update the prayers to 'ongoing' status
+    // Update the prayers to 'archived' status
     const prayerIds = prayersToTransition.map(p => p.id)
     const { error: updateError } = await supabaseClient
       .from('prayers')
-      .update({ status: 'ongoing' })
+      .update({ status: 'archived' })
       .in('id', prayerIds)
 
     if (updateError) {
@@ -111,7 +111,7 @@ serve(async (req) => {
       )
     }
 
-    console.log(`Transitioned ${prayersToTransition.length} prayers from current to ongoing`)
+    console.log(`Transitioned ${prayersToTransition.length} prayers from current to archived`)
 
     return new Response(
       JSON.stringify({ 
