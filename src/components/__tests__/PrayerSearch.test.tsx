@@ -11,8 +11,9 @@ let mockPrayerData: any[] = []
 vi.mock('../../lib/supabase', () => {
   return {
     supabase: {
-      from: vi.fn(() => {
+      from: vi.fn((table: string) => {
         const builder: any = {}
+        builder._table = table
         builder.select = vi.fn(() => builder)
         builder.or = vi.fn(() => builder)
         builder.eq = vi.fn((column: string, value: any) => {
@@ -39,6 +40,22 @@ vi.mock('../../lib/supabase', () => {
         builder.update = vi.fn((updates: any) => {
           builder._updates = updates
           return builder
+        })
+        builder.insert = vi.fn((data: any) => {
+          builder._insertData = data
+          return builder
+        })
+        builder.single = vi.fn(() => {
+          // Handle insert operation
+          if (builder._insertData && builder._table === 'prayer_updates') {
+            const newUpdate = {
+              id: `update-${Date.now()}`,
+              created_at: new Date().toISOString(),
+              ...builder._insertData
+            }
+            return Promise.resolve({ data: newUpdate, error: null })
+          }
+          return Promise.resolve({ data: null, error: null })
         })
         // Store the eq value for update operations
         builder._eqId = null
@@ -628,5 +645,157 @@ describe('PrayerSearch Component', () => {
       expect(screen.getByText('Search Prayers & Audit Log')).toBeInTheDocument();
       expect(screen.getByText(/Select a filter from the dropdowns/)).toBeInTheDocument();
     });
+  })
+
+  describe('Adding Prayer Updates', () => {
+    it('shows add update button when prayer is expanded', async () => {
+      const user = userEvent.setup()
+      const mockPrayers = [
+        {
+          id: '1',
+          title: 'Test Prayer',
+          requester: 'John',
+          email: 'john@example.com',
+          status: 'current',
+          approval_status: 'approved',
+          created_at: '2025-01-01T00:00:00Z',
+          prayer_updates: [],
+        },
+      ]
+      
+      setMockPrayerData(mockPrayers)
+      render(<PrayerSearch />)
+      
+      // Search to show the prayer
+      const searchButton = screen.getByRole('button', { name: /^search$/i })
+      await user.click(searchButton)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Test Prayer')).toBeDefined()
+      })
+      
+      // Click the prayer card to expand it
+      const prayerCardButton = screen.getByRole('button', { name: /Test Prayer.*John/ })
+      await user.click(prayerCardButton)
+      
+      // Should show Add Update button
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /add update/i })).toBeDefined()
+      })
+    })
+
+    it('allows adding a new update to a prayer', async () => {
+      const user = userEvent.setup()
+      const mockPrayers = [
+        {
+          id: '1',
+          title: 'Test Prayer',
+          requester: 'John',
+          email: 'john@example.com',
+          status: 'current',
+          approval_status: 'approved',
+          created_at: '2025-01-01T00:00:00Z',
+          prayer_updates: [],
+        },
+      ]
+      
+      setMockPrayerData(mockPrayers)
+      render(<PrayerSearch />)
+      
+      // Search and expand
+      const searchButton = screen.getByRole('button', { name: /^search$/i })
+      await user.click(searchButton)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Test Prayer')).toBeDefined()
+      })
+      
+      const prayerCardButton = screen.getByRole('button', { name: /Test Prayer.*John/ })
+      await user.click(prayerCardButton)
+      
+      // Click Add Update button
+      const addUpdateButton = await screen.findByRole('button', { name: /add update/i })
+      await user.click(addUpdateButton)
+      
+      // Should show the update form
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText(/enter the update content/i)).toBeDefined()
+        expect(screen.getByPlaceholderText(/your name/i)).toBeDefined()
+        expect(screen.getByPlaceholderText(/your.email@example.com/i)).toBeDefined()
+      })
+      
+      // Fill in the form
+      const contentInput = screen.getByPlaceholderText(/enter the update content/i)
+      const authorInput = screen.getByPlaceholderText(/your name/i)
+      const emailInput = screen.getByPlaceholderText(/your.email@example.com/i)
+      
+      await user.type(contentInput, 'Prayer has been answered!')
+      await user.type(authorInput, 'Admin User')
+      await user.type(emailInput, 'admin@example.com')
+      
+      // Save the update
+      const saveButton = screen.getByRole('button', { name: /save update/i })
+      await user.click(saveButton)
+      
+      // Should show the new update in the list
+      await waitFor(() => {
+        expect(screen.getByText('Prayer has been answered!')).toBeDefined()
+        expect(screen.getByText(/Admin User/)).toBeDefined()
+      })
+    })
+
+    it('can cancel adding an update', async () => {
+      const user = userEvent.setup()
+      const mockPrayers = [
+        {
+          id: '1',
+          title: 'Test Prayer',
+          requester: 'John',
+          email: 'john@example.com',
+          status: 'current',
+          approval_status: 'approved',
+          created_at: '2025-01-01T00:00:00Z',
+          prayer_updates: [],
+        },
+      ]
+      
+      setMockPrayerData(mockPrayers)
+      render(<PrayerSearch />)
+      
+      // Search and expand
+      const searchButton = screen.getByRole('button', { name: /^search$/i })
+      await user.click(searchButton)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Test Prayer')).toBeDefined()
+      })
+      
+      const prayerCardButton = screen.getByRole('button', { name: /Test Prayer.*John/ })
+      await user.click(prayerCardButton)
+      
+      // Click Add Update button
+      const addUpdateButton = await screen.findByRole('button', { name: /add update/i })
+      await user.click(addUpdateButton)
+      
+      // Fill in some content
+      const contentInput = await screen.findByPlaceholderText(/enter the update content/i)
+      await user.type(contentInput, 'Test content')
+      
+      // Click cancel
+      const cancelButton = screen.getByRole('button', { name: /cancel/i })
+      await user.click(cancelButton)
+      
+      // Should go back to showing Add Update button
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /add update/i })).toBeDefined()
+      })
+      
+      // Form content should be cleared
+      const addUpdateButtonAgain = screen.getByRole('button', { name: /add update/i })
+      await user.click(addUpdateButtonAgain)
+      
+      const contentInputAfter = await screen.findByPlaceholderText(/enter the update content/i)
+      expect(contentInputAfter).toHaveValue('')
+    })
   })
 })

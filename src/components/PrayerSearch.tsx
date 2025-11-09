@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Trash2, AlertTriangle, X, ChevronDown, ChevronUp, Edit2, Save, XCircle } from 'lucide-react';
+import { Search, Trash2, AlertTriangle, X, ChevronDown, ChevronUp, Edit2, Save, XCircle, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { PrayerStatus } from '../types/prayer';
 
@@ -53,6 +53,9 @@ export const PrayerSearch: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [bulkStatus, setBulkStatus] = useState<string>('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [addingUpdate, setAddingUpdate] = useState<string | null>(null);
+  const [newUpdate, setNewUpdate] = useState({ content: '', author: '', author_email: '' });
+  const [savingUpdate, setSavingUpdate] = useState(false);
 
   const handleSearch = useCallback(async () => {
     // Check if we have any actual search criteria (not just "all" selections)
@@ -403,6 +406,63 @@ export const PrayerSearch: React.FC = () => {
     } finally {
       setUpdatingStatus(false);
     }
+  };
+
+  const saveNewUpdate = async (prayerId: string) => {
+    if (!newUpdate.content.trim() || !newUpdate.author.trim() || !newUpdate.author_email.trim()) {
+      setError('Please provide update content, author name, and author email');
+      return;
+    }
+
+    try {
+      setSavingUpdate(true);
+      setError(null);
+
+      const { data, error: insertError } = await supabase
+        .from('prayer_updates')
+        .insert({
+          prayer_id: prayerId,
+          content: newUpdate.content.trim(),
+          author: newUpdate.author.trim(),
+          author_email: newUpdate.author_email.trim(),
+          approval_status: 'approved' // Auto-approve admin-created updates
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Error creating prayer update:', insertError);
+        throw new Error(`Failed to create update: ${insertError.message}`);
+      }
+
+      // Update local state to show the new update
+      setSearchResults(searchResults.map(p => {
+        if (p.id === prayerId) {
+          return {
+            ...p,
+            prayer_updates: [...(p.prayer_updates || []), data]
+          };
+        }
+        return p;
+      }));
+
+      // Reset form and close
+      setNewUpdate({ content: '', author: '', author_email: '' });
+      setAddingUpdate(null);
+    } catch (err: unknown) {
+      console.error('Error saving update:', err);
+      const errorMessage = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Failed to save update. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setSavingUpdate(false);
+    }
+  };
+
+  const cancelAddUpdate = () => {
+    setAddingUpdate(null);
+    setNewUpdate({ content: '', author: '', author_email: '' });
   };
 
   const clearSearch = () => {
@@ -992,6 +1052,86 @@ export const PrayerSearch: React.FC = () => {
                                 </div>
                               ))}
                           </div>
+                        </div>
+                      )}
+
+                      {/* Add Update Section */}
+                      {!editingPrayer && (
+                        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                          {addingUpdate === prayer.id ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <h6 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                                  Add New Update
+                                </h6>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => saveNewUpdate(prayer.id)}
+                                    disabled={savingUpdate}
+                                    className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm disabled:opacity-50"
+                                  >
+                                    <Save size={14} />
+                                    {savingUpdate ? 'Saving...' : 'Save Update'}
+                                  </button>
+                                  <button
+                                    onClick={cancelAddUpdate}
+                                    disabled={savingUpdate}
+                                    className="flex items-center gap-1 px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm disabled:opacity-50"
+                                  >
+                                    <XCircle size={14} />
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  Update Content *
+                                </label>
+                                <textarea
+                                  value={newUpdate.content}
+                                  onChange={(e) => setNewUpdate({ ...newUpdate, content: e.target.value })}
+                                  rows={4}
+                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Enter the update content..."
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  Author Name *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={newUpdate.author}
+                                  onChange={(e) => setNewUpdate({ ...newUpdate, author: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Your name"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                  Author Email *
+                                </label>
+                                <input
+                                  type="email"
+                                  value={newUpdate.author_email}
+                                  onChange={(e) => setNewUpdate({ ...newUpdate, author_email: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                                  placeholder="your.email@example.com"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setAddingUpdate(prayer.id)}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              <Plus size={16} />
+                              Add Update
+                            </button>
+                          )}
                         </div>
                       )}
                       </>
