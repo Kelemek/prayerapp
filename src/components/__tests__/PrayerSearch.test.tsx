@@ -400,7 +400,7 @@ describe('PrayerSearch Component', () => {
       await user.click(checkboxes[0])
 
       // Delete button should appear
-      expect(screen.getByRole('button', { name: /delete selected/i })).toBeDefined()
+      expect(screen.getByRole('button', { name: /delete \(1\)/i })).toBeDefined()
     })
 
     it('requires confirmation before deleting prayers', async () => {
@@ -435,7 +435,7 @@ describe('PrayerSearch Component', () => {
       await user.click(checkboxes[0])
 
       // Click delete button
-      const deleteButton = screen.getByRole('button', { name: /delete selected/i })
+      const deleteButton = screen.getByRole('button', { name: /delete \(1\)/i })
       await user.click(deleteButton)
 
       // Should show confirmation dialog
@@ -580,17 +580,43 @@ describe('PrayerSearch Component', () => {
   })
 
   describe('Error Handling', () => {
-    it('shows validation error when no search criteria provided', async () => {
+    it('allows empty search to show all prayers (wildcard search)', async () => {
       const user = userEvent.setup()
+      const mockPrayers = [
+        {
+          id: '1',
+          title: 'Prayer 1',
+          requester: 'User 1',
+          email: 'user1@example.com',
+          status: 'current',
+          approval_status: 'approved',
+          created_at: '2025-01-01T00:00:00Z',
+          prayer_updates: [],
+        },
+        {
+          id: '2',
+          title: 'Prayer 2',
+          requester: 'User 2',
+          email: 'user2@example.com',
+          status: 'answered',
+          approval_status: 'approved',
+          created_at: '2025-01-02T00:00:00Z',
+          prayer_updates: [],
+        },
+      ]
       
+      setMockPrayerData(mockPrayers)
       render(<PrayerSearch />)
       const searchButton = screen.getByRole('button', { name: /^search$/i })
       
-      // Click search without entering anything
+      // Click search without entering anything (wildcard search)
       await user.click(searchButton)
 
-      // Should show validation error
-      expect(screen.getByText('Please enter a search term or select a filter')).toBeInTheDocument();
+      // Should show all prayers
+      await waitFor(() => {
+        expect(screen.getByText('Prayer 1')).toBeDefined()
+        expect(screen.getByText('Prayer 2')).toBeDefined()
+      })
     });
   })
 

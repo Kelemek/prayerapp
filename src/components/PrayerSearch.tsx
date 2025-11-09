@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Trash2, AlertTriangle, X, ChevronDown, ChevronUp, Edit2, Save, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { PrayerStatus } from '../types/prayer';
 
 interface Prayer {
   id: string;
@@ -40,14 +41,18 @@ export const PrayerSearch: React.FC = () => {
     requester: string;
     email: string;
     prayer_for: string;
+    status: string;
   }>({
     title: '',
     description: '',
     requester: '',
     email: '',
-    prayer_for: ''
+    prayer_for: '',
+    status: ''
   });
   const [saving, setSaving] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<string>('');
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const handleSearch = useCallback(async () => {
     // Check if we have any actual search criteria (not just "all" selections)
@@ -57,10 +62,11 @@ export const PrayerSearch: React.FC = () => {
     const hasAllStatusFilter = statusFilter === 'all';
     const hasAllApprovalFilter = approvalFilter === 'all';
     
+    // If no search term, treat as wildcard search (show all)
     // Need at least one real criterion or at least one "all" filter to proceed
     if (!hasSearchTerm && !hasStatusFilter && !hasApprovalFilter && !hasAllStatusFilter && !hasAllApprovalFilter) {
-      setError('Please enter a search term or select a filter');
-      return;
+      // Allow empty search to show all prayers
+      // Don't return, continue with the search
     }
 
     try {
@@ -76,6 +82,7 @@ export const PrayerSearch: React.FC = () => {
       if (searchTerm.trim()) {
         query = query.or(`requester.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,denial_reason.ilike.%${searchTerm}%`);
       }
+      // If no search term, we're doing a wildcard search (show all)
 
       // Add status filter
       if (statusFilter && statusFilter !== 'all') {
@@ -230,7 +237,8 @@ export const PrayerSearch: React.FC = () => {
       description: prayer.description || '',
       requester: prayer.requester,
       email: prayer.email || '',
-      prayer_for: prayer.prayer_for || ''
+      prayer_for: prayer.prayer_for || '',
+      status: prayer.status
     });
     setEditingPrayer(prayer.id);
     // Expand the card when editing starts
@@ -244,7 +252,8 @@ export const PrayerSearch: React.FC = () => {
       description: '',
       requester: '',
       email: '',
-      prayer_for: ''
+      prayer_for: '',
+      status: ''
     });
   };
 
@@ -265,7 +274,8 @@ export const PrayerSearch: React.FC = () => {
           description: editForm.description.trim(),
           requester: editForm.requester.trim(),
           email: editForm.email.trim() || null,
-          prayer_for: editForm.prayer_for.trim() || null
+          prayer_for: editForm.prayer_for.trim() || null,
+          status: editForm.status
         })
         .eq('id', prayerId);
 
@@ -282,7 +292,8 @@ export const PrayerSearch: React.FC = () => {
               description: editForm.description.trim(),
               requester: editForm.requester.trim(),
               email: editForm.email.trim() || null,
-              prayer_for: editForm.prayer_for.trim() || null
+              prayer_for: editForm.prayer_for.trim() || null,
+              status: editForm.status
             }
           : p
       ));
@@ -349,6 +360,51 @@ export const PrayerSearch: React.FC = () => {
     }
   };
 
+  const updateSelectedStatus = async () => {
+    if (selectedPrayers.size === 0 || !bulkStatus) return;
+
+    const statusLabel = bulkStatus === PrayerStatus.CURRENT ? 'Current' 
+      : bulkStatus === PrayerStatus.ANSWERED ? 'Answered' 
+      : 'Archived';
+
+    if (!confirm(`Are you sure you want to change ${selectedPrayers.size} prayer(s) to "${statusLabel}" status?`)) {
+      return;
+    }
+
+    try {
+      setUpdatingStatus(true);
+      setError(null);
+
+      const prayerIds = Array.from(selectedPrayers);
+
+      const { error: updateError } = await supabase
+        .from('prayers')
+        .update({ status: bulkStatus })
+        .in('id', prayerIds);
+
+      if (updateError) {
+        console.error('Error updating prayer statuses:', updateError);
+        throw new Error(`Failed to update prayer statuses: ${updateError.message}`);
+      }
+
+      // Update local state
+      setSearchResults(searchResults.map(p => 
+        selectedPrayers.has(p.id) ? { ...p, status: bulkStatus } : p
+      ));
+      
+      setSelectedPrayers(new Set());
+      setBulkStatus('');
+    } catch (err: unknown) {
+      console.error('Error updating prayer statuses:', err);
+      const errorMessage = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Failed to update prayer statuses. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   const clearSearch = () => {
     setSearchTerm('');
     setSearchResults([]);
@@ -400,7 +456,7 @@ export const PrayerSearch: React.FC = () => {
         </div>
         <button
           onClick={handleSearch}
-          disabled={searching || (!searchTerm.trim() && statusFilter === 'all' && approvalFilter === 'all')}
+          disabled={searching}
           className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition-colors"
         >
           {searching ? (
@@ -488,23 +544,63 @@ export const PrayerSearch: React.FC = () => {
             )}
           </div>
           {selectedPrayers.size > 0 && (
-            <button
-              onClick={deleteSelected}
-              disabled={deleting}
-              className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 transition-colors text-sm"
-            >
-              {deleting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 size={16} />
-                  Delete Selected ({selectedPrayers.size})
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Bulk Status Change */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-700 dark:text-gray-300">
+                  Change Status:
+                </label>
+                <div className="relative">
+                  <select
+                    value={bulkStatus}
+                    onChange={(e) => setBulkStatus(e.target.value)}
+                    className="appearance-none px-3 py-1.5 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8 cursor-pointer"
+                  >
+                    <option value="">Select...</option>
+                    <option value={PrayerStatus.CURRENT}>Current</option>
+                    <option value={PrayerStatus.ANSWERED}>Answered</option>
+                    <option value={PrayerStatus.ARCHIVED}>Archived</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-600 dark:text-blue-400" size={14} />
+                </div>
+                <button
+                  onClick={updateSelectedStatus}
+                  disabled={!bulkStatus || updatingStatus}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  {updatingStatus ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} />
+                      Update ({selectedPrayers.size})
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Delete Button */}
+              <button
+                onClick={deleteSelected}
+                disabled={deleting}
+                className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 transition-colors text-sm"
+              >
+                {deleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Delete ({selectedPrayers.size})
+                  </>
+                )}
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -706,6 +802,24 @@ export const PrayerSearch: React.FC = () => {
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
                               placeholder="Person being prayed for"
                             />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Status *
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={editForm.status}
+                                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                                className="w-full appearance-none px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
+                              >
+                                <option value={PrayerStatus.CURRENT}>Current</option>
+                                <option value={PrayerStatus.ANSWERED}>Answered</option>
+                                <option value={PrayerStatus.ARCHIVED}>Archived</option>
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 dark:text-blue-400" size={18} />
+                            </div>
                           </div>
                         </div>
                       ) : (
