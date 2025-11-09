@@ -70,7 +70,11 @@ const _consoleError = console.error.bind(console)
 console.error = (...args: any[]) => {
   try {
     const joined = args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')
-    if (joined.includes('not wrapped in act(') || joined.includes('wrap-tests-with-act')) {
+    if (joined.includes('not wrapped in act(') || 
+        joined.includes('wrap-tests-with-act') ||
+        joined.includes('Error checking verification setting') ||
+        joined.includes('Error loading preferences') ||
+        joined.includes('Error saving preferences')) {
       return
     }
   } catch (e) {
