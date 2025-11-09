@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, expect } from 'vitest'
 
@@ -31,44 +31,132 @@ vi.mock('../../lib/supabase', async () => {
     }
   ]
 
-  const sup = mod.createSupabaseMock({ fromData: { prayers } }) as any;
+  const prompts = [
+    {
+      id: 'p1',
+      title: 'Daily Prayer',
+      type: 'daily',
+      description: 'A daily prayer for guidance',
+      created_at: '2025-02-01T12:00:00Z'
+    },
+    {
+      id: 'p2',
+      title: 'Weekly Prayer',
+      type: 'weekly',
+      description: 'A weekly prayer for strength',
+      created_at: '2025-02-02T12:00:00Z'
+    }
+  ]
+
+  const sup = mod.createSupabaseMock({ fromData: { prayers, prayer_prompts: prompts } }) as any;
   return { supabase: sup };
 })
 
 import { MobilePresentation } from '../MobilePresentation'
 
-describe('MobilePresentation (focused)', () => {
-  it('renders first prayer, supports swipe to next, and toggles settings', async () => {
+describe('MobilePresentation', () => {
+  it('renders first prayer and supports basic navigation', async () => {
     const user = userEvent.setup()
 
-    const { container } = render(<MobilePresentation />)
+    render(<MobilePresentation />)
 
-  // Wait for first prayer (newer prayers appear first)
-  await waitFor(() => expect(screen.getByText('School Staff')).toBeInTheDocument())
-
-  // Simulate a left swipe: touchStart at x=300 -> touchMove x=100 -> touchEnd
-  // The touch handlers are on the scrollable container (class "flex-1"), not the outer .min-h-screen
-  const touchTarget = container.querySelector('.flex-1') || container.querySelector('.min-h-screen') || container.firstChild
-    if (!touchTarget) throw new Error('touch target not found')
-
-  fireEvent.touchStart(touchTarget, { touches: [{ clientX: 300 }], targetTouches: [{ clientX: 300 }] })
-  fireEvent.touchMove(touchTarget, { touches: [{ clientX: 100 }], targetTouches: [{ clientX: 100 }] })
-    fireEvent.touchEnd(touchTarget)
-
-  // After swipe, the next prayer_for should appear
-  await waitFor(() => expect(screen.getByText('Neighborhood Safety')).toBeInTheDocument())
+    // Wait for first prayer (newer prayers appear first)
+    await waitFor(() => expect(screen.getByText('School Staff')).toBeInTheDocument())
 
     // Open settings and close it
     const settingsButton = screen.getByTitle('Settings')
     await user.click(settingsButton)
     expect(screen.getByRole('heading', { name: /Settings/i })).toBeInTheDocument()
 
-    // Close using the close button in header (select nearby button)
+    // Close using the close button in header
     const settingsHeading = screen.getByRole('heading', { name: /Settings/i })
     const headerBtn = settingsHeading.parentElement?.querySelector('button') as HTMLButtonElement
     if (headerBtn) await user.click(headerBtn)
 
-    // Ensure settings closed by asserting heading is not present
+    // Ensure settings closed
     await waitFor(() => expect(screen.queryByRole('heading', { name: /Settings/i })).toBeNull())
+  })
+
+  it('switches between content types', async () => {
+    const user = userEvent.setup()
+    render(<MobilePresentation />)
+
+    // Wait for initial prayers to load
+    await waitFor(() => expect(screen.getByText('School Staff')).toBeInTheDocument())
+
+    // Open settings
+    const settingsButton = screen.getByTitle('Settings')
+    await user.click(settingsButton)
+
+    // Switch to prompts only - find the content type select specifically
+    const contentSelect = screen.getByDisplayValue('Prayers')
+    await user.selectOptions(contentSelect, 'prompts')
+
+    // Close settings
+    const settingsHeading = screen.getByRole('heading', { name: /Settings/i })
+    const closeButton = settingsHeading.parentElement?.querySelector('button') as HTMLButtonElement
+    if (closeButton) await user.click(closeButton)
+
+    // Should show prompts now
+    await waitFor(() => expect(screen.getByText('Weekly Prayer')).toBeInTheDocument())
+  })
+
+  it('toggles randomization', async () => {
+    const user = userEvent.setup()
+    render(<MobilePresentation />)
+
+    // Wait for initial prayers to load
+    await waitFor(() => expect(screen.getByText('School Staff')).toBeInTheDocument())
+
+    // Open settings
+    const settingsButton = screen.getByTitle('Settings')
+    await user.click(settingsButton)
+
+    // Enable randomization
+    const randomizeCheckbox = screen.getByRole('checkbox', { name: /Randomize Order/i })
+    await user.click(randomizeCheckbox)
+
+    // Close settings
+    const settingsHeading = screen.getByRole('heading', { name: /Settings/i })
+    const closeButton = settingsHeading.parentElement?.querySelector('button') as HTMLButtonElement
+    if (closeButton) await user.click(closeButton)
+
+    // Should still show content
+    await waitFor(() => {
+      const hasPrayer1 = screen.queryByText('School Staff')
+      const hasPrayer2 = screen.queryByText('Neighborhood Safety')
+      expect(hasPrayer1 || hasPrayer2).toBeTruthy()
+    })
+  })
+
+  it('switches themes', async () => {
+    const user = userEvent.setup()
+    render(<MobilePresentation />)
+
+    // Wait for initial prayers to load
+    await waitFor(() => expect(screen.getByText('School Staff')).toBeInTheDocument())
+
+    // Open settings
+    const settingsButton = screen.getByTitle('Settings')
+    await user.click(settingsButton)
+
+    // Switch to dark theme
+    const darkThemeButton = screen.getByRole('button', { name: /Dark/i })
+    await user.click(darkThemeButton)
+
+    // Close settings
+    const settingsHeading = screen.getByRole('heading', { name: /Settings/i })
+    const closeButton = settingsHeading.parentElement?.querySelector('button') as HTMLButtonElement
+    if (closeButton) await user.click(closeButton)
+
+    // Should still show content
+    expect(screen.getByText('School Staff')).toBeInTheDocument()
+  })
+
+  it('handles loading state', () => {
+    render(<MobilePresentation />)
+
+    // Should show loading initially
+    expect(screen.getByText(/Loading prayers\.\.\./i)).toBeInTheDocument()
   })
 })

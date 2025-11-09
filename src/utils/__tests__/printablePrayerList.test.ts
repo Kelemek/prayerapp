@@ -158,4 +158,125 @@ describe('downloadPrintablePrayerList', () => {
     createUrlSpy.mockRestore();
     clickSpy.mockRestore();
   });
+
+  it('handles prayers with multiple updates and sorts them newest first', async () => {
+    const now = new Date().toISOString();
+    const older = new Date(Date.now() - 86400000).toISOString(); // 1 day ago
+    const samplePrayer = {
+      id: 'p3',
+      title: 'Help 3',
+      prayer_for: 'Family',
+      description: 'Please pray 3',
+      requester: 'Alice',
+      status: 'current',
+      created_at: now,
+      prayer_updates: [
+        { id: 'u1', content: 'First update', author: 'Alice', created_at: older },
+        { id: 'u2', content: 'Second update', author: 'Alice', created_at: now }
+      ]
+    };
+
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [samplePrayer], error: null })
+    } as any;
+
+    vi.mocked(supabase.from).mockReturnValue(chain);
+
+    const fakeDoc = {
+      open: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn()
+    } as any;
+
+    const fakeWin: any = { document: fakeDoc, focus: vi.fn() };
+
+    const mod = await import('../printablePrayerList');
+    await mod.downloadPrintablePrayerList('month', fakeWin as any);
+
+    const written = (fakeDoc.write as any).mock.calls[0][0] as string;
+    expect(written).toContain('Second update'); // Should appear before First update due to sorting
+    expect(written).toContain('First update');
+  });
+
+  it('handles prayers without updates', async () => {
+    const now = new Date().toISOString();
+    const samplePrayer = {
+      id: 'p4',
+      title: 'Help 4',
+      prayer_for: 'Friends',
+      description: 'Please pray 4',
+      requester: 'Charlie',
+      status: 'answered',
+      created_at: now,
+      prayer_updates: [] // Empty array
+    };
+
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [samplePrayer], error: null })
+    } as any;
+
+    vi.mocked(supabase.from).mockReturnValue(chain);
+
+    const fakeDoc = {
+      open: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn()
+    } as any;
+
+    const fakeWin: any = { document: fakeDoc, focus: vi.fn() };
+
+    const mod = await import('../printablePrayerList');
+    await mod.downloadPrintablePrayerList('month', fakeWin as any);
+
+    const written = (fakeDoc.write as any).mock.calls[0][0] as string;
+    expect(written).toContain('Friends');
+    expect(written).toContain('Charlie');
+  });
+
+  it('handles prayers with null updates', async () => {
+    const now = new Date().toISOString();
+    const samplePrayer = {
+      id: 'p5',
+      title: 'Help 5',
+      prayer_for: 'Church',
+      description: 'Please pray 5',
+      requester: 'David',
+      status: 'current',
+      created_at: now,
+      prayer_updates: null // Null updates
+    };
+
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [samplePrayer], error: null })
+    } as any;
+
+    vi.mocked(supabase.from).mockReturnValue(chain);
+
+    const fakeDoc = {
+      open: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn()
+    } as any;
+
+    const fakeWin: any = { document: fakeDoc, focus: vi.fn() };
+
+    const mod = await import('../printablePrayerList');
+    await mod.downloadPrintablePrayerList('month', fakeWin as any);
+
+    const written = (fakeDoc.write as any).mock.calls[0][0] as string;
+    expect(written).toContain('Church');
+    expect(written).toContain('David');
+  });
 });

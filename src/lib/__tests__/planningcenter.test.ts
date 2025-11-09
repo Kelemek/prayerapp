@@ -1,5 +1,4 @@
-import 'vitest';
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+/// <reference types="vitest/globals" />
 
 // Mock the supabase module used by planningcenter
 vi.mock('../supabase', () => {
@@ -48,5 +47,15 @@ describe('planningcenter utilities', () => {
     const res = await lookupPersonByEmail('me@example.com')
     expect(res).toEqual(result)
     expect((supabase.functions.invoke as any)).toHaveBeenCalled()
+  })
+
+  it('lookupPersonByEmail throws when supabase invoke returns an error object', async () => {
+    ;(supabase.functions.invoke as any).mockResolvedValueOnce({ data: null, error: { message: 'not found' } })
+    await expect(lookupPersonByEmail('b@example.com')).rejects.toThrow('not found')
+  })
+
+  it('lookupPersonByEmail propagates when invoke throws', async () => {
+    ;(supabase.functions.invoke as any).mockImplementation(() => { throw new Error('network') })
+    await expect(lookupPersonByEmail('c@example.com')).rejects.toThrow('network')
   })
 })

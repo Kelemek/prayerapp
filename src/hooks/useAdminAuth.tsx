@@ -58,6 +58,13 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         
         setUser(session?.user ?? null);
         checkAdminStatus(session?.user ?? null);
+
+        // If there's an existing session on initialize, treat it as a signed-in session
+        // and set sessionStart/lastActivity so the auto-logout logic can run.
+        if (session?.user) {
+          setSessionStart(Date.now());
+          setLastActivity(Date.now());
+        }
       } catch (error) {
         console.error('Error getting session:', error);
       } finally {
@@ -135,6 +142,22 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         logout();
       }
     }, 60000); // Check every minute
+
+    // Perform an immediate check as well so tests (and fast flows) can trigger logout
+    // without waiting for the first interval tick.
+    (function immediateCheck() {
+      const now = Date.now();
+      const inactive = now - lastActivity > INACTIVITY_TIMEOUT;
+      const sessionTooOld = now - sessionStart > MAX_SESSION_DURATION;
+
+      if (inactive) {
+        console.log('Auto-logout due to inactivity (immediate check)');
+        logout();
+      } else if (sessionTooOld) {
+        console.log('Auto-logout due to maximum session duration (immediate check)');
+        logout();
+      }
+    })();
 
     return () => {
       events.forEach(event => window.removeEventListener(event, updateActivity));

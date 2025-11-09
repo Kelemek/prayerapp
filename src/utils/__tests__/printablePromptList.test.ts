@@ -162,4 +162,134 @@ describe('downloadPrintablePromptList', () => {
     createUrlSpy.mockRestore();
     clickSpy.mockRestore();
   });
+
+  it('continues with default sorting when prayer types fetch fails', async () => {
+    const now = new Date().toISOString();
+    const prompts = [
+      { id: 'pp3', title: 'Z Title', type: 'Confession', description: 'Confess', created_at: now },
+      { id: 'pp4', title: 'A Title', type: 'Praise', description: 'Praise', created_at: now }
+    ];
+
+    const chainPrompts = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: prompts, error: null })
+    } as any;
+
+    const chainTypes = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: null, error: { message: 'Types error' } })
+    } as any;
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => table === 'prayer_prompts' ? chainPrompts : chainTypes as any);
+
+    const fakeDoc = {
+      open: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn()
+    } as any;
+
+    const fakeWin: any = { document: fakeDoc, focus: vi.fn() };
+
+    const mod = await import('../printablePromptList');
+    await mod.downloadPrintablePromptList(fakeWin as any);
+
+    const written = (fakeDoc.write as any).mock.calls[0][0] as string;
+    // Should still generate HTML even with types error
+    expect(written).toContain('Z Title');
+    expect(written).toContain('A Title');
+  });
+
+  it('sorts prompts by prayer type display order when types are available', async () => {
+    const now = new Date().toISOString();
+    const prompts = [
+      { id: 'pp5', title: 'First', type: 'Praise', description: 'Praise God', created_at: now },
+      { id: 'pp6', title: 'Second', type: 'Confession', description: 'Confess sins', created_at: now },
+      { id: 'pp7', title: 'Third', type: 'Supplication', description: 'Ask for needs', created_at: now }
+    ];
+
+    const types = [
+      { name: 'Praise', display_order: 1 },
+      { name: 'Confession', display_order: 2 },
+      { name: 'Supplication', display_order: 3 }
+    ];
+
+    const chainPrompts = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: prompts, error: null })
+    } as any;
+
+    const chainTypes = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: types, error: null })
+    } as any;
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => table === 'prayer_prompts' ? chainPrompts : chainTypes as any);
+
+    const fakeDoc = {
+      open: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn()
+    } as any;
+
+    const fakeWin: any = { document: fakeDoc, focus: vi.fn() };
+
+    const mod = await import('../printablePromptList');
+    await mod.downloadPrintablePromptList(fakeWin as any);
+
+    const written = (fakeDoc.write as any).mock.calls[0][0] as string;
+    // Should appear in order: Praise (1), Confession (2), Supplication (3)
+    const firstIndex = written.indexOf('First');
+    const secondIndex = written.indexOf('Second');
+    const thirdIndex = written.indexOf('Third');
+    expect(firstIndex).toBeGreaterThan(-1);
+    expect(secondIndex).toBeGreaterThan(-1);
+    expect(thirdIndex).toBeGreaterThan(-1);
+    expect(firstIndex).toBeLessThan(secondIndex);
+    expect(secondIndex).toBeLessThan(thirdIndex);
+  });
+
+  it('handles multiple prompts of same type and different types', async () => {
+    const now = new Date().toISOString();
+    const prompts = [
+      { id: 'pp8', title: 'Morning Praise', type: 'Praise', description: 'Morning praise', created_at: now },
+      { id: 'pp9', title: 'Evening Praise', type: 'Praise', description: 'Evening praise', created_at: now },
+      { id: 'pp10', title: 'Daily Confession', type: 'Confession', description: 'Daily confession', created_at: now }
+    ];
+
+    const types = [
+      { name: 'Praise', display_order: 1 },
+      { name: 'Confession', display_order: 2 }
+    ];
+
+    const chainPrompts = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: prompts, error: null })
+    } as any;
+
+    const chainTypes = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: types, error: null })
+    } as any;
+
+    vi.mocked(supabase.from).mockImplementation((table: string) => table === 'prayer_prompts' ? chainPrompts : chainTypes as any);
+
+    const fakeDoc = {
+      open: vi.fn(),
+      write: vi.fn(),
+      close: vi.fn()
+    } as any;
+
+    const fakeWin: any = { document: fakeDoc, focus: vi.fn() };
+
+    const mod = await import('../printablePromptList');
+    await mod.downloadPrintablePromptList(fakeWin as any);
+
+    const written = (fakeDoc.write as any).mock.calls[0][0] as string;
+    expect(written).toContain('Morning Praise');
+    expect(written).toContain('Evening Praise');
+    expect(written).toContain('Daily Confession');
+  });
 });

@@ -319,6 +319,14 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
             )}
           </button>
         </div>
+
+        {successBranding && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md p-4 mt-4">
+            <p className="text-sm text-green-800 dark:text-green-200">
+              Branding settings saved successfully!
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Email Verification Section */}
@@ -475,11 +483,12 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
             <>
               {/* Reminder Interval Days */}
               <div className="ml-6 mb-4 pb-4 border-b border-gray-300 dark:border-gray-600">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="reminder-interval-days" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Days of inactivity before sending reminder email
                 </label>
                 <div className="flex items-center gap-3">
                   <input
+                    id="reminder-interval-days"
                     type="number"
                     min="1"
                     max="90"
