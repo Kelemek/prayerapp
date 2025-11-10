@@ -98,7 +98,7 @@ describe('PrayerSearch Component', () => {
   describe('Rendering', () => {
     it('renders the search component with header', () => {
       render(<PrayerSearch />)
-      expect(screen.getByRole('heading', { name: /prayer search & log/i })).toBeDefined()
+      expect(screen.getByRole('heading', { name: /prayer editor/i })).toBeDefined()
     })
 
     it('displays the description text', () => {

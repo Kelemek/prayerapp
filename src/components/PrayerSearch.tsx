@@ -465,6 +465,46 @@ export const PrayerSearch: React.FC = () => {
     setNewUpdate({ content: '', author: '', author_email: '' });
   };
 
+  const deleteUpdate = async (prayerId: string, updateId: string, updateContent: string) => {
+    if (!confirm(`Are you sure you want to delete this update? "${updateContent.substring(0, 50)}${updateContent.length > 50 ? '...' : ''}"\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      setError(null);
+
+      const { error: deleteError } = await supabase
+        .from('prayer_updates')
+        .delete()
+        .eq('id', updateId);
+
+      if (deleteError) {
+        console.error('Error deleting prayer update:', deleteError);
+        throw new Error(`Failed to delete update: ${deleteError.message}`);
+      }
+
+      // Update local state to remove the deleted update
+      setSearchResults(searchResults.map(p => {
+        if (p.id === prayerId && p.prayer_updates) {
+          return {
+            ...p,
+            prayer_updates: p.prayer_updates.filter(u => u.id !== updateId)
+          };
+        }
+        return p;
+      }));
+    } catch (err: unknown) {
+      console.error('Error deleting update:', err);
+      const errorMessage = err && typeof err === 'object' && 'message' in err 
+        ? String(err.message) 
+        : 'Failed to delete update. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const clearSearch = () => {
     setSearchTerm('');
     setSearchResults([]);
@@ -486,7 +526,7 @@ export const PrayerSearch: React.FC = () => {
       <div className="flex items-center gap-2 mb-4">
         <Search className="text-red-600 dark:text-red-400" size={24} />
         <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
-          Prayer Search & Log
+          Prayer Editor
         </h3>
       </div>
 
@@ -1024,9 +1064,19 @@ export const PrayerSearch: React.FC = () => {
                                         </span>
                                       )}
                                     </div>
-                                    <span className="text-xs text-gray-500 dark:text-gray-500">
-                                      {new Date(update.created_at).toLocaleDateString()}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500 dark:text-gray-500">
+                                        {new Date(update.created_at).toLocaleDateString()}
+                                      </span>
+                                      <button
+                                        onClick={() => deleteUpdate(prayer.id, update.id, update.content)}
+                                        disabled={deleting}
+                                        className="p-1 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors disabled:opacity-50"
+                                        title="Delete this update"
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </div>
                                   </div>
                                   <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap mb-2">
                                     {update.content}
