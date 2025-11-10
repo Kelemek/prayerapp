@@ -146,6 +146,25 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
     answered: prayers.filter(p => p.status === 'answered')
   };
 
+  // Sort prayers within each status by most recent activity (latest update or prayer creation)
+  const sortByRecentActivity = (a: Prayer, b: Prayer) => {
+    const aLatestUpdate = a.prayer_updates && a.prayer_updates.length > 0
+      ? Math.max(...a.prayer_updates.map(u => new Date(u.created_at).getTime()))
+      : 0;
+    const bLatestUpdate = b.prayer_updates && b.prayer_updates.length > 0
+      ? Math.max(...b.prayer_updates.map(u => new Date(u.created_at).getTime()))
+      : 0;
+
+    const aLatestActivity = Math.max(new Date(a.created_at).getTime(), aLatestUpdate);
+    const bLatestActivity = Math.max(new Date(b.created_at).getTime(), bLatestUpdate);
+
+    return bLatestActivity - aLatestActivity;
+  };
+
+  // Apply sorting to each status group
+  prayersByStatus.current.sort(sortByRecentActivity);
+  prayersByStatus.answered.sort(sortByRecentActivity);
+
   const statusLabels = {
     current: 'Current Prayer Requests',
     answered: 'Answered Prayers'
