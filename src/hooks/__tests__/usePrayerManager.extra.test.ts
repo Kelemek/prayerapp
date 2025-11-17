@@ -256,7 +256,7 @@ describe('usePrayerManager extra flows', () => {
       if (table === 'prayers') {
         return {
           select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }),
-          update: () => ({ eq: () => ({ error: { message: 'DB fail' } }) })
+          update: () => ({ eq: () => Promise.resolve({ error: { message: 'DB fail' } }) })
         } as any;
       }
       return makeSelectMaybeSingle(null) as any;
@@ -267,7 +267,13 @@ describe('usePrayerManager extra flows', () => {
     expect(result.current.prayers.find(p => p.id === 'p1')?.status).toBe('current');
 
     // Call update which will fail on DB and trigger loadPrayers to restore state
-    await act(async () => { await result.current.updatePrayerStatus('p1', PrayerStatus.ANSWERED); });
+    await act(async () => { 
+      try {
+        await result.current.updatePrayerStatus('p1', PrayerStatus.ANSWERED);
+      } catch (e) {
+        // Expected to throw after reverting state
+      }
+    });
 
     await waitFor(() => expect(result.current.prayers.find(p => p.id === 'p1')?.status).toBe('current'));
   });
