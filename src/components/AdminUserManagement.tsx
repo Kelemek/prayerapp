@@ -249,7 +249,7 @@ Prayer App Admin Portal
         <div className="flex items-center gap-3">
           <Shield className="text-red-600 dark:text-red-400" size={24} />
           <div>
-            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Admin User Management
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -299,7 +299,7 @@ Prayer App Admin Portal
       {showAddForm && (
         <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-md font-medium text-gray-800 dark:text-gray-100">
+            <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">
               Add New Admin
             </h4>
             <button

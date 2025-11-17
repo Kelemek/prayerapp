@@ -196,7 +196,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <Tag className="text-indigo-600 dark:text-indigo-400" size={24} />
-          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Prayer Types
           </h3>
         </div>
@@ -237,7 +237,7 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       {showAddForm && (
         <form onSubmit={handleSubmit} className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-md font-medium text-gray-800 dark:text-gray-100">
+            <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">
               {editingId ? 'Edit Prayer Type' : 'Add New Prayer Type'}
             </h4>
             <button

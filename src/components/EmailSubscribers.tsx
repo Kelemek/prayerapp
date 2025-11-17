@@ -307,7 +307,7 @@ export const EmailSubscribers: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <Mail className="text-blue-600 dark:text-blue-400" size={24} />
-          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Email Notification Subscribers
           </h3>
         </div>
@@ -382,7 +382,7 @@ export const EmailSubscribers: React.FC = () => {
       {showCSVUpload && (
         <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-md font-medium text-gray-800 dark:text-gray-100">Upload CSV File</h4>
+            <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Upload CSV File</h4>
             <button
               onClick={() => {
                 setShowCSVUpload(false);

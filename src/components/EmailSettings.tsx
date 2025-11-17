@@ -257,7 +257,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center gap-2 mb-4">
           <Settings className="text-purple-600 dark:text-purple-400" size={24} />
-          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             App Branding
           </h3>
         </div>
@@ -333,13 +333,13 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center gap-2 mb-4">
           <Mail className="text-blue-600 dark:text-blue-400" size={24} />
-          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Email Verification (2FA)
           </h3>
         </div>
 
         {/* Email Verification Requirement */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md p-4">
+        <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-md p-4">
           <div className="flex items-start gap-3">
             <div className="flex-1">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -379,13 +379,13 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
                       <select
                         value={verificationCodeLength}
                         onChange={(e) => setVerificationCodeLength(Number(e.target.value))}
-                        className="w-full appearance-none px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
+                        className="w-full appearance-none px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
                       >
                         <option value={4}>4 digits</option>
                         <option value={6}>6 digits (recommended)</option>
                         <option value={8}>8 digits</option>
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 dark:text-blue-400" size={18} />
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={18} />
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Length of verification code sent to users
@@ -401,7 +401,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
                       <select
                         value={verificationCodeExpiryMinutes}
                         onChange={(e) => setVerificationCodeExpiryMinutes(Number(e.target.value))}
-                        className="w-full appearance-none px-3 py-2 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
+                        className="w-full appearance-none px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
                       >
                         <option value={5}>5 minutes</option>
                         <option value={10}>10 minutes</option>
@@ -411,7 +411,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
                         <option value={45}>45 minutes</option>
                         <option value={60}>60 minutes</option>
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-600 dark:text-blue-400" size={18} />
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={18} />
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       How long verification codes remain valid
@@ -456,7 +456,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center gap-2 mb-4">
           <Mail className="text-orange-600 dark:text-orange-400" size={24} />
-          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Prayer Update Reminders
           </h3>
         </div>
@@ -465,7 +465,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           Automatically send email reminders to prayer requesters and optionally archive prayers without updates.
         </p>
 
-        <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+        <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
           {/* Enable Reminders Checkbox */}
           <label className="flex items-center gap-2 cursor-pointer mb-4">
             <input

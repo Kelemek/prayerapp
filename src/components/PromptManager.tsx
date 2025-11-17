@@ -335,7 +335,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <Lightbulb className="text-yellow-600 dark:text-yellow-400" size={24} />
-          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Prayer Prompts
           </h3>
         </div>
@@ -415,7 +415,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       {showCSVUpload && (
         <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-md font-medium text-gray-800 dark:text-gray-100">Upload CSV File</h4>
+            <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">Upload CSV File</h4>
             <button
               onClick={() => {
                 setShowCSVUpload(false);
@@ -509,7 +509,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
       {showAddForm && (
         <form onSubmit={handleSubmit} className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-4">
-            <h4 className="text-md font-medium text-gray-800 dark:text-gray-100">
+            <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">
               {editingId ? 'Edit Prayer Prompt' : 'Add New Prayer Prompt'}
             </h4>
             <button
@@ -626,7 +626,7 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
                   // Inline Edit Form
                   <form onSubmit={handleSubmit} className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-blue-300 dark:border-blue-600">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-md font-medium text-gray-800 dark:text-gray-100">
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100">
                         Edit Prayer Prompt
                       </h4>
                       <button
