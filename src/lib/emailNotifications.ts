@@ -321,7 +321,7 @@ async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void
     console.log('Bulk email sent successfully:', result);
   } catch (error) {
     console.error('Error in sendBulkPrayerEmail:', error);
-    throw error;
+    // Don't re-throw - let the error be logged but don't block approval
   }
 }
 
