@@ -216,7 +216,8 @@ export const usePrayerManager = () => {
       return data; // Return the data but don't add to local state
     } catch (error: unknown) {
       console.error('Error adding prayer:', error);
-      handleSupabaseError(error);
+      // Re-throw the error so the caller can handle it
+      throw error;
     }
   };
 
@@ -249,7 +250,8 @@ export const usePrayerManager = () => {
         throw error;
       }
     } catch (error: unknown) {
-      handleSupabaseError(error);
+      console.error('Error updating prayer status:', error);
+      throw error;
     }
   };
 
@@ -391,7 +393,6 @@ export const usePrayerManager = () => {
       return { ok: true, data };
     } catch (error: unknown) {
       console.error('requestUpdateDeletion error:', error);
-      handleSupabaseError(error);
       const errorMessage = error && typeof error === 'object' && 'message' in error
         ? String(error.message)
         : String(error);
