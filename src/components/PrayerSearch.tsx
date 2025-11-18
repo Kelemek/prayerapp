@@ -100,6 +100,9 @@ export const PrayerSearch: React.FC = () => {
           // 2. Prayers that have updates with denial_reason
           // We'll filter the updates client-side since Supabase nested queries are complex
           // Just get all prayers and we'll filter based on prayer_updates after
+        } else if (approvalFilter === 'pending') {
+          // Pending prayers are those with approval_status = 'pending' OR approval_status IS NULL
+          // We'll filter client-side to handle both cases
         } else {
           query = query.eq('approval_status', approvalFilter);
         }
@@ -129,6 +132,22 @@ export const PrayerSearch: React.FC = () => {
           }
           
           return false;
+        });
+      }
+
+      // If filtering by pending, include prayers with approval_status = 'pending' or null
+      if (approvalFilter === 'pending') {
+        results = results.filter(prayer => {
+          // Include if prayer approval_status is 'pending' or null/undefined
+          const isPrayerPending = prayer.approval_status === 'pending' || prayer.approval_status === null || prayer.approval_status === undefined;
+          
+          // Also include if any of its updates are pending
+          const hasPendingUpdates = prayer.prayer_updates && prayer.prayer_updates.length > 0 && 
+            prayer.prayer_updates.some(update => 
+              update.approval_status === 'pending' || update.approval_status === null || update.approval_status === undefined
+            );
+          
+          return isPrayerPending || hasPendingUpdates;
         });
       }
 
@@ -706,7 +725,12 @@ export const PrayerSearch: React.FC = () => {
       )}
 
       {/* Search Results */}
-      {searchResults.length > 0 ? (
+      {searching ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 dark:border-red-400 mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading prayer data...</p>
+        </div>
+      ) : searchResults.length > 0 ? (
         <div className="space-y-1">
           {searchResults.map((prayer) => {
             const isExpanded = expandedCards.has(prayer.id);
