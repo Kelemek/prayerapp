@@ -1,12 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as emailService from '../emailService';
 
-// Mock supabase.functions.invoke
+// Mock supabase
 vi.mock('../supabase', () => ({
   supabase: {
     functions: {
       invoke: vi.fn()
-    }
+    },
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: '1',
+              template_key: 'verification_code',
+              name: 'Verification Code',
+              subject: 'Your verification code: {{code}}',
+              html_body: '<html><body><p>You requested to {{actionDescription}}.</p><div class="code">{{code}}</div></body></html>',
+              text_body: 'You requested to {{actionDescription}}.\n\n{{code}}',
+              description: 'Email sent to verify user actions like prayer submissions and deletions',
+              created_at: '2025-01-01T00:00:00Z',
+              updated_at: '2025-01-01T00:00:00Z'
+            },
+            error: null
+          })
+        }))
+      }))
+    }))
   }
 }));
 
@@ -54,8 +74,10 @@ describe('emailService', () => {
     const calledArgs = (supabase.functions.invoke as any).mock.calls[0][1];
     const body = calledArgs.body;
     expect(body.to).toBe('u@example.com');
+    expect(body.subject).toContain('Your verification code:');
     expect(body.subject).toContain('123456');
-    expect(body.htmlBody).toContain('Verification Code');
+    // Variables should be substituted in the body
+    expect(body.htmlBody).toContain('123456');
     expect(body.htmlBody).toContain('submit a prayer request');
   });
 });
