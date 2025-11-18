@@ -27,6 +27,11 @@ vi.mock('../lib/supabase', () => ({
         }))
       }))
     })),
+    channel: vi.fn(() => ({
+      on: vi.fn(function(this: any) { return this }),
+      subscribe: vi.fn(() => ({}))
+    })),
+    removeChannel: vi.fn(),
     auth: {
       getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
       onAuthStateChange: vi.fn(() => ({
