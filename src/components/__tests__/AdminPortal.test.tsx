@@ -384,6 +384,17 @@ describe('AdminPortal', () => {
         fireEvent.click(settingsButton!);
       });
       
+      // Click on Tools tab to view prayer search
+      await waitFor(() => {
+        const toolsTab = screen.getByText('Tools').closest('button');
+        expect(toolsTab).toBeDefined();
+      });
+      
+      const toolsTab = screen.getByText('Tools').closest('button');
+      act(() => {
+        fireEvent.click(toolsTab!);
+      });
+      
       await waitFor(() => {
         expect(screen.getByTestId('prayer-search')).toBeDefined();
       });
