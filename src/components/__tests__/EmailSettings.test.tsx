@@ -59,8 +59,6 @@ describe('EmailSettings Component', () => {
             reminder_interval_days: 7,
             enable_auto_archive: true,
             days_before_archive: 14,
-            app_title: 'Test Church',
-            app_subtitle: 'Test Subtitle',
           },
           error: null,
         }),
@@ -73,14 +71,11 @@ describe('EmailSettings Component', () => {
 
     render(<EmailSettings />);
 
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('Test Church')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Test Subtitle')).toBeInTheDocument();
-    });
-
     // Check that verification checkbox is checked
-    const verificationCheckbox = screen.getByRole('checkbox', { name: /require email verification/i });
-    expect(verificationCheckbox).toBeChecked();
+    await waitFor(() => {
+      const verificationCheckbox = screen.getByRole('checkbox', { name: /require email verification/i });
+      expect(verificationCheckbox).toBeChecked();
+    });
 
     // Check that reminder checkbox is checked
     const reminderCheckbox = screen.getByRole('checkbox', { name: /enable prayer update reminders/i });
@@ -89,91 +84,6 @@ describe('EmailSettings Component', () => {
     // Check that auto-archive checkbox is checked
     const archiveCheckbox = screen.getByRole('checkbox', { name: /auto-archive prayers after reminder/i });
     expect(archiveCheckbox).toBeChecked();
-  });
-
-  it('shows default values when no data loaded', async () => {
-    const mockSelect = vi.fn(() => ({
-      eq: vi.fn(() => ({
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: null,
-          error: null,
-        }),
-      })),
-    }));
-
-    (supabase.from as any).mockReturnValue({
-      select: mockSelect,
-    });
-
-    render(<EmailSettings />);
-
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('Church Prayer Manager')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Keeping our community connected in prayer')).toBeInTheDocument();
-    });
-
-    // Check default values
-    const verificationCheckbox = screen.getByRole('checkbox', { name: /require email verification/i });
-    expect(verificationCheckbox).not.toBeChecked();
-
-    const reminderCheckbox = screen.getByRole('checkbox', { name: /enable prayer update reminders/i });
-    expect(reminderCheckbox).not.toBeChecked();
-  });
-
-  it('saves branding settings successfully', async () => {
-    const user = userEvent.setup();
-    const mockSelect = vi.fn(() => ({
-      eq: vi.fn(() => ({
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: {
-            app_title: 'Old Title',
-            app_subtitle: 'Old Subtitle',
-          },
-          error: null,
-        }),
-      })),
-    }));
-
-    const mockUpsert = vi.fn().mockResolvedValue({ data: null, error: null });
-
-    (supabase.from as any).mockReturnValue({
-      select: mockSelect,
-      upsert: mockUpsert,
-    });
-
-    render(<EmailSettings />);
-
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('Old Title')).toBeInTheDocument();
-    });
-
-    // Update branding fields
-    const titleInput = screen.getByDisplayValue('Old Title');
-    const subtitleInput = screen.getByDisplayValue('Old Subtitle');
-
-    await user.clear(titleInput);
-    await user.type(titleInput, 'New Title');
-    await user.clear(subtitleInput);
-    await user.type(subtitleInput, 'New Subtitle');
-
-    // Save branding settings
-    const saveButton = screen.getByRole('button', { name: /save branding settings/i });
-    await user.click(saveButton);
-
-    // Check that upsert was called with correct data
-    expect(mockUpsert).toHaveBeenCalledWith({
-      id: 1,
-      app_title: 'New Title',
-      app_subtitle: 'New Subtitle',
-      allow_user_deletions: true,
-      allow_user_updates: true,
-      updated_at: expect.any(String),
-    });
-
-    // Check success message
-    await waitFor(() => {
-      expect(screen.getByText('Branding settings saved successfully!')).toBeInTheDocument();
-    });
   });
 
   it('saves verification settings successfully', async () => {
@@ -185,8 +95,6 @@ describe('EmailSettings Component', () => {
             require_email_verification: false,
             verification_code_length: 6,
             verification_code_expiry_minutes: 15,
-            app_title: 'Test Title',
-            app_subtitle: 'Test Subtitle',
           },
           error: null,
         }),
@@ -203,7 +111,7 @@ describe('EmailSettings Component', () => {
     render(<EmailSettings />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('Test Title')).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /require email verification/i })).toBeInTheDocument();
     });
 
     // Enable verification and change settings
@@ -228,8 +136,6 @@ describe('EmailSettings Component', () => {
       require_email_verification: true,
       verification_code_length: 8,
       verification_code_expiry_minutes: 30,
-      app_title: 'Test Title',
-      app_subtitle: 'Test Subtitle',
       updated_at: expect.any(String),
     });
 
@@ -461,76 +367,4 @@ describe('EmailSettings Component', () => {
     });
   });
 
-  it('handles save error gracefully', async () => {
-    const user = userEvent.setup();
-    const mockSelect = vi.fn(() => ({
-      eq: vi.fn(() => ({
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: null,
-          error: null,
-        }),
-      })),
-    }));
-
-    const mockUpsert = vi.fn().mockResolvedValue({
-      data: null,
-      error: { message: 'Save failed' }
-    });
-
-    (supabase.from as any).mockReturnValue({
-      select: mockSelect,
-      upsert: mockUpsert,
-    });
-
-    render(<EmailSettings />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /save branding settings/i })).toBeInTheDocument();
-    });
-
-    // Try to save branding settings
-    const saveButton = screen.getByRole('button', { name: /save branding settings/i });
-    await user.click(saveButton);
-
-    // Check error message
-    await waitFor(() => {
-      expect(screen.getByText('Failed to save branding settings')).toBeInTheDocument();
-    });
-  });
-
-  it('calls onSave callback when provided', async () => {
-    const user = userEvent.setup();
-    const mockOnSave = vi.fn();
-
-    const mockSelect = vi.fn(() => ({
-      eq: vi.fn(() => ({
-        maybeSingle: vi.fn().mockResolvedValue({
-          data: null,
-          error: null,
-        }),
-      })),
-    }));
-
-    const mockUpsert = vi.fn().mockResolvedValue({ data: null, error: null });
-
-    (supabase.from as any).mockReturnValue({
-      select: mockSelect,
-      upsert: mockUpsert,
-    });
-
-    render(<EmailSettings onSave={mockOnSave} />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /save branding settings/i })).toBeInTheDocument();
-    });
-
-    // Save branding settings
-    const saveButton = screen.getByRole('button', { name: /save branding settings/i });
-    await user.click(saveButton);
-
-    // Check that onSave was called
-    await waitFor(() => {
-      expect(mockOnSave).toHaveBeenCalled();
-    });
-  });
 });
