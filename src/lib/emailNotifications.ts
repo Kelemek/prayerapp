@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { sendEmail } from './emailService';
+import { sendEmail, getTemplate, applyTemplateVariables } from './emailService';
 
 /**
  * Helper function to send email using new Graph API service
@@ -630,10 +630,30 @@ export async function sendDeniedPrayerNotification(payload: DeniedPrayerPayload)
       return;
     }
 
-    const subject = `Prayer Request Not Approved: ${payload.title}`;
-    const body = `Unfortunately, your prayer request could not be approved at this time.\n\nTitle: ${payload.title}\nRequested by: ${payload.requester}\n\nReason: ${payload.denialReason}\n\nIf you have questions, please contact the administrator.`;
+    let subject = `Prayer Request Not Approved: ${payload.title}`;
+    let body = `Unfortunately, your prayer request could not be approved at this time.\n\nTitle: ${payload.title}\nRequested by: ${payload.requester}\n\nReason: ${payload.denialReason}\n\nIf you have questions, please contact the administrator.`;
+    let html = generateDeniedPrayerHTML(payload);
 
-    const html = generateDeniedPrayerHTML(payload);
+    try {
+      const template = await getTemplate('denied_prayer');
+      if (template) {
+        subject = template.subject;
+        body = template.text_body;
+        html = template.html_body;
+        // Apply variables
+        const variables = {
+          title: payload.title,
+          description: payload.description,
+          denialReason: payload.denialReason,
+          appLink: `${window.location.origin}/`
+        };
+        subject = applyTemplateVariables(subject, variables);
+        body = applyTemplateVariables(body, variables);
+        html = applyTemplateVariables(html, variables);
+      }
+    } catch (templateError) {
+      console.warn('Failed to fetch denied_prayer template, using fallback:', templateError);
+    }
 
     // Send email via Supabase Edge Function
     const { error: functionError } = await invokeSendNotification({
@@ -662,10 +682,30 @@ export async function sendDeniedUpdateNotification(payload: DeniedUpdatePayload)
       return;
     }
 
-    const subject = `Prayer Update Not Approved: ${payload.prayerTitle}`;
-    const body = `Unfortunately, your update for "${payload.prayerTitle}" could not be approved at this time.\n\nUpdate by: ${payload.author}\n\nReason: ${payload.denialReason}\n\nIf you have questions, please contact the administrator.`;
+    let subject = `Prayer Update Not Approved: ${payload.prayerTitle}`;
+    let body = `Unfortunately, your update for "${payload.prayerTitle}" could not be approved at this time.\n\nUpdate by: ${payload.author}\n\nReason: ${payload.denialReason}\n\nIf you have questions, please contact the administrator.`;
+    let html = generateDeniedUpdateHTML(payload);
 
-    const html = generateDeniedUpdateHTML(payload);
+    try {
+      const template = await getTemplate('denied_update');
+      if (template) {
+        subject = template.subject;
+        body = template.text_body;
+        html = template.html_body;
+        // Apply variables
+        const variables = {
+          prayerTitle: payload.prayerTitle,
+          content: payload.content,
+          denialReason: payload.denialReason,
+          appLink: `${window.location.origin}/`
+        };
+        subject = applyTemplateVariables(subject, variables);
+        body = applyTemplateVariables(body, variables);
+        html = applyTemplateVariables(html, variables);
+      }
+    } catch (templateError) {
+      console.warn('Failed to fetch denied_update template, using fallback:', templateError);
+    }
 
     // Send email via Supabase Edge Function
     const { error: functionError } = await invokeSendNotification({
@@ -798,10 +838,30 @@ export async function sendApprovedStatusChangeNotification(payload: ApprovedStat
       return;
     }
 
-    const subject = `Status Change Approved: ${payload.prayerTitle}`;
-    const body = `Great news! Your status change request for "${payload.prayerTitle}" has been approved.\n\nPrevious Status: ${payload.currentStatus}\nNew Status: ${payload.newStatus}\n\nThank you for keeping the prayer community updated.`;
+    let subject = `Status Change Approved: ${payload.prayerTitle}`;
+    let body = `Great news! Your status change request for "${payload.prayerTitle}" has been approved.\n\nPrevious Status: ${payload.currentStatus}\nNew Status: ${payload.newStatus}\n\nThank you for keeping the prayer community updated.`;
+    let html = generateApprovedStatusChangeHTML(payload);
 
-    const html = generateApprovedStatusChangeHTML(payload);
+    try {
+      const template = await getTemplate('approved_status_change');
+      if (template) {
+        subject = template.subject;
+        body = template.text_body;
+        html = template.html_body;
+        // Apply variables
+        const variables = {
+          prayerTitle: payload.prayerTitle,
+          currentStatus: payload.currentStatus,
+          newStatus: payload.newStatus,
+          appLink: `${window.location.origin}/`
+        };
+        subject = applyTemplateVariables(subject, variables);
+        body = applyTemplateVariables(body, variables);
+        html = applyTemplateVariables(html, variables);
+      }
+    } catch (templateError) {
+      console.warn('Failed to fetch approved_status_change template, using fallback:', templateError);
+    }
 
     // Send email via Supabase Edge Function
     const { error: functionError } = await invokeSendNotification({
@@ -829,10 +889,31 @@ export async function sendDeniedStatusChangeNotification(payload: DeniedStatusCh
       return;
     }
 
-    const subject = `Status Change Not Approved: ${payload.prayerTitle}`;
-    const body = `Unfortunately, your status change request for "${payload.prayerTitle}" could not be approved at this time.\n\nRequested Status: ${payload.requestedStatus}\nCurrent Status: ${payload.currentStatus}\n\nReason: ${payload.denialReason}\n\nIf you have questions, please contact the administrator.`;
+    let subject = `Status Change Not Approved: ${payload.prayerTitle}`;
+    let body = `Unfortunately, your status change request for "${payload.prayerTitle}" could not be approved at this time.\n\nRequested Status: ${payload.requestedStatus}\nCurrent Status: ${payload.currentStatus}\n\nReason: ${payload.denialReason}\n\nIf you have questions, please contact the administrator.`;
+    let html = generateDeniedStatusChangeHTML(payload);
 
-    const html = generateDeniedStatusChangeHTML(payload);
+    try {
+      const template = await getTemplate('denied_status_change');
+      if (template) {
+        subject = template.subject;
+        body = template.text_body;
+        html = template.html_body;
+        // Apply variables
+        const variables = {
+          prayerTitle: payload.prayerTitle,
+          requestedStatus: payload.requestedStatus,
+          currentStatus: payload.currentStatus,
+          denialReason: payload.denialReason,
+          appLink: `${window.location.origin}/`
+        };
+        subject = applyTemplateVariables(subject, variables);
+        body = applyTemplateVariables(body, variables);
+        html = applyTemplateVariables(html, variables);
+      }
+    } catch (templateError) {
+      console.warn('Failed to fetch denied_status_change template, using fallback:', templateError);
+    }
 
     // Send email via Supabase Edge Function
     const { error: functionError } = await invokeSendNotification({
