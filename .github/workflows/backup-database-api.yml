@@ -59,6 +59,7 @@ jobs:
                 'analytics',
                 'backup_logs',
                 'email_subscribers',
+                'email_templates',
                 'prayer_prompts',
                 'prayer_types',
                 'prayer_updates',
