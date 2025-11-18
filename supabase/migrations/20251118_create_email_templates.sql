@@ -20,6 +20,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS email_templates_updated_at ON email_templates;
+
 CREATE TRIGGER email_templates_updated_at
 BEFORE UPDATE ON email_templates
 FOR EACH ROW
@@ -28,12 +30,12 @@ EXECUTE FUNCTION update_email_templates_updated_at();
 -- Enable RLS
 ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
 
--- Allow authenticated users to read templates
-CREATE POLICY "Allow authenticated users to read templates" ON email_templates
+-- Allow anyone to read templates (they're public content)
+CREATE POLICY "Allow all to read templates" ON email_templates
   FOR SELECT
-  USING (auth.role() = 'authenticated_user' OR auth.role() = 'service_role');
+  USING (true);
 
--- Only admins can update templates
+-- Only service role can update templates
 CREATE POLICY "Only service role can update templates" ON email_templates
   FOR UPDATE
   USING (auth.role() = 'service_role');

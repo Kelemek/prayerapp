@@ -20,16 +20,21 @@ export const EmailTemplatesManager: React.FC = () => {
 
   const loadTemplates = async () => {
     setLoading(true)
+    setError(null)
     try {
       const data = await getAllTemplates()
+      console.log('Loaded templates:', data)
       setTemplates(data)
       if (data.length > 0) {
         setSelectedTemplate(data[0])
         setEditedTemplate(data[0])
+      } else {
+        setError('No templates found. Please run the database migration.')
       }
     } catch (err) {
-      setError('Failed to load templates')
-      console.error(err)
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      console.error('Failed to load templates:', err)
+      setError(`Failed to load templates: ${errorMsg}`)
     } finally {
       setLoading(false)
     }
@@ -100,34 +105,56 @@ export const EmailTemplatesManager: React.FC = () => {
     )
   }
 
+  if (error && templates.length === 0) {
+    return (
+      <div className={`${bgClass} rounded-lg border ${borderClass} p-6`}>
+        <h2 className={`text-2xl font-bold ${textClass} mb-6`}>Email Templates</h2>
+        <div className="bg-red-100 border border-red-300 rounded p-4 text-red-700">
+          <p><strong>Error:</strong> {error}</p>
+          <p className="mt-2 text-sm">Please execute the database migration in Supabase SQL Editor to enable email templates.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`${bgClass} rounded-lg border ${borderClass} p-6`}>
       <h2 className={`text-2xl font-bold ${textClass} mb-6`}>Email Templates</h2>
+
+      {error && templates.length > 0 && (
+        <div className="mb-4 bg-yellow-100 border border-yellow-300 rounded p-3 text-yellow-700 text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Templates List */}
         <div>
           <h3 className={`text-lg font-semibold ${textClass} mb-4`}>Available Templates</h3>
-          <div className="space-y-2">
-            {templates.map((template) => (
-              <button
-                key={template.id}
-                onClick={() => handleSelectTemplate(template)}
-                className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                  selectedTemplate?.id === template.id
-                    ? isDark
-                      ? 'bg-blue-900 border-blue-500'
-                      : 'bg-blue-100 border-blue-300'
-                    : isDark
-                    ? 'border-gray-700 hover:border-gray-600 hover:bg-gray-700'
-                    : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                }`}
-              >
-                <div className="font-semibold">{template.name}</div>
-                <div className={`text-sm ${secondaryTextClass}`}>{template.template_key}</div>
-              </button>
-            ))}
-          </div>
+          {templates.length === 0 ? (
+            <p className={secondaryTextClass}>No templates available</p>
+          ) : (
+            <div className="space-y-2">
+              {templates.map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => handleSelectTemplate(template)}
+                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                    selectedTemplate?.id === template.id
+                      ? isDark
+                        ? 'bg-blue-900 border-blue-500'
+                        : 'bg-blue-100 border-blue-300'
+                      : isDark
+                      ? 'border-gray-700 hover:border-gray-600 hover:bg-gray-700'
+                      : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="font-semibold">{template.name}</div>
+                  <div className={`text-sm ${secondaryTextClass}`}>{template.template_key}</div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Editor */}
