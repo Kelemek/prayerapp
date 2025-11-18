@@ -35,20 +35,39 @@ vi.mock('../../lib/supabase', async () => {
     {
       id: 'p1',
       title: 'Daily Prayer',
-      type: 'daily',
+      type: 'Guidance',
       description: 'A daily prayer for guidance',
       created_at: '2025-02-01T12:00:00Z'
     },
     {
       id: 'p2',
       title: 'Weekly Prayer',
-      type: 'weekly',
+      type: 'Healing',
       description: 'A weekly prayer for strength',
       created_at: '2025-02-02T12:00:00Z'
     }
   ]
 
-  const sup = mod.createSupabaseMock({ fromData: { prayers, prayer_prompts: prompts } }) as any;
+  const prayerTypes = [
+    {
+      id: 'pt1',
+      name: 'Guidance',
+      display_order: 1,
+      is_active: true,
+      created_at: '2025-01-01T12:00:00Z',
+      updated_at: '2025-01-01T12:00:00Z'
+    },
+    {
+      id: 'pt2',
+      name: 'Healing',
+      display_order: 2,
+      is_active: true,
+      created_at: '2025-01-01T12:00:00Z',
+      updated_at: '2025-01-01T12:00:00Z'
+    }
+  ]
+
+  const sup = mod.createSupabaseMock({ fromData: { prayers, prayer_prompts: prompts, prayer_types: prayerTypes } }) as any;
   return { supabase: sup };
 })
 
@@ -97,8 +116,8 @@ describe('MobilePresentation', () => {
     const closeButton = settingsHeading.parentElement?.querySelector('button') as HTMLButtonElement
     if (closeButton) await user.click(closeButton)
 
-    // Should show prompts now
-    await waitFor(() => expect(screen.getByText('Weekly Prayer')).toBeInTheDocument())
+    // Should show prompts now - wait for the prompts to load after content type change
+    await waitFor(() => expect(screen.getByText('Daily Prayer')).toBeInTheDocument(), { timeout: 3000 })
   })
 
   it('toggles randomization', async () => {

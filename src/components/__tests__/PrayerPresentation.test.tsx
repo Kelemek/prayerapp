@@ -34,9 +34,28 @@ vi.mock('../../lib/supabase', () => {
     {
       id: 'pr1',
       title: 'Prompt One',
-      type: 'general',
+      type: 'Guidance',
       description: 'A general prayer prompt',
       created_at: '2025-01-01T12:00:00Z'
+    }
+  ]
+
+  const prayerTypes = [
+    {
+      id: 'pt1',
+      name: 'Guidance',
+      display_order: 1,
+      is_active: true,
+      created_at: '2025-01-01T12:00:00Z',
+      updated_at: '2025-01-01T12:00:00Z'
+    },
+    {
+      id: 'pt2',
+      name: 'Healing',
+      display_order: 2,
+      is_active: true,
+      created_at: '2025-01-01T12:00:00Z',
+      updated_at: '2025-01-01T12:00:00Z'
     }
   ]
 
@@ -53,6 +72,8 @@ vi.mock('../../lib/supabase', () => {
         return cb({ data: prayers, error: null })
       } else if (tableName === 'prayer_prompts') {
         return cb({ data: prompts, error: null })
+      } else if (tableName === 'prayer_types') {
+        return cb({ data: prayerTypes, error: null })
       }
       return cb({ data: [], error: null })
     }

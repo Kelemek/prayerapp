@@ -155,15 +155,7 @@ function AppContent() {
   const fetchPrompts = async () => {
     setPromptsLoading(true);
     try {
-      // Fetch prompts with prayer_types to get display_order
-      const { data: promptsData, error: promptsError } = await supabase
-        .from('prayer_prompts')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (promptsError) throw promptsError;
-      
-      // Fetch prayer types for ordering
+      // Fetch active prayer types
       const { data: typesData, error: typesError } = await supabase
         .from('prayer_types')
         .select('name, display_order')
@@ -172,15 +164,28 @@ function AppContent() {
       
       if (typesError) throw typesError;
       
+      // Create a set of active type names for filtering
+      const activeTypeNames = new Set((typesData || []).map(t => t.name));
+      
       // Create a map of type name to display_order
       const typeOrderMap = new Map(typesData?.map(t => [t.name, t.display_order]) || []);
       
-      // Sort prompts by type's display_order
-      const sortedPrompts = (promptsData || []).sort((a, b) => {
-        const orderA = typeOrderMap.get(a.type) ?? 999;
-        const orderB = typeOrderMap.get(b.type) ?? 999;
-        return orderA - orderB;
-      });
+      // Fetch all prompts
+      const { data: promptsData, error: promptsError } = await supabase
+        .from('prayer_prompts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (promptsError) throw promptsError;
+      
+      // Filter prompts to only include those with active types, then sort by type's display_order
+      const sortedPrompts = (promptsData || [])
+        .filter(p => activeTypeNames.has(p.type))
+        .sort((a, b) => {
+          const orderA = typeOrderMap.get(a.type) ?? 999;
+          const orderB = typeOrderMap.get(b.type) ?? 999;
+          return orderA - orderB;
+        });
       
       setPrompts(sortedPrompts);
     } catch (error) {
