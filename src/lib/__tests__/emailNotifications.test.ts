@@ -3,7 +3,15 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 // Mock the email service and supabase client
 vi.mock('../emailService', () => ({
   sendEmail: vi.fn(),
-  sendEmailToAllSubscribers: vi.fn()
+  sendEmailToAllSubscribers: vi.fn(),
+  getTemplate: vi.fn(),
+  applyTemplateVariables: (content: string, variables: Record<string, string>) => {
+    let result = content;
+    for (const [key, value] of Object.entries(variables)) {
+      result = result.replace(new RegExp(`{{${key}}}`, 'g'), value || '');
+    }
+    return result;
+  }
 }));
 
 vi.mock('../supabase', () => ({
@@ -165,6 +173,18 @@ describe('emailNotifications', () => {
   });
 
   it('sends approved update notification via sendEmailToAllSubscribers and logs on failure', async () => {
+    // Mock getTemplate to return a template
+    const { getTemplate } = await import('../emailService');
+    (getTemplate as any).mockResolvedValue({
+      id: 'test-id',
+      template_key: 'approved_update',
+      name: 'Approved Update',
+      subject: 'Prayer Update: {{prayerTitle}}',
+      html_body: 'Update: {{content}}',
+      text_body: 'Update: {{content}}',
+      description: 'Test template'
+    });
+
     // success path
     (sendEmailToAllSubscribers as any).mockResolvedValue({ ok: true });
 
@@ -179,6 +199,18 @@ describe('emailNotifications', () => {
 
     // failure path - force it to throw and expect console.error
     (sendEmailToAllSubscribers as any).mockRejectedValue(new Error('bulk-fail'));
+    
+    // Mock getTemplate again for the second call
+    (getTemplate as any).mockResolvedValue({
+      id: 'test-id-2',
+      template_key: 'prayer_answered',
+      name: 'Prayer Answered',
+      subject: 'Prayer Answered: {{prayerTitle}}',
+      html_body: 'Prayer answered: {{content}}',
+      text_body: 'Prayer answered: {{content}}',
+      description: 'Test template'
+    });
+
     await emailNotifications.sendApprovedUpdateNotification({
       prayerTitle: 'PT2',
       content: 'C2',

@@ -502,7 +502,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       {/* Prayer Update Reminders Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Mail className="text-orange-600 dark:text-orange-400" size={24} />
+          <Mail className="text-blue-600 dark:text-blue-400" size={24} />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Prayer Update Reminders
           </h3>

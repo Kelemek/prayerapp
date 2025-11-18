@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import type { EmailTemplate } from '../lib/emailService'
 import { getAllTemplates, updateTemplate } from '../lib/emailService'
-import { useTheme } from '../hooks/useTheme'
+import { Eye, EyeOff, Save, RefreshCw, Mail } from 'lucide-react'
 
 export const EmailTemplatesManager: React.FC = () => {
-  const { isDark } = useTheme()
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null)
   const [editedTemplate, setEditedTemplate] = useState<EmailTemplate | null>(null)
@@ -25,12 +24,12 @@ export const EmailTemplatesManager: React.FC = () => {
       const data = await getAllTemplates()
       console.log('Loaded templates:', data)
       setTemplates(data)
-      if (data.length > 0) {
-        setSelectedTemplate(data[0])
-        setEditedTemplate(data[0])
-      } else {
+      if (data.length === 0) {
         setError('No templates found. Please run the database migration.')
       }
+      // Don't auto-select a template - let user choose one
+      setSelectedTemplate(null)
+      setEditedTemplate(null)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err)
       console.error('Failed to load templates:', err)
@@ -41,9 +40,17 @@ export const EmailTemplatesManager: React.FC = () => {
   }
 
   const handleSelectTemplate = (template: EmailTemplate) => {
-    setSelectedTemplate(template)
-    setEditedTemplate(template)
-    setShowPreview(false)
+    // If clicking the same template, toggle the editor off
+    if (selectedTemplate?.id === template.id) {
+      setSelectedTemplate(null)
+      setEditedTemplate(null)
+      setShowPreview(false)
+    } else {
+      // Open editor for the clicked template
+      setSelectedTemplate(template)
+      setEditedTemplate(template)
+      setShowPreview(false)
+    }
     setSuccess(null)
     setError(null)
   }
@@ -86,250 +93,267 @@ export const EmailTemplatesManager: React.FC = () => {
     }
   }
 
-  const bgClass = isDark ? 'bg-gray-800' : 'bg-white'
-  const borderClass = isDark ? 'border-gray-700' : 'border-gray-200'
-  const textClass = isDark ? 'text-gray-100' : 'text-gray-900'
-  const secondaryTextClass = isDark ? 'text-gray-400' : 'text-gray-600'
-  const inputClass = isDark
-    ? 'bg-gray-700 border-gray-600 text-white'
-    : 'bg-white border-gray-200 text-gray-900'
-  const selectClass = isDark
-    ? 'bg-gray-700 border-gray-600 text-white'
-    : 'bg-white border-gray-200 text-gray-900'
-
   if (loading) {
     return (
-      <div className={`${bgClass} rounded-lg border ${borderClass} p-6 text-center`}>
-        <p className={secondaryTextClass}>Loading templates...</p>
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center">
+        <p className="text-gray-600 dark:text-gray-400">Loading templates...</p>
       </div>
     )
   }
 
   if (error && templates.length === 0) {
     return (
-      <div className={`${bgClass} rounded-lg border ${borderClass} p-6`}>
-        <h2 className={`text-2xl font-bold ${textClass} mb-6`}>Email Templates</h2>
-        <div className="bg-red-100 border border-red-300 rounded p-4 text-red-700">
-          <p><strong>Error:</strong> {error}</p>
-          <p className="mt-2 text-sm">Please execute the database migration in Supabase SQL Editor to enable email templates.</p>
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Email Templates</h3>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded p-4">
+          <p className="text-red-800 dark:text-red-200"><strong>Error:</strong> {error}</p>
+          <p className="mt-2 text-sm text-red-700 dark:text-red-300">Please execute the database migration in Supabase SQL Editor to enable email templates.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className={`${bgClass} rounded-lg border ${borderClass} p-6`}>
-      <h2 className={`text-2xl font-bold ${textClass} mb-6`}>Email Templates</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Mail size={24} className="text-blue-600 dark:text-blue-400" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Email Templates</h3>
+        </div>
+        <button
+          onClick={loadTemplates}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          title="Refresh templates"
+        >
+          <RefreshCw size={18} className="text-gray-600 dark:text-gray-400" />
+        </button>
+      </div>
 
       {error && templates.length > 0 && (
-        <div className="mb-4 bg-yellow-100 border border-yellow-300 rounded p-3 text-yellow-700 text-sm">
-          {error}
+        <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded p-3">
+          <p className="text-yellow-800 dark:text-yellow-200 text-sm">{error}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Templates List */}
-        <div>
-          <h3 className={`text-lg font-semibold ${textClass} mb-4`}>Available Templates</h3>
-          {templates.length === 0 ? (
-            <p className={secondaryTextClass}>No templates available</p>
-          ) : (
-            <div className="space-y-2">
-              {templates.map((template) => (
+      {/* Templates List */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">Available Templates</label>
+        {templates.length === 0 ? (
+          <p className="text-gray-600 dark:text-gray-400 text-sm">No templates available</p>
+        ) : (
+          <div className="space-y-3">
+            {templates.map((template) => (
+              <div key={template.id}>
+                {/* Template Card */}
                 <button
-                  key={template.id}
                   onClick={() => handleSelectTemplate(template)}
                   className={`w-full text-left p-3 rounded-lg border transition-colors ${
                     selectedTemplate?.id === template.id
-                      ? isDark
-                        ? 'bg-blue-900 border-blue-500'
-                        : 'bg-blue-100 border-blue-300'
-                      : isDark
-                      ? 'border-gray-700 hover:border-gray-600 hover:bg-gray-700'
-                      : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600'
+                      : 'bg-gray-50 dark:bg-gray-700/50 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <div className="font-semibold">{template.name}</div>
-                  <div className={`text-sm ${secondaryTextClass}`}>{template.template_key}</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">{template.name}</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">{template.template_key}</div>
                 </button>
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* Editor */}
-        {editedTemplate && (
-          <div className="lg:col-span-2">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className={`text-lg font-semibold ${textClass}`}>Edit Template</h3>
-              <button
-                onClick={() => setShowPreview(!showPreview)}
-                className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
-              >
-                {showPreview ? 'Edit' : 'Preview'}
-              </button>
-            </div>
+                {/* Editor - appears under selected template */}
+                {selectedTemplate?.id === template.id && editedTemplate && (
+                  <div className="mt-3 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
+                    {/* Preview/Edit Toggle */}
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold text-gray-900 dark:text-white">Edit Template</label>
+                      <button
+                        onClick={() => setShowPreview(!showPreview)}
+                        className="flex items-center gap-2 px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        {showPreview ? (
+                          <>
+                            <EyeOff size={16} />
+                            Edit
+                          </>
+                        ) : (
+                          <>
+                            <Eye size={16} />
+                            Preview
+                          </>
+                        )}
+                      </button>
+                    </div>
 
-            {showPreview ? (
-              // Preview Mode
-              <div className="space-y-6">
-                <div>
-                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>
-                    Subject Preview:
-                  </label>
-                  <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    <p className={textClass}>{editedTemplate.subject}</p>
+                    {showPreview ? (
+                      // Preview Mode
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Subject:
+                          </label>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                            {editedTemplate.subject}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            HTML Preview:
+                          </label>
+                          <div
+                            className="p-4 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-auto max-h-64 text-sm"
+                            dangerouslySetInnerHTML={{ __html: editedTemplate.html_body }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Text Preview:
+                          </label>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg whitespace-pre-wrap font-mono text-xs text-gray-600 dark:text-gray-300 max-h-64 overflow-auto">
+                            {editedTemplate.text_body}
+                          </div>
+                        </div>
+
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-200 mb-2"><strong>Available variables:</strong></p>
+                          <p className="text-xs text-blue-800 dark:text-blue-300 break-words">
+                            {'{{name}}'}, {'{{email}}'}, {'{{code}}'}, {'{{title}}'}, {'{{description}}'}, {'{{requester}}'}, {'{{prayerFor}}'}, {'{{content}}'}, {'{{author}}'}, {'{{actionDescription}}'}, {'{{adminLink}}'}, {'{{appLink}}'}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      // Edit Mode
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Human-readable title for this email template (for admin reference only)</p>
+                          <input
+                            type="text"
+                            value={editedTemplate.name}
+                            onChange={(e) =>
+                              setEditedTemplate({ ...editedTemplate, name: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Template Key <span className="text-gray-500">(read-only)</span>
+                          </label>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Unique identifier used to reference this template in the system</p>
+                          <div className="w-full px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 font-mono text-xs text-gray-600 dark:text-gray-400">
+                            {editedTemplate.template_key}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">The subject line users see in their email inbox. Include variables like name, code, or title for dynamic content</p>
+                          <input
+                            type="text"
+                            value={editedTemplate.subject}
+                            onChange={(e) =>
+                              setEditedTemplate({ ...editedTemplate, subject: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            placeholder="Subject with {{variables}}"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">HTML Body</label>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">The formatted email content with styling, colors, and layout. What most users see when opening the email</p>
+                          <textarea
+                            value={editedTemplate.html_body}
+                            onChange={(e) =>
+                              setEditedTemplate({ ...editedTemplate, html_body: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-xs"
+                            rows={8}
+                            placeholder="HTML content with {{variables}}"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Text Body</label>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Plain text version without formatting. Used for basic email clients and accessibility. Should match the HTML version</p>
+                          <textarea
+                            value={editedTemplate.text_body}
+                            onChange={(e) =>
+                              setEditedTemplate({ ...editedTemplate, text_body: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-xs"
+                            rows={6}
+                            placeholder="Plain text content with {{variables}}"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Internal note explaining when and why this email is sent. For admin reference only</p>
+                          <input
+                            type="text"
+                            value={editedTemplate.description || ''}
+                            onChange={(e) =>
+                              setEditedTemplate({ ...editedTemplate, description: e.target.value })
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            placeholder="Template description"
+                          />
+                        </div>
+
+                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-blue-900 dark:text-blue-200 mb-2"><strong>Available variables:</strong></p>
+                          <ul className="text-xs text-blue-800 dark:text-blue-300 space-y-1">
+                            <li>• {'{{name}}'} - User or admin name</li>
+                            <li>• {'{{email}}'} - Email address</li>
+                            <li>• {'{{code}}'} - Verification code</li>
+                            <li>• {'{{title}}'} - Prayer or update title</li>
+                            <li>• {'{{description}}'} - Prayer description</li>
+                            <li>• {'{{content}}'} - Prayer update content</li>
+                            <li>• {'{{requester}}'} - Prayer requester name</li>
+                            <li>• {'{{author}}'} - Update author name</li>
+                            <li>• {'{{prayerFor}}'} - Who the prayer is for</li>
+                            <li>• {'{{actionDescription}}'} - Action type description</li>
+                            <li>• {'{{adminLink}}'} - Admin portal link</li>
+                            <li>• {'{{appLink}}'} - App link</li>
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Messages */}
+                    {error && (
+                      <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded text-red-700 dark:text-red-200 text-sm">
+                        {error}
+                      </div>
+                    )}
+                    {success && (
+                      <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded text-green-700 dark:text-green-200 text-sm">
+                        {success}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors text-sm font-medium"
+                      >
+                        <Save size={16} />
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                      <button
+                        onClick={handleRevert}
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                      >
+                        Revert
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>
-                    HTML Preview:
-                  </label>
-                  <div
-                    className={`p-4 rounded-lg border ${borderClass} overflow-auto max-h-96`}
-                    dangerouslySetInnerHTML={{ __html: editedTemplate.html_body }}
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>
-                    Text Preview:
-                  </label>
-                  <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'} whitespace-pre-wrap font-mono text-sm`}>
-                    <p className={secondaryTextClass}>{editedTemplate.text_body}</p>
-                  </div>
-                </div>
-
-                <div className={`text-xs ${secondaryTextClass}`}>
-                  <p><strong>Available variables:</strong></p>
-                  <p>{'{{name}}'}, {'{{email}}'}, {'{{code}}'}, {'{{title}}'}, {'{{description}}'}, {'{{requester}}'}, {'{{prayerFor}}'}, {'{{content}}'}, {'{{author}}'}, {'{{actionDescription}}'}, {'{{adminLink}}'}, {'{{appLink}}'}</p>
-                </div>
+                )}
               </div>
-            ) : (
-              // Edit Mode
-              <div className="space-y-4">
-                <div>
-                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>Name</label>
-                  <input
-                    type="text"
-                    value={editedTemplate.name}
-                    onChange={(e) =>
-                      setEditedTemplate({ ...editedTemplate, name: e.target.value })
-                    }
-                    className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>
-                    Template Key <span className={secondaryTextClass}>(read-only)</span>
-                  </label>
-                  <div className={`w-full px-3 py-2 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'} font-mono text-sm`}>
-                    {editedTemplate.template_key}
-                  </div>
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>Subject</label>
-                  <input
-                    type="text"
-                    value={editedTemplate.subject}
-                    onChange={(e) =>
-                      setEditedTemplate({ ...editedTemplate, subject: e.target.value })
-                    }
-                    className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
-                    placeholder="Subject with {{variables}}"
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>HTML Body</label>
-                  <textarea
-                    value={editedTemplate.html_body}
-                    onChange={(e) =>
-                      setEditedTemplate({ ...editedTemplate, html_body: e.target.value })
-                    }
-                    className={`w-full px-3 py-2 border rounded-lg font-mono text-sm ${inputClass}`}
-                    rows={10}
-                    placeholder="HTML content with {{variables}}"
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>Text Body</label>
-                  <textarea
-                    value={editedTemplate.text_body}
-                    onChange={(e) =>
-                      setEditedTemplate({ ...editedTemplate, text_body: e.target.value })
-                    }
-                    className={`w-full px-3 py-2 border rounded-lg font-mono text-sm ${inputClass}`}
-                    rows={8}
-                    placeholder="Plain text content with {{variables}}"
-                  />
-                </div>
-
-                <div>
-                  <label className={`block text-sm font-semibold ${textClass} mb-2`}>Description</label>
-                  <input
-                    type="text"
-                    value={editedTemplate.description || ''}
-                    onChange={(e) =>
-                      setEditedTemplate({ ...editedTemplate, description: e.target.value })
-                    }
-                    className={`w-full px-3 py-2 border rounded-lg ${inputClass}`}
-                    placeholder="Template description"
-                  />
-                </div>
-
-                <div className={`text-xs ${secondaryTextClass} bg-gray-900 bg-opacity-10 p-3 rounded`}>
-                  <p><strong>Use these variables in your template:</strong></p>
-                  <ul className="mt-2 space-y-1">
-                    <li>• {'{{name}}'} - User or admin name</li>
-                    <li>• {'{{email}}'} - Email address</li>
-                    <li>• {'{{code}}'} - Verification code</li>
-                    <li>• {'{{title}}'} - Prayer or update title</li>
-                    <li>• {'{{description}}'} - Prayer description</li>
-                    <li>• {'{{content}}'} - Prayer update content</li>
-                    <li>• {'{{requester}}'} - Prayer requester name</li>
-                    <li>• {'{{author}}'} - Update author name</li>
-                    <li>• {'{{prayerFor}}'} - Who the prayer is for</li>
-                    <li>• {'{{actionDescription}}'} - Action type description</li>
-                    <li>• {'{{adminLink}}'} - Admin portal link</li>
-                    <li>• {'{{appLink}}'} - App link</li>
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {/* Messages */}
-            {error && (
-              <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded text-red-700">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded text-green-700">
-                {success}
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-2 mt-6">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-              <button
-                onClick={handleRevert}
-                className="px-4 py-2 border border-gray-400 rounded-lg hover:bg-gray-100 hover:dark:bg-gray-700"
-              >
-                Revert
-              </button>
-            </div>
+            ))}
           </div>
         )}
       </div>

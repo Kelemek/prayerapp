@@ -328,22 +328,35 @@ async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void
 /**
  * Send email notifications when a prayer update is approved
  * Sends to all active email subscribers
+ * Uses templates from the email_templates table
  */
 export async function sendApprovedUpdateNotification(payload: ApprovedUpdatePayload): Promise<void> {
   try {
     const isAnswered = payload.markedAsAnswered || false;
-    const subject = isAnswered 
-      ? `🎉 Prayer Answered: ${payload.prayerTitle}`
-      : `Prayer Update: ${payload.prayerTitle}`;
+    const { sendEmailToAllSubscribers, getTemplate, applyTemplateVariables } = await import('./emailService');
     
-    const textContent = isAnswered
-      ? `Great news! A prayer has been answered!\n\nPrayer: ${payload.prayerTitle}\nUpdate by: ${payload.author}\n\nUpdate: ${payload.content}\n\nLet's give thanks and praise for this answered prayer!`
-      : `A new update has been posted for a prayer.\n\nPrayer: ${payload.prayerTitle}\nUpdate by: ${payload.author}\n\nUpdate: ${payload.content}\n\nLet's continue to lift this prayer up together.`;
+    // Fetch the appropriate template
+    const templateKey = isAnswered ? 'prayer_answered' : 'approved_update';
+    const template = await getTemplate(templateKey);
     
-    const htmlContent = generateApprovedUpdateHTML(payload);
-
-    // Use new Graph API email service to send to all active subscribers
-    const { sendEmailToAllSubscribers } = await import('./emailService');
+    if (!template) {
+      console.error(`Template not found: ${templateKey}`);
+      return;
+    }
+    
+    // Prepare template variables
+    const variables = {
+      prayerTitle: payload.prayerTitle,
+      author: payload.author,
+      content: payload.content,
+      appLink: typeof window !== 'undefined' ? window.location.origin : 'https://prayerapp.com'
+    };
+    
+    // Apply variables to template
+    const subject = applyTemplateVariables(template.subject, variables);
+    const htmlContent = applyTemplateVariables(template.html_body, variables);
+    const textContent = applyTemplateVariables(template.text_body, variables);
+    
     const result = await sendEmailToAllSubscribers({
       subject,
       htmlBody: htmlContent,

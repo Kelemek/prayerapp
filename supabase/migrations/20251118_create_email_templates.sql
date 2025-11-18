@@ -31,11 +31,13 @@ EXECUTE FUNCTION update_email_templates_updated_at();
 ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
 
 -- Allow anyone to read templates (they're public content)
+DROP POLICY IF EXISTS "Allow all to read templates" ON email_templates;
 CREATE POLICY "Allow all to read templates" ON email_templates
   FOR SELECT
   USING (true);
 
 -- Only service role can update templates
+DROP POLICY IF EXISTS "Only service role can update templates" ON email_templates;
 CREATE POLICY "Only service role can update templates" ON email_templates
   FOR UPDATE
   USING (auth.role() = 'service_role');
@@ -333,5 +335,91 @@ You will receive updates via email when the prayer status changes or when update
 ---
 Thank you for your faithfulness in prayer!',
   'Sent to the requester when their prayer is approved'
+),
+(
+  'prayer_answered',
+  'Prayer Answered - Subscriber Notification',
+  '🎉 Prayer Answered: {{prayerTitle}}',
+  '<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayer Answered</title>
+  </head>
+  <body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">🎉 Prayer Answered!</h1>
+    </div>
+    <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+      <div style="display: inline-block; background: #10b981; color: white; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 15px;">✓ Answered Prayer</div>
+      <h2 style="color: #1f2937; margin-top: 0;">Update for: {{prayerTitle}}</h2>
+      <p style="margin: 5px 0 15px 0;"><strong>Posted by:</strong> {{author}}</p>
+      <p><strong>Update:</strong></p>
+      <p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">{{content}}</p>
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="{{appLink}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a>
+      </div>
+    </div>
+    <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
+      <p>Let''s give thanks and praise for this answered prayer!</p>
+    </div>
+  </body>
+</html>',
+  'Great news! A prayer has been answered!
+
+Prayer: {{prayerTitle}}
+Posted by: {{author}}
+
+Update: {{content}}
+
+Let''s give thanks and praise for this answered prayer!',
+  'Sent to all subscribers when a prayer is marked as answered'
+),
+(
+  'prayer_reminder',
+  'Prayer Reminder - Update Request',
+  'Reminder: Update Your Prayer Request - {{prayerTitle}}',
+  '<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayer Update Reminder</title>
+  </head>
+  <body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(to right, #3b82f6, #2563eb); padding: 20px; border-radius: 8px 8px 0 0;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">⏰ Prayer Update Reminder</h1>
+    </div>
+    <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+      <p>Hello {{requesterName}},</p>
+      <p>This is a friendly reminder to update your prayer request if there have been any changes or answered prayers.</p>
+      <div style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+        <p style="margin: 5px 0;"><strong>Prayer:</strong> {{prayerTitle}}</p>
+        <p style="margin: 5px 0;"><strong>For:</strong> {{prayerFor}}</p>
+      </div>
+      <p>You can add an update by visiting the prayer app and clicking "Add Update" on your prayer.</p>
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="{{appLink}}" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Add Update Now</a>
+      </div>
+    </div>
+    <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;">
+      <p>Praying with you,<br/>The Prayer Team</p>
+    </div>
+  </body>
+</html>',
+  'Hello {{requesterName}},
+
+This is a friendly reminder to update your prayer request if there have been any changes or answered prayers.
+
+Prayer: {{prayerTitle}}
+For: {{prayerFor}}
+
+You can add an update by visiting the prayer app and clicking "Add Update" on your prayer.
+
+---
+Praying with you,
+The Prayer Team',
+  'Sent to prayer requesters as a reminder to add updates'
 )
 ON CONFLICT (template_key) DO NOTHING;

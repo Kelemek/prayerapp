@@ -189,18 +189,43 @@ serve(async (req) => {
       }
 
       try {
-        const subject = `Reminder: Update Your Prayer Request - ${prayer.title}`
-        const body = `Hello ${prayer.is_anonymous ? 'Friend' : prayer.requester},\n\nThis is a friendly reminder to update your prayer request if there have been any changes or answered prayers.\n\nPrayer: ${prayer.title}\nFor: ${prayer.prayer_for}\n\nYou can add an update by visiting the prayer app and clicking "Add Update" on your prayer.\n\nPraying with you,\nThe Prayer Team`
+        // Fetch the prayer_reminder template
+        const { data: template, error: templateError } = await supabaseClient
+          .from('email_templates')
+          .select('*')
+          .eq('template_key', 'prayer_reminder')
+          .single()
 
-        const html = generateReminderHTML(prayer, enableAutoArchive, daysBeforeArchive)
+        if (templateError || !template) {
+          console.error(`Template not found for prayer reminder: ${templateError?.message || 'unknown error'}`)
+          errors.push({ prayerId: prayer.id, error: 'Prayer reminder template not found' })
+          continue
+        }
+
+        // Prepare template variables
+        const requesterName = prayer.is_anonymous ? 'Friend' : prayer.requester
+        const baseUrl = Deno.env.get('APP_URL') || 'http://localhost:5173'
+        const appLink = `${baseUrl}/`
+
+        const variables: Record<string, string> = {
+          requesterName,
+          prayerTitle: prayer.title,
+          prayerFor: prayer.prayer_for,
+          appLink
+        }
+
+        // Apply variables to template
+        const subject = applyTemplateVariables(template.subject, variables)
+        const textBody = applyTemplateVariables(template.text_body, variables)
+        const htmlBody = applyTemplateVariables(template.html_body, variables)
 
         // Send the reminder email using send-email function
         const { error: emailError } = await supabaseClient.functions.invoke('send-email', {
           body: {
             to: prayer.email,
             subject,
-            textBody: body,
-            htmlBody: html
+            textBody,
+            htmlBody
           }
         })
 
@@ -325,6 +350,18 @@ serve(async (req) => {
     )
   }
 })
+
+/**
+ * Replace template variables with actual values
+ * Supports {{variableName}} syntax
+ */
+function applyTemplateVariables(content: string, variables: Record<string, string>): string {
+  let result = content
+  for (const [key, value] of Object.entries(variables)) {
+    result = result.replace(new RegExp(`{{${key}}}`, 'g'), value || '')
+  }
+  return result
+}
 
 function generateReminderHTML(prayer: Prayer, enableAutoArchive: boolean, daysBeforeArchive: number): string {
   const baseUrl = Deno.env.get('APP_URL') || 'http://localhost:5173'
