@@ -10,11 +10,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const AZURE_TENANT_ID = Deno.env.get('AZURE_TENANT_ID')
 const AZURE_CLIENT_ID = Deno.env.get('AZURE_CLIENT_ID')
 const AZURE_CLIENT_SECRET = Deno.env.get('AZURE_CLIENT_SECRET')
-const MAIL_FROM_ADDRESS = Deno.env.get('MAIL_FROM_ADDRESS') || 'prayer@yourchurch.org'
+// The mailbox to send from (shared mailbox or regular mailbox)
+const MAIL_SENDER_ADDRESS = Deno.env.get('MAIL_SENDER_ADDRESS')!
 const MAIL_FROM_NAME = Deno.env.get('MAIL_FROM_NAME') || 'Prayer Ministry'
-// For shared mailboxes: This should be a licensed user account that has "Send As" permission
-// If not set, defaults to MAIL_FROM_ADDRESS (direct mailbox scenario)
-const MAIL_SENDER_ADDRESS = Deno.env.get('MAIL_SENDER_ADDRESS') || MAIL_FROM_ADDRESS
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -91,7 +89,7 @@ async function sendEmail(
       },
       from: {
         emailAddress: {
-          address: MAIL_FROM_ADDRESS,
+          address: MAIL_SENDER_ADDRESS,
           name: options.fromName || MAIL_FROM_NAME
         }
       },
@@ -112,13 +110,12 @@ async function sendEmail(
     saveToSentItems: true
   }
 
-  // Use MAIL_SENDER_ADDRESS for API endpoint (licensed user with Send As permission)
-  // MAIL_FROM_ADDRESS appears in the "from" field (can be shared mailbox)
+  // With app-only auth (Mail.Send application permission), we send from the mailbox address directly
+  // MAIL_SENDER_ADDRESS should be the shared mailbox or actual sending mailbox
   const url = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(MAIL_SENDER_ADDRESS)}/sendMail`
   
-  console.log('📤 Sending email via Graph API:', {
-    senderMailbox: MAIL_SENDER_ADDRESS,
-    fromAddress: MAIL_FROM_ADDRESS,
+  console.log('📤 Sending email via Graph API (app-only):', {
+    from: MAIL_SENDER_ADDRESS,
     to: recipients.length > 5 ? `${recipients.slice(0, 5).join(', ')}... (${recipients.length} total)` : recipients,
     subject: options.subject,
     hasHtmlBody: !!options.htmlBody,
@@ -244,6 +241,10 @@ serve(async (req) => {
     // Validate environment
     if (!AZURE_TENANT_ID || !AZURE_CLIENT_ID || !AZURE_CLIENT_SECRET) {
       throw new Error('Microsoft Graph not configured. Set AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET')
+    }
+
+    if (!MAIL_SENDER_ADDRESS) {
+      throw new Error('MAIL_SENDER_ADDRESS not configured. Set to your shared mailbox or sending mailbox address.')
     }
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
