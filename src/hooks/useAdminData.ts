@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
 import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest, UpdateDeletionRequest } from '../types/prayer';
-import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification, sendApprovedStatusChangeNotification, sendDeniedStatusChangeNotification } from '../lib/emailNotifications';
+import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification } from '../lib/emailNotifications';
 
 export interface PendingPreferenceChange {
   id: string;
@@ -683,18 +683,6 @@ export const useAdminData = () => {
         .eq('id', statusChangeRequest.prayer_id);
       if (updateError) throw updateError;
       
-      // Send approval email to requester (don't let email failures block the approval)
-      if (statusChangeRequest.requested_email) {
-        sendApprovedStatusChangeNotification({
-          prayerTitle: statusChangeRequest.prayers.title,
-          requestedBy: statusChangeRequest.requested_by,
-          requestedEmail: statusChangeRequest.requested_email,
-          currentStatus: currentStatus,
-          newStatus: newStatus,
-          reason: statusChangeRequest.reason || undefined
-        }).catch(err => console.error('Failed to send status change approval notification:', err));
-      }
-      
       setData(prev => ({ ...prev, pendingStatusChangeRequests: prev.pendingStatusChangeRequests.filter(req => req.id !== requestId) }));
       setTimeout(async () => { await fetchAdminData(); }, 1000);
     } catch (error) {
@@ -729,19 +717,6 @@ export const useAdminData = () => {
         })
         .eq('id', requestId);
       if (error) throw error;
-      
-      // Send denial email to requester (don't let email failures block the denial)
-      if (statusChangeRequest.requested_email) {
-        sendDeniedStatusChangeNotification({
-          prayerTitle: statusChangeRequest.prayers.title,
-          requestedBy: statusChangeRequest.requested_by,
-          requestedEmail: statusChangeRequest.requested_email,
-          requestedStatus: statusChangeRequest.requested_status,
-          currentStatus: statusChangeRequest.prayers.status,
-          reason: statusChangeRequest.reason || undefined,
-          denialReason: reason
-        }).catch(err => console.error('Failed to send status change denial notification:', err));
-      }
       
       setData(prev => ({ ...prev, pendingStatusChangeRequests: prev.pendingStatusChangeRequests.filter(req => req.id !== requestId) }));
       setTimeout(async () => { await fetchAdminData(); }, 1000);

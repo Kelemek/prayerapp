@@ -238,39 +238,5 @@ If you have questions, please contact the administrator.
 ---
 This is an automated notification from your prayer app.',
   'Sent to the update author when their update is denied'
-),
-(
-  'approved_status_change',
-  'Approved Status Change - Requester Notification',
-  'Status Change Approved: {{prayerTitle}}',
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Status Change Approved</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">✅ Status Change Approved</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">{{prayerTitle}}</h2><p style="margin-bottom: 15px;">Great news! Your status change request has been approved.</p><div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; border-radius: 6px; margin: 20px 0;"><p style="margin: 5px 0;"><strong>Previous Status:</strong> <span style="text-transform: capitalize;">{{currentStatus}}</span></p><p style="margin: 5px 0;"><strong>New Status:</strong> <span style="text-transform: capitalize; color: #059669;">{{newStatus}}</span></p></div><p style="margin-top: 20px; font-size: 14px; color: #6b7280;">Thank you for keeping the prayer community updated on this prayer request. Your engagement helps others know how to pray effectively.</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>This is an automated notification from your prayer app.</p></div></body></html>',
-  'Status Change Approved: {{prayerTitle}}
-
-Previous Status: {{currentStatus}}
-New Status: {{newStatus}}
-
-Thank you for keeping the prayer community updated.
-
----
-This is an automated notification from your prayer app.',
-  'Sent to the requester when their status change is approved'
-),
-(
-  'denied_status_change',
-  'Denied Status Change - Requester Notification',
-  'Status Change Not Approved: {{prayerTitle}}',
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Status Change Not Approved</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #ef4444, #dc2626); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">📋 Status Change Request</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">{{prayerTitle}}</h2><p style="margin-bottom: 15px;">Thank you for your status change request. After careful review, we are unable to approve this change at this time.</p><div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb; margin: 15px 0;"><p style="margin: 5px 0;"><strong>Requested Status:</strong> <span style="text-transform: capitalize;">{{requestedStatus}}</span></p><p style="margin: 5px 0;"><strong>Current Status:</strong> <span style="text-transform: capitalize;">{{currentStatus}}</span></p></div><div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 6px; margin: 20px 0;"><p style="margin: 0; color: #991b1b;"><strong>Reason:</strong></p><p style="margin: 10px 0 0 0; color: #991b1b;">{{denialReason}}</p></div><p style="margin-top: 20px; font-size: 14px; color: #6b7280;">If you have questions or would like to discuss this decision, please feel free to contact the administrator.</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #6b7280; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Visit Prayer App</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>This is an automated notification from your prayer app.</p></div></body></html>',
-  'Status Change Request: {{prayerTitle}}
-
-Requested Status: {{requestedStatus}}
-Current Status: {{currentStatus}}
-
-Reason: {{denialReason}}
-
-If you have questions, please contact the administrator.
-
----
-This is an automated notification from your prayer app.',
-  'Sent to the requester when their status change is denied'
 )
 ON CONFLICT (template_key) DO NOTHING;

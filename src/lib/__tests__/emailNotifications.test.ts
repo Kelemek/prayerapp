@@ -160,18 +160,6 @@ describe('emailNotifications', () => {
     expect(sendEmail).toHaveBeenCalled();
   });
 
-  it('warns when approved status change has no requester email', async () => {
-    await emailNotifications.sendApprovedStatusChangeNotification({
-      prayerTitle: 'P',
-      requestedBy: 'R',
-      requestedEmail: '' as any,
-      currentStatus: 'open',
-      newStatus: 'answered'
-    } as any);
-
-    expect(consoleWarn).toHaveBeenCalled();
-  });
-
   it('sends approved update notification via sendEmailToAllSubscribers and logs on failure', async () => {
     // Mock getTemplate to return a template
     const { getTemplate } = await import('../emailService');
@@ -216,36 +204,6 @@ describe('emailNotifications', () => {
       content: 'C2',
       author: 'A2',
       markedAsAnswered: true
-    } as any);
-
-    expect(consoleError).toHaveBeenCalled();
-  });
-
-  it('sends denied status change notification when email provided and logs when send fails', async () => {
-    (sendEmail as any).mockResolvedValue(undefined);
-
-    await emailNotifications.sendDeniedStatusChangeNotification({
-      prayerTitle: 'Title',
-      requestedBy: 'R',
-      requestedEmail: 'r@example.com',
-      requestedStatus: 'answered',
-      currentStatus: 'open',
-      reason: 'none',
-      denialReason: 'no'
-    } as any);
-
-    expect(sendEmail).toHaveBeenCalled();
-
-    // error path
-    (sendEmail as any).mockRejectedValue(new Error('send-failed'));
-    await emailNotifications.sendDeniedStatusChangeNotification({
-      prayerTitle: 'Title2',
-      requestedBy: 'R2',
-      requestedEmail: 'r2@example.com',
-      requestedStatus: 'answered',
-      currentStatus: 'open',
-      reason: 'none',
-      denialReason: 'no'
     } as any);
 
     expect(consoleError).toHaveBeenCalled();

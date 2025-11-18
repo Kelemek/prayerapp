@@ -16,9 +16,7 @@ vi.mock('../../lib/supabase', async () => {
 
 vi.mock('../../lib/emailNotifications', () => ({
   sendApprovedUpdateNotification: vi.fn(() => Promise.resolve()),
-  sendApprovedStatusChangeNotification: vi.fn(() => Promise.resolve()),
   sendDeniedUpdateNotification: vi.fn(() => Promise.resolve()),
-  sendDeniedStatusChangeNotification: vi.fn(() => Promise.resolve()),
   sendApprovedPrayerNotification: vi.fn(() => Promise.resolve()),
   sendRequesterApprovalNotification: vi.fn(() => Promise.resolve()),
   sendDeniedPrayerNotification: vi.fn(() => Promise.resolve())
@@ -134,8 +132,6 @@ describe('useAdminData approvals', () => {
       await result.current.approveStatusChangeRequest('status-1')
     })
 
-    // The notification should be sent
-    expect(email.sendApprovedStatusChangeNotification).toHaveBeenCalled()
     // And supabase should have been used to update prayers
     expect(supabase.from).toHaveBeenCalled()
   })
