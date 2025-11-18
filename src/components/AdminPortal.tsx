@@ -20,8 +20,27 @@ import { sendApprovedPreferenceChangeNotification, sendDeniedPreferenceChangeNot
 
 type AdminTab = 'prayers' | 'updates' | 'deletions' | 'preferences' | 'settings';
 
-export const AdminPortal: React.FC = () => {
+interface AdminPortalProps {
+  allowUserDeletions?: boolean;
+  allowUserUpdates?: boolean;
+}
+
+export const AdminPortal: React.FC<AdminPortalProps> = ({ 
+  allowUserDeletions = true,
+  allowUserUpdates = true 
+}) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('prayers');
+  
+  // Redirect to valid tab if current tab is disabled
+  useEffect(() => {
+    if (activeTab === 'updates' && !allowUserUpdates) {
+      setActiveTab('prayers');
+    }
+    if (activeTab === 'deletions' && !allowUserDeletions) {
+      setActiveTab('prayers');
+    }
+  }, [activeTab, allowUserUpdates, allowUserDeletions]);
+  
   const {
     pendingPrayers,
     pendingUpdates,
@@ -423,39 +442,43 @@ export const AdminPortal: React.FC = () => {
             </div>
           </button>
           
-          <button
-            onClick={() => setActiveTab('updates')}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              activeTab === 'updates' ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-600'
-            }`}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <MessageSquare className="text-blue-500" size={20} />
-              <div className="text-center">
-                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                  {pendingUpdates.length}
+          {allowUserUpdates && (
+            <button
+              onClick={() => setActiveTab('updates')}
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+                activeTab === 'updates' ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:border-blue-300 dark:hover:border-blue-600'
+              }`}
+            >
+              <div className="flex flex-col items-center gap-1">
+                <MessageSquare className="text-blue-500" size={20} />
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                    {pendingUpdates.length}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-300">Updates</div>
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-300">Updates</div>
               </div>
-            </div>
-          </button>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('deletions')}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
-              activeTab === 'deletions' ? 'ring-2 ring-red-500 border-red-500' : 'hover:border-red-300 dark:hover:border-red-600'
-            }`}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <Trash2 className="text-red-500" size={20} />
-              <div className="text-center">
-                <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                  {pendingDeletionRequests.length + pendingUpdateDeletionRequests.length}
+          {allowUserDeletions && (
+            <button
+              onClick={() => setActiveTab('deletions')}
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
+                activeTab === 'deletions' ? 'ring-2 ring-red-500 border-red-500' : 'hover:border-red-300 dark:hover:border-red-600'
+              }`}
+            >
+              <div className="flex flex-col items-center gap-1">
+                <Trash2 className="text-red-500" size={20} />
+                <div className="text-center">
+                  <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                    {pendingDeletionRequests.length + pendingUpdateDeletionRequests.length}
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-300">Deletions</div>
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-300">Deletions</div>
               </div>
-            </div>
-          </button>
+            </button>
+          )}
           
           <button
             onClick={() => setActiveTab('preferences')}
@@ -539,7 +562,7 @@ export const AdminPortal: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'updates' && (
+        {activeTab === 'updates' && allowUserUpdates && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
               Pending Prayer Updates ({pendingUpdates.length})
@@ -571,7 +594,7 @@ export const AdminPortal: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'deletions' && (
+        {activeTab === 'deletions' && allowUserDeletions && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
               Pending Deletion Requests ({pendingDeletionRequests.length + pendingUpdateDeletionRequests.length})

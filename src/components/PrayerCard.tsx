@@ -19,6 +19,8 @@ interface PrayerCardProps {
   registerCloseCallback: (callback: () => void) => () => void;
   onFormOpen: () => void;
   isAdmin: boolean;
+  allowUserDeletions?: boolean;
+  allowUserUpdates?: boolean;
 }
 
 export const PrayerCard: React.FC<PrayerCardProps> = ({ 
@@ -32,7 +34,9 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
   onRequestUpdateDelete,
   registerCloseCallback,
   onFormOpen,
-  isAdmin 
+  isAdmin,
+  allowUserDeletions = true,
+  allowUserUpdates = true
 }) => {
   const displayedRequester = prayer.is_anonymous ? 'Anonymous' : prayer.requester;
   const [showAddUpdate, setShowAddUpdate] = useState(false);
@@ -445,19 +449,21 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
             <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Requested by <span className="font-medium text-gray-800 dark:text-gray-100">{displayedRequester}</span></span>
           </div>
         </div>
-        <button
-          onClick={() => {
-            if (isAdmin) {
-              handleDirectDelete();
-            } else {
-              openForm(() => setShowDeleteRequest(!showDeleteRequest));
-            }
-          }}
-          className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
-          title={isAdmin ? "Delete prayer" : "Request deletion"}
-        >
-          <Trash2 size={16} />
-        </button>
+        {(isAdmin || allowUserDeletions) && (
+          <button
+            onClick={() => {
+              if (isAdmin) {
+                handleDirectDelete();
+              } else {
+                openForm(() => setShowDeleteRequest(!showDeleteRequest));
+              }
+            }}
+            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1"
+            title={isAdmin ? "Delete prayer" : "Request deletion"}
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
       </div>
 
   {/* Centered timestamp for the prayer (positioned relative to the whole card) */}
@@ -479,16 +485,18 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
               </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                openForm(() => setShowAddUpdate(!showAddUpdate));
-              }}
-              className="px-3 py-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
-            >
-              Add Update
-            </button>
-          </div>
+          allowUserUpdates && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  openForm(() => setShowAddUpdate(!showAddUpdate));
+                }}
+                className="px-3 py-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
+              >
+                Add Update
+              </button>
+            </div>
+          )
         )}
         
         {/* Updates exist; list is shown below */}
@@ -651,33 +659,35 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {update.is_anonymous ? 'Anonymous' : update.author}
                     </span>
-                    <button
-                      onClick={async () => {
-                        if (isAdmin) {
-                          if (confirm('Are you sure you want to delete this update? This action cannot be undone.')) {
-                            try {
-                              await onDeleteUpdate(update.id);
-                              // show a toast confirmation
-                              showToast('Update deleted', 'success');
-                            } catch (err) {
-                              console.error('Failed to delete update:', err);
-                              showToast('Failed to delete update', 'error');
+                    {(isAdmin || allowUserDeletions) && (
+                      <button
+                        onClick={async () => {
+                          if (isAdmin) {
+                            if (confirm('Are you sure you want to delete this update? This action cannot be undone.')) {
+                              try {
+                                await onDeleteUpdate(update.id);
+                                // show a toast confirmation
+                                showToast('Update deleted', 'success');
+                              } catch (err) {
+                                console.error('Failed to delete update:', err);
+                                showToast('Failed to delete update', 'error');
+                              }
+                            }
+                          } else {
+                            // Toggle the form - close if already open, open if closed
+                            if (showUpdateDeleteRequest === update.id) {
+                              setShowUpdateDeleteRequest(null);
+                            } else {
+                              openForm(() => setShowUpdateDeleteRequest(update.id));
                             }
                           }
-                        } else {
-                          // Toggle the form - close if already open, open if closed
-                          if (showUpdateDeleteRequest === update.id) {
-                            setShowUpdateDeleteRequest(null);
-                          } else {
-                            openForm(() => setShowUpdateDeleteRequest(update.id));
-                          }
-                        }
-                      }}
-                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 ml-2"
-                      title={isAdmin ? 'Delete update' : 'Request update deletion'}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                        }}
+                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 ml-2"
+                        title={isAdmin ? 'Delete update' : 'Request update deletion'}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                   <span className="absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400">{formatDate(update.created_at)}</span>
                 </div>

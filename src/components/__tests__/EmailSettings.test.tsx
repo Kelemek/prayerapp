@@ -165,6 +165,8 @@ describe('EmailSettings Component', () => {
       id: 1,
       app_title: 'New Title',
       app_subtitle: 'New Subtitle',
+      allow_user_deletions: true,
+      allow_user_updates: true,
       updated_at: expect.any(String),
     });
 

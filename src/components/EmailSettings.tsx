@@ -16,6 +16,8 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
   const [daysBeforeArchive, setDaysBeforeArchive] = useState<number>(7);
   const [appTitle, setAppTitle] = useState<string>('Church Prayer Manager');
   const [appSubtitle, setAppSubtitle] = useState<string>('Keeping our community connected in prayer');
+  const [allowUserDeletions, setAllowUserDeletions] = useState<boolean>(true);
+  const [allowUserUpdates, setAllowUserUpdates] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [savingBranding, setSavingBranding] = useState(false);
   const [savingVerification, setSavingVerification] = useState(false);
@@ -36,7 +38,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('require_email_verification, verification_code_length, verification_code_expiry_minutes, days_before_ongoing, enable_reminders, reminder_interval_days, enable_auto_archive, days_before_archive, app_title, app_subtitle')
+        .select('require_email_verification, verification_code_length, verification_code_expiry_minutes, days_before_ongoing, enable_reminders, reminder_interval_days, enable_auto_archive, days_before_archive, app_title, app_subtitle, allow_user_deletions, allow_user_updates')
         .eq('id', 1)
         .maybeSingle();
 
@@ -79,6 +81,14 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
 
       if (data?.app_subtitle) {
         setAppSubtitle(data.app_subtitle);
+      }
+
+      if (data?.allow_user_deletions !== null && data?.allow_user_deletions !== undefined) {
+        setAllowUserDeletions(data.allow_user_deletions);
+      }
+
+      if (data?.allow_user_updates !== null && data?.allow_user_updates !== undefined) {
+        setAllowUserUpdates(data.allow_user_updates);
       }
     } catch (err: unknown) {
       console.error('Error loading emails:', err);
@@ -140,6 +150,8 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           id: 1,
           app_title: appTitle,
           app_subtitle: appSubtitle,
+          allow_user_deletions: allowUserDeletions,
+          allow_user_updates: allowUserUpdates,
           updated_at: new Date().toISOString()
         });
 
@@ -296,6 +308,40 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Descriptive tagline shown under the title (hidden on mobile)
+            </p>
+          </div>
+
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allowUserDeletions}
+                onChange={(e) => setAllowUserDeletions(e.target.checked)}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Allow users to delete prayers and updates
+              </span>
+            </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
+              When enabled, users can delete their own prayer requests and updates from the front-end interface. When disabled, all delete (trash can) icons are hidden.
+            </p>
+          </div>
+
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allowUserUpdates}
+                onChange={(e) => setAllowUserUpdates(e.target.checked)}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Allow users to add updates to prayers
+              </span>
+            </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
+              When enabled, users can add updates to existing prayer requests. When disabled, "Add Update" buttons are hidden from users (admins can still add updates).
             </p>
           </div>
         </div>

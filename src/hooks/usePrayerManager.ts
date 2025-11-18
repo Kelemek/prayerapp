@@ -360,7 +360,7 @@ export const usePrayerManager = () => {
           update_id: updateId,
           reason,
           requested_by: requester,
-          requester_email: requesterEmail || null
+          requested_email: requesterEmail || null
         })
         .select()
         .single();

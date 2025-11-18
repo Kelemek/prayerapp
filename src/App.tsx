@@ -46,6 +46,8 @@ function AppContent() {
   // App branding
   const [appTitle, setAppTitle] = useState('Church Prayer Manager');
   const [appSubtitle, setAppSubtitle] = useState('Keeping our community connected in prayer');
+  const [allowUserDeletions, setAllowUserDeletions] = useState(true);
+  const [allowUserUpdates, setAllowUserUpdates] = useState(true);
 
   const [showForm, setShowForm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -75,13 +77,19 @@ function AppContent() {
       try {
         const { data, error } = await supabase
           .from('admin_settings')
-          .select('app_title, app_subtitle')
+          .select('app_title, app_subtitle, allow_user_deletions, allow_user_updates')
           .eq('id', 1)
           .maybeSingle();
         
         if (!error && data) {
           if (data.app_title) setAppTitle(data.app_title);
           if (data.app_subtitle) setAppSubtitle(data.app_subtitle);
+          if (data.allow_user_deletions !== null && data.allow_user_deletions !== undefined) {
+            setAllowUserDeletions(data.allow_user_deletions);
+          }
+          if (data.allow_user_updates !== null && data.allow_user_updates !== undefined) {
+            setAllowUserUpdates(data.allow_user_updates);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch branding settings:', error);
@@ -89,6 +97,37 @@ function AppContent() {
     };
     
     fetchBranding();
+    
+    // Subscribe to real-time changes to admin_settings
+    const channel = supabase
+      .channel('app_settings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'admin_settings',
+          filter: 'id=eq.1'
+        },
+        (payload) => {
+          if (payload.new) {
+            const newData = payload.new as any;
+            if (newData.app_title) setAppTitle(newData.app_title);
+            if (newData.app_subtitle) setAppSubtitle(newData.app_subtitle);
+            if (newData.allow_user_deletions !== null && newData.allow_user_deletions !== undefined) {
+              setAllowUserDeletions(newData.allow_user_deletions);
+            }
+            if (newData.allow_user_updates !== null && newData.allow_user_updates !== undefined) {
+              setAllowUserUpdates(newData.allow_user_updates);
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Track page view on initial load
@@ -535,6 +574,8 @@ function AppContent() {
                 onUpdateStatus={updatePrayerStatus}
                 onAddUpdate={addPrayerUpdate}
                 onDelete={deletePrayer}
+                allowUserDeletions={allowUserDeletions}
+                allowUserUpdates={allowUserUpdates}
                 registerCloseCallback={registerCloseCallback}
                 onFormOpen={closeAllForms}
                 onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => {
@@ -623,6 +664,63 @@ function AppContent() {
 function AdminWrapper() {
   const { isAdmin, loading } = useAdminAuth();
   const [currentView, setCurrentView] = useState<'public' | 'admin-login' | 'admin-portal' | 'presentation' | 'mobile-presentation'>('public');
+  const [allowUserDeletions, setAllowUserDeletions] = useState(true);
+  const [allowUserUpdates, setAllowUserUpdates] = useState(true);
+  
+  // Fetch app settings for admin controls
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('allow_user_deletions, allow_user_updates')
+        .eq('id', 1)
+        .maybeSingle();
+      
+      if (!error && data) {
+        if (data.allow_user_deletions !== null && data.allow_user_deletions !== undefined) {
+          setAllowUserDeletions(data.allow_user_deletions);
+        }
+        if (data.allow_user_updates !== null && data.allow_user_updates !== undefined) {
+          setAllowUserUpdates(data.allow_user_updates);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch admin settings:', error);
+    }
+  };
+  
+  useEffect(() => {
+    fetchSettings();
+    
+    // Subscribe to real-time changes to admin_settings
+    const channel = supabase
+      .channel('admin_settings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'admin_settings',
+          filter: 'id=eq.1'
+        },
+        (payload) => {
+          if (payload.new) {
+            const newData = payload.new as any;
+            if (newData.allow_user_deletions !== null && newData.allow_user_deletions !== undefined) {
+              setAllowUserDeletions(newData.allow_user_deletions);
+            }
+            if (newData.allow_user_updates !== null && newData.allow_user_updates !== undefined) {
+              setAllowUserUpdates(newData.allow_user_updates);
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
   
   // Handle hash changes for admin access
   useEffect(() => {
@@ -740,7 +838,10 @@ function AdminWrapper() {
           </div>
         </div>
       }>
-        <AdminPortal />
+        <AdminPortal 
+          allowUserDeletions={allowUserDeletions}
+          allowUserUpdates={allowUserUpdates}
+        />
       </Suspense>
     );
   }
