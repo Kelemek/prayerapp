@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Save, RefreshCw, ChevronDown, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { EmailTemplatesManager } from './EmailTemplatesManager';
 
 interface EmailSettingsProps {
   onSave?: () => void;
@@ -629,6 +630,11 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
           <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
         </div>
       )}
+
+      {/* Email Templates Manager */}
+      <div className="mt-8">
+        <EmailTemplatesManager />
+      </div>
     </div>
   );
 };

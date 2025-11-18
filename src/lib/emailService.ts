@@ -21,6 +21,91 @@ export interface BulkEmailResult {
   errors: string[]
 }
 
+export interface EmailTemplate {
+  id: string
+  template_key: string
+  name: string
+  subject: string
+  html_body: string
+  text_body: string
+  description?: string
+  created_at: string
+  updated_at: string
+}
+
+/**
+ * Get template by key
+ */
+export async function getTemplate(templateKey: string): Promise<EmailTemplate | null> {
+  const { data, error } = await supabase
+    .from('email_templates')
+    .select('*')
+    .eq('template_key', templateKey)
+    .single()
+
+  if (error) {
+    console.error('Error fetching template:', error)
+    return null
+  }
+
+  return data
+}
+
+/**
+ * Get all templates
+ */
+export async function getAllTemplates(): Promise<EmailTemplate[]> {
+  const { data, error } = await supabase
+    .from('email_templates')
+    .select('*')
+    .order('name', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching templates:', error)
+    return []
+  }
+
+  return data || []
+}
+
+/**
+ * Update template
+ */
+export async function updateTemplate(templateId: string, updates: Partial<EmailTemplate>): Promise<EmailTemplate | null> {
+  const { data, error } = await supabase
+    .from('email_templates')
+    .update({
+      name: updates.name,
+      subject: updates.subject,
+      html_body: updates.html_body,
+      text_body: updates.text_body,
+      description: updates.description
+    })
+    .eq('id', templateId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating template:', error)
+    return null
+  }
+
+  return data
+}
+
+/**
+ * Replace template variables with actual values
+ * Supports {{variableName}} syntax
+ */
+export function applyTemplateVariables(content: string, variables: Record<string, string>): string {
+  let result = content
+  for (const [key, value] of Object.entries(variables)) {
+    const placeholder = new RegExp(`{{\\s*${key}\\s*}}`, 'g')
+    result = result.replace(placeholder, value || '')
+  }
+  return result
+}
+
 /**
  * Send a single email or small batch
  */
@@ -99,57 +184,32 @@ export async function sendVerificationCode(options: {
 
   const actionDescription = actionDescriptions[options.actionType] || 'perform an action'
 
-  const htmlBody = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #4F46E5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-          .code { font-size: 32px; font-weight: bold; color: #4F46E5; letter-spacing: 8px; text-align: center; padding: 20px; background-color: white; border-radius: 8px; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Verification Code</h1>
-          </div>
-          <div class="content">
-            <p>You requested to ${actionDescription}. Please use the verification code below:</p>
-            <div class="code">${options.code}</div>
-            <p>This code will expire in 15 minutes.</p>
-            <p>If you didn't request this code, you can safely ignore this email.</p>
-          </div>
-          <div class="footer">
-            <p>This is an automated message. Please do not reply to this email.</p>
-          </div>
-        </div>
-      </body>
-    </html>
-  `
+  // Fetch template
+  const template = await getTemplate('verification_code')
+  
+  if (!template) {
+    console.error('Verification code template not found')
+    throw new Error('Email template not configured')
+  }
 
-  const textBody = `
-Verification Code
+  // Apply variables to template
+  const subject = applyTemplateVariables(template.subject, {
+    code: options.code
+  })
 
-You requested to ${actionDescription}. Please use the verification code below:
+  const htmlBody = applyTemplateVariables(template.html_body, {
+    code: options.code,
+    actionDescription
+  })
 
-${options.code}
-
-This code will expire in 15 minutes.
-
-If you didn't request this code, you can safely ignore this email.
-
----
-This is an automated message. Please do not reply to this email.
-  `.trim()
+  const textBody = applyTemplateVariables(template.text_body, {
+    code: options.code,
+    actionDescription
+  })
 
   await sendEmail({
     to: options.email,
-    subject: `Your verification code: ${options.code}`,
+    subject,
     htmlBody,
     textBody
   })
