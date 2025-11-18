@@ -142,13 +142,43 @@ serve(async (req) => {
 
     console.log(`✅ Verification code stored: ${codeRecord.id}`);
 
+    // Fetch verification template from database
+    const { data: template, error: templateError } = await supabase
+      .from('email_templates')
+      .select('*')
+      .eq('template_key', 'verification_code')
+      .single();
+
+    if (templateError || !template) {
+      console.error('Template not found:', templateError?.message);
+      // Continue anyway - code is still stored, send fallback email
+    }
+
+    // Prepare template variables
+    const actionDescription = getActionDescription(actionType);
+    const variables = {
+      code: code,
+      actionDescription: actionDescription
+    };
+
+    // Apply variables to template (or use fallback)
+    let subject = `Your verification code: ${code}`;
+    let htmlBody = generateVerificationHTML(code, actionType);
+    let textBody = generateVerificationText(code, actionType);
+
+    if (template) {
+      subject = applyTemplateVariables(template.subject, variables);
+      htmlBody = applyTemplateVariables(template.html_body, variables);
+      textBody = applyTemplateVariables(template.text_body, variables);
+    }
+
     // Send verification email via new unified email service
     const { error: emailError } = await supabase.functions.invoke('send-email', {
       body: {
         to: email,
-        subject: `Your verification code: ${code}`,
-        htmlBody: generateVerificationHTML(code, actionType),
-        textBody: generateVerificationText(code, actionType)
+        subject,
+        htmlBody,
+        textBody
       }
     });
 
@@ -197,6 +227,18 @@ function getActionDescription(actionType: string): string {
     'preference_change': 'update your email preferences'
   };
   return descriptions[actionType] || 'perform an action';
+}
+
+/**
+ * Replace template variables with actual values
+ * Supports {{variableName}} syntax
+ */
+function applyTemplateVariables(content: string, variables: Record<string, string>): string {
+  let result = content
+  for (const [key, value] of Object.entries(variables)) {
+    result = result.replace(new RegExp(`{{${key}}}`, 'g'), value || '')
+  }
+  return result
 }
 
 function generateVerificationHTML(code: string, actionType: string): string {

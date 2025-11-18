@@ -65,34 +65,56 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
 
     const emails = admins.map(admin => admin.email);
 
-    // Prepare email content based on type
+    // For prayer notifications, try to use template; fall back to hardcoded for other types
     let subject: string;
     let body: string;
+    let html: string | undefined;
 
-    switch (payload.type) {
-      case 'prayer':
+    if (payload.type === 'prayer') {
+      try {
+        const { getTemplate, applyTemplateVariables } = await import('./emailService');
+        const template = await getTemplate('admin_notification_prayer');
+        
+        if (template) {
+          const variables = {
+            title: payload.title,
+            requester: payload.requester || 'Anonymous',
+            description: payload.description || 'No description provided',
+            adminLink: `${window.location.origin}/#admin`
+          };
+          subject = applyTemplateVariables(template.subject, variables);
+          body = applyTemplateVariables(template.text_body, variables);
+          html = applyTemplateVariables(template.html_body, variables);
+        } else {
+          throw new Error('Template not found');
+        }
+      } catch (error) {
+        console.warn('Failed to load admin_notification_prayer template, using fallback:', error);
         subject = `New Prayer Request: ${payload.title}`;
         body = `A new prayer request has been submitted and is pending approval.\n\nTitle: ${payload.title}\nRequested by: ${payload.requester || 'Anonymous'}\n\nDescription: ${payload.description || 'No description provided'}\n\nPlease review and approve/deny this request in the admin portal.`;
-        break;
-      
-      case 'update':
-        subject = `New Prayer Update: ${payload.title}`;
-        body = `A new prayer update has been submitted and is pending approval.\n\nPrayer: ${payload.title}\nUpdate by: ${payload.author || 'Anonymous'}\n\nContent: ${payload.content || 'No content provided'}\n\nPlease review and approve/deny this update in the admin portal.`;
-        break;
-      
-      case 'deletion':
-        subject = `Deletion Request: ${payload.title}`;
-        body = `A deletion request has been submitted for a prayer.\n\nPrayer: ${payload.title}\nRequested by: ${payload.requestedBy || 'Anonymous'}\n\nReason: ${payload.reason || 'No reason provided'}\n\nPlease review and approve/deny this deletion request in the admin portal.`;
-        break;
-      
-      case 'status-change':
-        subject = `Status Change Request: ${payload.title}`;
-        body = `A status change request has been submitted for a prayer.\n\nPrayer: ${payload.title}\nRequested by: ${payload.requestedBy || 'Anonymous'}\nCurrent Status: ${payload.currentStatus || 'Unknown'}\nRequested Status: ${payload.requestedStatus || 'Unknown'}\n\nReason: ${payload.reason || 'No reason provided'}\n\nPlease review and approve/deny this status change request in the admin portal.`;
-        break;
-      
-      default:
-        subject = `New Admin Action Required: ${payload.title}`;
-        body = `A new item requires your attention in the admin portal.`;
+      }
+    } else {
+      // For other types, continue using hardcoded templates
+      switch (payload.type) {
+        case 'update':
+          subject = `New Prayer Update: ${payload.title}`;
+          body = `A new prayer update has been submitted and is pending approval.\n\nPrayer: ${payload.title}\nUpdate by: ${payload.author || 'Anonymous'}\n\nContent: ${payload.content || 'No content provided'}\n\nPlease review and approve/deny this update in the admin portal.`;
+          break;
+        
+        case 'deletion':
+          subject = `Deletion Request: ${payload.title}`;
+          body = `A deletion request has been submitted for a prayer.\n\nPrayer: ${payload.title}\nRequested by: ${payload.requestedBy || 'Anonymous'}\n\nReason: ${payload.reason || 'No reason provided'}\n\nPlease review and approve/deny this deletion request in the admin portal.`;
+          break;
+        
+        case 'status-change':
+          subject = `Status Change Request: ${payload.title}`;
+          body = `A status change request has been submitted for a prayer.\n\nPrayer: ${payload.title}\nRequested by: ${payload.requestedBy || 'Anonymous'}\nCurrent Status: ${payload.currentStatus || 'Unknown'}\nRequested Status: ${payload.requestedStatus || 'Unknown'}\n\nReason: ${payload.reason || 'No reason provided'}\n\nPlease review and approve/deny this status change request in the admin portal.`;
+          break;
+        
+        default:
+          subject = `New Admin Action Required: ${payload.title}`;
+          body = `A new item requires your attention in the admin portal.`;
+      }
     }
 
     // Send email via Supabase Edge Function
@@ -100,7 +122,7 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
       to: emails,
       subject,
       body,
-      html: generateEmailHTML(payload)
+      html: html || generateEmailHTML(payload)
     });
 
     if (functionError) {
@@ -306,12 +328,37 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
  */
 async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void> {
   try {
-    const subject = `New Prayer Request: ${payload.title}`;
-    const htmlContent = generateApprovedPrayerHTML(payload);
-    const textContent = `A new prayer request has been approved and is now live.\n\nTitle: ${payload.title}\nFor: ${payload.prayerFor}\nRequested by: ${payload.requester}\n\nDescription: ${payload.description}`;
+    const { sendEmailToAllSubscribers, getTemplate, applyTemplateVariables } = await import('./emailService');
+    
+    // Try to fetch the approved_prayer template
+    let subject: string;
+    let htmlContent: string;
+    let textContent: string;
 
-    // Use new Graph API email service to send to all active subscribers
-    const { sendEmailToAllSubscribers } = await import('./emailService');
+    try {
+      const template = await getTemplate('approved_prayer');
+      if (template) {
+        const variables = {
+          title: payload.title,
+          prayerFor: payload.prayerFor,
+          requester: payload.requester,
+          description: payload.description,
+          status: payload.status,
+          appLink: `${window.location.origin}/`
+        };
+        subject = applyTemplateVariables(template.subject, variables);
+        htmlContent = applyTemplateVariables(template.html_body, variables);
+        textContent = applyTemplateVariables(template.text_body, variables);
+      } else {
+        throw new Error('Template not found');
+      }
+    } catch (error) {
+      console.warn('Failed to load approved_prayer template, using fallback:', error);
+      subject = `New Prayer Request: ${payload.title}`;
+      htmlContent = generateApprovedPrayerHTML(payload);
+      textContent = `A new prayer request has been approved and is now live.\n\nTitle: ${payload.title}\nFor: ${payload.prayerFor}\nRequested by: ${payload.requester}\n\nDescription: ${payload.description}`;
+    }
+
     const result = await sendEmailToAllSubscribers({
       subject,
       htmlBody: htmlContent,
