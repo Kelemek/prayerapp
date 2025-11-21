@@ -172,7 +172,6 @@ Single-row table for admin configuration.
 CREATE TABLE admin_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   admin_password TEXT DEFAULT 'prayer2024',
-  notification_emails TEXT,
   reminder_interval_days INTEGER DEFAULT 7,
   enable_reminders BOOLEAN DEFAULT false,
   enable_auto_archive BOOLEAN DEFAULT false,

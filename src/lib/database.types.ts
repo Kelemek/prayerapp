@@ -354,9 +354,6 @@ export interface Database {
       admin_settings: {
         Row: {
           id: number
-          notification_emails: string[]
-          email_distribution: string
-          reply_to_email: string | null
           require_email_verification: boolean
           verification_code_length: number
           verification_code_expiry_minutes: number
@@ -369,9 +366,6 @@ export interface Database {
         }
         Insert: {
           id?: number
-          notification_emails?: string[]
-          email_distribution?: string
-          reply_to_email?: string | null
           require_email_verification?: boolean
           verification_code_length?: number
           verification_code_expiry_minutes?: number
@@ -384,9 +378,6 @@ export interface Database {
         }
         Update: {
           id?: number
-          notification_emails?: string[]
-          email_distribution?: string
-          reply_to_email?: string | null
           require_email_verification?: boolean
           verification_code_length?: number
           verification_code_expiry_minutes?: number

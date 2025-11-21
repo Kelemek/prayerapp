@@ -319,14 +319,7 @@ UPDATE admin_settings
 SET admin_password = 'your_secure_password_here';
 ```
 
-2. Configure notification emails:
-
-```sql
-UPDATE admin_settings 
-SET notification_emails = 'admin@yourdomain.com';
-```
-
-3. Set reminder interval:
+2. Set reminder interval:
 
 ```sql
 UPDATE admin_settings 
