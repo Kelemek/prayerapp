@@ -162,7 +162,7 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
             </span>
           </label>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
-            When enabled, users can delete their own prayer requests and updates from the front-end interface. When disabled, all delete (trash can) icons are hidden.
+            When enabled, users can request to delete their own prayer requests and updates from the front-end interface. Deletions require admin approval before taking effect. When disabled, all delete (trash can) icons are hidden.
           </p>
         </div>
 
@@ -179,7 +179,7 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
             </span>
           </label>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
-            When enabled, users can add updates to existing prayer requests. When disabled, "Add Update" buttons are hidden from users (admins can still add updates).
+            When enabled, users can submit updates to existing prayer requests. Updates require admin approval before being displayed. When disabled, "Add Update" buttons are hidden from users (admins can still add updates).
           </p>
         </div>
       </div>
