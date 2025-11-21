@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, RefreshCw, Clock, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useVerification } from '../hooks/useVerification';
@@ -29,7 +30,13 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [isMounted, setIsMounted] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
 
     // Fetch code length from admin settings
   useEffect(() => {
@@ -96,6 +103,21 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
       setError(null);
     }
   }, [isOpen, codeLength]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      // Save original overflow value
+      const originalOverflow = document.body.style.overflow;
+      // Prevent scrolling
+      document.body.style.overflow = 'hidden';
+      
+      // Restore on cleanup
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -214,21 +236,39 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isMounted || !isOpen) return null;
 
   const isExpired = timeRemaining === 0;
   const isCodeComplete = code.every(c => c);
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 relative my-8">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+  const modalContent = (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/60"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="min-h-screen px-4 py-8 flex items-center justify-center">
+        <div
+          className="relative w-full max-w-md overflow-y-auto rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800"
+          style={{ maxHeight: 'calc(100vh - 4rem)' }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <X size={24} />
-        </button>
+          {/* Close button */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            type="button"
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors z-10"
+            aria-label="Close dialog"
+          >
+            <X size={24} />
+          </button>
 
         {/* Header */}
         <div className="text-center mb-6">
@@ -336,11 +376,14 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
           </button>
         </div>
 
-        {/* Help text */}
-        <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
-          Didn't receive the code? Check your spam folder or click Resend Code
-        </p>
+          {/* Help text */}
+          <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
+            Didn't receive the code? Check your spam folder or click Resend Code
+          </p>
+        </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };

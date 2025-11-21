@@ -70,6 +70,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     expiresAt: string | null;
     email: string;
     actionType: 'prayer_update' | 'prayer_deletion' | 'status_change' | 'update_deletion';
+    codeActionType: 'prayer_update' | 'deletion_request' | 'status_change_request' | 'update_deletion_request';
     actionData: any;
   }>({
     isOpen: false,
@@ -77,6 +78,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     expiresAt: null,
     email: '',
     actionType: 'prayer_update',
+    codeActionType: 'prayer_update',
     actionData: null
   });
 
@@ -159,6 +161,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
           expiresAt: verificationResult.expiresAt,
           email: updateAuthorEmail,
           actionType: 'prayer_update',
+          codeActionType: 'prayer_update',
           actionData: updateData
         });
       } catch (error) {
@@ -230,6 +233,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
           expiresAt: verificationResult.expiresAt,
           email: deleteRequesterEmail,
           actionType: 'prayer_deletion',
+          codeActionType: 'deletion_request',
           actionData: deleteData
         });
       } catch (error) {
@@ -297,6 +301,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
         expiresAt: null,
         email: '',
         actionType: 'prayer_update',
+        codeActionType: 'prayer_update',
         actionData: null
       });
     } catch (error) {
@@ -312,6 +317,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       expiresAt: null,
       email: '',
       actionType: 'prayer_update',
+      codeActionType: 'prayer_update',
       actionData: null
     });
   };
@@ -320,10 +326,12 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
     try {
       if (!verificationState.email || !verificationState.actionData) return;
 
+      const actionKey = verificationState.codeActionType ?? verificationState.actionType;
+
       // Request new verification code
       const verificationResult = await requestCode(
         verificationState.email,
-        verificationState.actionType,
+        actionKey,
         verificationState.actionData
       );
       
@@ -386,6 +394,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
           expiresAt: verificationResult.expiresAt,
           email: updateDeleteRequesterEmail,
           actionType: 'update_deletion',
+          codeActionType: 'update_deletion_request',
           actionData: updateDeleteData
         });
       } catch (error) {
