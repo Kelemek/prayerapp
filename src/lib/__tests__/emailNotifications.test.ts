@@ -168,8 +168,8 @@ describe('emailNotifications', () => {
       template_key: 'approved_update',
       name: 'Approved Update',
       subject: 'Prayer Update: {{prayerTitle}}',
-      html_body: 'Update: {{content}}',
-      text_body: 'Update: {{content}}',
+      html_body: 'Update: {{updateContent}}',
+      text_body: 'Update: {{updateContent}}',
       description: 'Test template'
     });
 
@@ -194,8 +194,8 @@ describe('emailNotifications', () => {
       template_key: 'prayer_answered',
       name: 'Prayer Answered',
       subject: 'Prayer Answered: {{prayerTitle}}',
-      html_body: 'Prayer answered: {{content}}',
-      text_body: 'Prayer answered: {{content}}',
+      html_body: 'Prayer answered: {{updateContent}}',
+      text_body: 'Prayer answered: {{updateContent}}',
       description: 'Test template'
     });
 

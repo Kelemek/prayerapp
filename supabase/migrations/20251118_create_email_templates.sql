@@ -95,84 +95,84 @@ Prayer App Admin Portal',
 (
   'admin_notification_prayer',
   'Admin Notification - New Prayer',
-  'New Prayer Request: {{title}}',
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>New Prayer Request</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #ef4444, #dc2626); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">🙏 New Prayer Request</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">{{title}}</h2><p><strong>Requested by:</strong> {{requester}}</p><p><strong>Description:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6;">{{description}}</p><div style="margin-top: 30px; text-align: center;"><a href="{{adminLink}}" style="background: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Go to Admin Portal</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>This is an automated notification from your prayer app.</p></div></body></html>',
+  'New Prayer Request: {{prayerTitle}}',
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>New Prayer Request</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #ef4444, #dc2626); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">🙏 New Prayer Request</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">{{prayerTitle}}</h2><p><strong>Requested by:</strong> {{requesterName}}</p><p><strong>Description:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6;">{{prayerDescription}}</p><div style="margin-top: 30px; text-align: center;"><a href="{{adminLink}}" style="background: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Go to Admin Portal</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>This is an automated notification from your prayer app.</p></div></body></html>',
   'New Prayer Request
 
-Prayer: {{title}}
-Requested by: {{requester}}
+Prayer: {{prayerTitle}}
+Requested by: {{requesterName}}
 
 Description:
-{{description}}
+{{prayerDescription}}
 
 Please review this prayer request in the admin portal.
 {{adminLink}}
 
 ---
 This is an automated notification from your prayer app.',
-  'Admin notification when a new prayer request is pending approval'
+  'Admin notification when a new prayer request is pending approval. Variables: {{prayerTitle}}, {{requesterName}}, {{prayerDescription}}, {{adminLink}}'
 ),
 (
   'approved_prayer',
   'Approved Prayer - Subscriber Notification',
-  'New Prayer Request: {{title}}',
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>New Prayer Request</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">🙏 New Prayer Request</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">{{title}}</h2><div style="margin-bottom: 15px;"><p style="margin: 5px 0;"><strong>For:</strong> {{prayerFor}}</p><p style="margin: 5px 0;"><strong>Requested by:</strong> {{requester}}</p><p style="margin: 5px 0;"><strong>Status:</strong> {{status}}</p></div><p><strong>Description:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">{{description}}</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>This prayer has been approved and is now active. Join us in prayer!</p></div></body></html>',
-  'New Prayer Request: {{title}}
+  'New Prayer Request: {{prayerTitle}}',
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>New Prayer Request</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">🙏 New Prayer Request</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">{{prayerTitle}}</h2><div style="margin-bottom: 15px;"><p style="margin: 5px 0;"><strong>For:</strong> {{prayerFor}}</p><p style="margin: 5px 0;"><strong>Requested by:</strong> {{requesterName}}</p><p style="margin: 5px 0;"><strong>Status:</strong> {{status}}</p></div><p><strong>Description:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">{{prayerDescription}}</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>This prayer has been approved and is now active. Join us in prayer!</p></div></body></html>',
+  'New Prayer Request: {{prayerTitle}}
 
 For: {{prayerFor}}
-Requested by: {{requester}}
+Requested by: {{requesterName}}
 
-{{description}}
+{{prayerDescription}}
 
 This prayer has been approved and is now active. Join us in prayer!',
-  'Sent to all subscribers when a prayer is approved'
+  'Sent to all subscribers when a prayer is approved. Variables: {{prayerTitle}}, {{prayerFor}}, {{requesterName}}, {{status}}, {{prayerDescription}}, {{appLink}}'
 ),
 (
   'approved_update',
   'Approved Update - Subscriber Notification',
-  'Prayer Update: {{title}}',
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Prayer Update</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #3b82f6, #2563eb); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">💬 Prayer Update</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">Update for: {{prayerTitle}}</h2><p style="margin: 5px 0 15px 0;"><strong>Posted by:</strong> {{author}}</p><p><strong>Update:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6;">{{content}}</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>Let''s continue to lift this prayer up together.</p></div></body></html>',
+  'Prayer Update: {{prayerTitle}}',
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Prayer Update</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #3b82f6, #2563eb); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">💬 Prayer Update</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">Update for: {{prayerTitle}}</h2><p style="margin: 5px 0 15px 0;"><strong>Posted by:</strong> {{authorName}}</p><p><strong>Update:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #3b82f6;">{{updateContent}}</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>Let''s continue to lift this prayer up together.</p></div></body></html>',
   'Prayer Update: {{prayerTitle}}
 
-Posted by: {{author}}
+Posted by: {{authorName}}
 
-{{content}}
+{{updateContent}}
 
 Let''s continue to lift this prayer up together.',
-  'Sent to all subscribers when a prayer update is approved'
+  'Sent to all subscribers when a prayer update is approved. Variables: {{prayerTitle}}, {{authorName}}, {{updateContent}}, {{appLink}}'
 ),
 (
   'requester_approval',
   'Requester Approval Notification',
-  'Your Prayer Request Has Been Approved: {{title}}',
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Prayer Approved</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">✅ Prayer Approved</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">{{title}}</h2><p>Great news! Your prayer request has been approved and is now live on the prayer app.</p><p><strong>For:</strong> {{prayerFor}}</p><p><strong>Description:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">{{description}}</p><p style="margin-top: 20px;">Your prayer is now being lifted up by our community. You will receive updates via email when the prayer status changes or when updates are posted.</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Your Prayer</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>Thank you for your faithfulness in prayer!</p></div></body></html>',
+  'Your Prayer Request Has Been Approved: {{prayerTitle}}',
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Prayer Approved</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">✅ Prayer Approved</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">{{prayerTitle}}</h2><p>Great news! Your prayer request has been approved and is now live on the prayer app.</p><p><strong>For:</strong> {{prayerFor}}</p><p><strong>Description:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">{{prayerDescription}}</p><p style="margin-top: 20px;">Your prayer is now being lifted up by our community. You will receive updates via email when the prayer status changes or when updates are posted.</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Your Prayer</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>Thank you for your faithfulness in prayer!</p></div></body></html>',
   'Great news! Your prayer request has been approved and is now live on the prayer app.
 
-Prayer: {{title}}
+Prayer: {{prayerTitle}}
 For: {{prayerFor}}
 
-{{description}}
+{{prayerDescription}}
 
 You will receive updates via email when the prayer status changes or when updates are posted.
 
 ---
 Thank you for your faithfulness in prayer!',
-  'Sent to the requester when their prayer is approved'
+  'Sent to the requester when their prayer is approved. Variables: {{prayerTitle}}, {{prayerFor}}, {{prayerDescription}}, {{appLink}}'
 ),
 (
   'prayer_answered',
   'Prayer Answered - Subscriber Notification',
   '🎉 Prayer Answered: {{prayerTitle}}',
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Prayer Answered</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">🎉 Prayer Answered!</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><div style="display: inline-block; background: #10b981; color: white; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 15px;">✓ Answered Prayer</div><h2 style="color: #1f2937; margin-top: 0;">Update for: {{prayerTitle}}</h2><p style="margin: 5px 0 15px 0;"><strong>Posted by:</strong> {{author}}</p><p><strong>Update:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">{{content}}</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>Let''s give thanks and praise for this answered prayer!</p></div></body></html>',
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Prayer Answered</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #10b981, #059669); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">🎉 Prayer Answered!</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><div style="display: inline-block; background: #10b981; color: white; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-bottom: 15px;">✓ Answered Prayer</div><h2 style="color: #1f2937; margin-top: 0;">Update for: {{prayerTitle}}</h2><p style="margin: 5px 0 15px 0;"><strong>Posted by:</strong> {{authorName}}</p><p><strong>Update:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #10b981;">{{updateContent}}</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">View Prayer</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>Let''s give thanks and praise for this answered prayer!</p></div></body></html>',
   'Great news! A prayer has been answered!
 
 Prayer: {{prayerTitle}}
-Posted by: {{author}}
+Posted by: {{authorName}}
 
-Update: {{content}}
+Update: {{updateContent}}
 
 Let''s give thanks and praise for this answered prayer!',
-  'Sent to all subscribers when a prayer is marked as answered'
+  'Sent to all subscribers when a prayer is marked as answered. Variables: {{prayerTitle}}, {{authorName}}, {{updateContent}}, {{appLink}}'
 ),
 (
   'prayer_reminder',
@@ -204,39 +204,39 @@ The Prayer Team',
 (
   'denied_prayer',
   'Denied Prayer - Requester Notification',
-  'Prayer Request Not Approved: {{title}}',
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Prayer Request Not Approved</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #ef4444, #dc2626); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">📋 Prayer Request Status</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">{{title}}</h2><p style="margin-bottom: 15px;">Thank you for submitting your prayer request. After careful review, we are unable to approve this request at this time.</p><div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 6px; margin: 20px 0;"><p style="margin: 0; color: #991b1b;"><strong>Reason:</strong></p><p style="margin: 10px 0 0 0; color: #991b1b;">{{denialReason}}</p></div><p style="margin-top: 20px;"><strong>Your Submission:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb;">{{description}}</p><p style="margin-top: 20px; font-size: 14px; color: #6b7280;">If you have questions or would like to discuss this decision, please feel free to contact the administrator.</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #6b7280; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Visit Prayer App</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>This is an automated notification from your prayer app.</p></div></body></html>',
-  'Prayer Request: {{title}}
+  'Prayer Request Not Approved: {{prayerTitle}}',
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Prayer Request Not Approved</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #ef4444, #dc2626); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">📋 Prayer Request Status</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">{{prayerTitle}}</h2><p style="margin-bottom: 15px;">Thank you for submitting your prayer request. After careful review, we are unable to approve this request at this time.</p><div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 6px; margin: 20px 0;"><p style="margin: 0; color: #991b1b;"><strong>Reason:</strong></p><p style="margin: 10px 0 0 0; color: #991b1b;">{{denialReason}}</p></div><p style="margin-top: 20px;"><strong>Your Submission:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb;">{{prayerDescription}}</p><p style="margin-top: 20px; font-size: 14px; color: #6b7280;">If you have questions or would like to discuss this decision, please feel free to contact the administrator.</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #6b7280; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Visit Prayer App</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>This is an automated notification from your prayer app.</p></div></body></html>',
+  'Prayer Request: {{prayerTitle}}
 
 After careful review, we are unable to approve this request at this time.
 
 Reason: {{denialReason}}
 
-Your Submission: {{description}}
+Your Submission: {{prayerDescription}}
 
 If you have questions, please contact the administrator.
 
 ---
 This is an automated notification from your prayer app.',
-  'Sent to the requester when their prayer is denied'
+  'Sent to the requester when their prayer is denied. Variables: {{prayerTitle}}, {{denialReason}}, {{prayerDescription}}, {{appLink}}'
 ),
 (
   'denied_update',
   'Denied Update - Requester Notification',
   'Prayer Update Not Approved: {{prayerTitle}}',
-  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Prayer Update Not Approved</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #ef4444, #dc2626); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">💬 Update Status</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">Update for: {{prayerTitle}}</h2><p style="margin-bottom: 15px;">Thank you for submitting an update. After careful review, we are unable to approve this update at this time.</p><div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 6px; margin: 20px 0;"><p style="margin: 0; color: #991b1b;"><strong>Reason:</strong></p><p style="margin: 10px 0 0 0; color: #991b1b;">{{denialReason}}</p></div><p style="margin-top: 20px;"><strong>Your Update:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb;">{{content}}</p><p style="margin-top: 20px; font-size: 14px; color: #6b7280;">If you have questions or would like to discuss this decision, please feel free to contact the administrator.</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #6b7280; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Visit Prayer App</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>This is an automated notification from your prayer app.</p></div></body></html>',
+  '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Prayer Update Not Approved</title></head><body style="font-family: -apple-system, BlinkMacSystemFont, ''Segoe UI'', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"><div style="background: linear-gradient(to right, #ef4444, #dc2626); padding: 20px; border-radius: 8px 8px 0 0;"><h1 style="color: white; margin: 0; font-size: 24px;">💬 Update Status</h1></div><div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;"><h2 style="color: #1f2937; margin-top: 0;">Update for: {{prayerTitle}}</h2><p style="margin-bottom: 15px;">Thank you for submitting an update. After careful review, we are unable to approve this update at this time.</p><div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 6px; margin: 20px 0;"><p style="margin: 0; color: #991b1b;"><strong>Reason:</strong></p><p style="margin: 10px 0 0 0; color: #991b1b;">{{denialReason}}</p></div><p style="margin-top: 20px;"><strong>Your Update:</strong></p><p style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb;">{{updateContent}}</p><p style="margin-top: 20px; font-size: 14px; color: #6b7280;">If you have questions or would like to discuss this decision, please feel free to contact the administrator.</p><div style="margin-top: 30px; text-align: center;"><a href="{{appLink}}" style="background: #6b7280; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Visit Prayer App</a></div></div><div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 14px;"><p>This is an automated notification from your prayer app.</p></div></body></html>',
   'Update for: {{prayerTitle}}
 
 After careful review, we are unable to approve this update at this time.
 
 Reason: {{denialReason}}
 
-Your Update: {{content}}
+Your Update: {{updateContent}}
 
 If you have questions, please contact the administrator.
 
 ---
 This is an automated notification from your prayer app.',
-  'Sent to the update author when their update is denied'
+  'Sent to the update author when their update is denied. Variables: {{prayerTitle}}, {{denialReason}}, {{updateContent}}, {{appLink}}'
 )
 ON CONFLICT (template_key) DO NOTHING;

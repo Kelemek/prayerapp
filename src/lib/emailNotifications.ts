@@ -77,9 +77,9 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
         
         if (template) {
           const variables = {
-            title: payload.title,
-            requester: payload.requester || 'Anonymous',
-            description: payload.description || 'No description provided',
+            prayerTitle: payload.title,
+            requesterName: payload.requester || 'Anonymous',
+            prayerDescription: payload.description || 'No description provided',
             adminLink: `${window.location.origin}/#admin`
           };
           subject = applyTemplateVariables(template.subject, variables);
@@ -339,10 +339,10 @@ async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void
       const template = await getTemplate('approved_prayer');
       if (template) {
         const variables = {
-          title: payload.title,
+          prayerTitle: payload.title,
           prayerFor: payload.prayerFor,
-          requester: payload.requester,
-          description: payload.description,
+          requesterName: payload.requester,
+          prayerDescription: payload.description,
           status: payload.status,
           appLink: `${window.location.origin}/`
         };
@@ -394,8 +394,8 @@ export async function sendApprovedUpdateNotification(payload: ApprovedUpdatePayl
     // Prepare template variables
     const variables = {
       prayerTitle: payload.prayerTitle,
-      author: payload.author,
-      content: payload.content,
+      authorName: payload.author,
+      updateContent: payload.content,
       appLink: typeof window !== 'undefined' ? window.location.origin : 'https://prayerapp.com'
     };
     
@@ -642,8 +642,8 @@ export async function sendDeniedPrayerNotification(payload: DeniedPrayerPayload)
         html = template.html_body;
         // Apply variables
         const variables = {
-          title: payload.title,
-          description: payload.description,
+          prayerTitle: payload.title,
+          prayerDescription: payload.description,
           denialReason: payload.denialReason,
           appLink: `${window.location.origin}/`
         };
@@ -695,7 +695,7 @@ export async function sendDeniedUpdateNotification(payload: DeniedUpdatePayload)
         // Apply variables
         const variables = {
           prayerTitle: payload.prayerTitle,
-          content: payload.content,
+          updateContent: payload.content,
           denialReason: payload.denialReason,
           appLink: `${window.location.origin}/`
         };

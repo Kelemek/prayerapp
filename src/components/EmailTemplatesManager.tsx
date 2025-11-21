@@ -215,7 +215,7 @@ export const EmailTemplatesManager: React.FC = () => {
                         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
                           <p className="text-xs font-semibold text-blue-900 dark:text-blue-200 mb-2"><strong>Available variables:</strong></p>
                           <p className="text-xs text-blue-800 dark:text-blue-300 break-words">
-                            {'{{name}}'}, {'{{email}}'}, {'{{code}}'}, {'{{title}}'}, {'{{description}}'}, {'{{requester}}'}, {'{{prayerFor}}'}, {'{{content}}'}, {'{{author}}'}, {'{{actionDescription}}'}, {'{{adminLink}}'}, {'{{appLink}}'}
+                            {'{{name}}'}, {'{{email}}'}, {'{{code}}'}, {'{{prayerTitle}}'}, {'{{prayerDescription}}'}, {'{{updateContent}}'}, {'{{requesterName}}'}, {'{{authorName}}'}, {'{{prayerFor}}'}, {'{{status}}'}, {'{{actionDescription}}'}, {'{{denialReason}}'}, {'{{adminLink}}'}, {'{{appLink}}'}
                           </p>
                         </div>
                       </div>
@@ -307,15 +307,17 @@ export const EmailTemplatesManager: React.FC = () => {
                             <li>• {'{{name}}'} - User or admin name</li>
                             <li>• {'{{email}}'} - Email address</li>
                             <li>• {'{{code}}'} - Verification code</li>
-                            <li>• {'{{title}}'} - Prayer or update title</li>
-                            <li>• {'{{description}}'} - Prayer description</li>
-                            <li>• {'{{content}}'} - Prayer update content</li>
-                            <li>• {'{{requester}}'} - Prayer requester name</li>
-                            <li>• {'{{author}}'} - Update author name</li>
+                            <li>• {'{{prayerTitle}}'} - Prayer title (used in all prayer-related emails)</li>
+                            <li>• {'{{prayerDescription}}'} - Original prayer description/content</li>
+                            <li>• {'{{updateContent}}'} - Prayer update content</li>
+                            <li>• {'{{requesterName}}'} - Name of person who submitted prayer</li>
+                            <li>• {'{{authorName}}'} - Name of person who posted update</li>
                             <li>• {'{{prayerFor}}'} - Who the prayer is for</li>
-                            <li>• {'{{actionDescription}}'} - Action type description</li>
-                            <li>• {'{{adminLink}}'} - Admin portal link</li>
-                            <li>• {'{{appLink}}'} - App link</li>
+                            <li>• {'{{status}}'} - Prayer status (Current/Ongoing/Answered/Archived)</li>
+                            <li>• {'{{denialReason}}'} - Reason for prayer/update denial</li>
+                            <li>• {'{{actionDescription}}'} - Description of verification action</li>
+                            <li>• {'{{adminLink}}'} - Link to admin portal</li>
+                            <li>• {'{{appLink}}'} - Link to prayer app</li>
                           </ul>
                         </div>
                       </div>
