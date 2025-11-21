@@ -174,7 +174,9 @@ CREATE TABLE admin_settings (
   admin_password TEXT DEFAULT 'prayer2024',
   notification_emails TEXT,
   reminder_interval_days INTEGER DEFAULT 7,
-  auto_transition_enabled BOOLEAN DEFAULT false,
+  enable_reminders BOOLEAN DEFAULT false,
+  enable_auto_archive BOOLEAN DEFAULT false,
+  days_before_archive INTEGER DEFAULT 7,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -183,7 +185,7 @@ CREATE TABLE admin_settings (
 **Default Values**:
 - Password: `prayer2024` (change immediately!)
 - Reminder interval: 7 days
-- Auto-transition: disabled
+- Auto-archive: disabled (7 days after reminder when enabled)
 
 ## Row Level Security (RLS)
 

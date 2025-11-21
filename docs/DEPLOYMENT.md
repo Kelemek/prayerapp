@@ -106,7 +106,6 @@ Or deploy individually:
 ```bash
 ./deploy-functions.sh send-notification
 ./deploy-functions.sh send-prayer-reminders
-./deploy-functions.sh auto-transition-prayers
 ```
 
 ### Manual Deployment
@@ -130,12 +129,6 @@ supabase functions deploy send-prayer-reminders
 
 # Set environment variable
 supabase secrets set RESEND_API_KEY=your_api_key
-```
-
-#### auto-transition-prayers
-
-```bash
-supabase functions deploy auto-transition-prayers
 ```
 
 ### Verify Deployment
@@ -359,19 +352,9 @@ SELECT cron.schedule(
   );
   $$
 );
-
--- Auto-transition prayers
-SELECT cron.schedule(
-  'auto-transition-prayers',
-  '0 0 * * *', -- Daily midnight
-  $$
-  SELECT net.http_post(
-    url := 'https://xxxxx.supabase.co/functions/v1/auto-transition-prayers',
-    headers := '{"Authorization": "Bearer YOUR_ANON_KEY"}'::jsonb
-  );
-  $$
-);
 ```
+
+**Note**: Auto-archiving of prayers is handled by the `send-prayer-reminders` function based on the `days_before_archive` setting.
 
 ## Monitoring
 

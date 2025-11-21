@@ -131,7 +131,6 @@ The app uses these main tables:
 # Or deploy individually
 supabase functions deploy send-notification --no-verify-jwt
 supabase functions deploy send-prayer-reminders
-supabase functions deploy auto-transition-prayers
 ```
 
 ### Configure Microsoft 365 SMTP Secrets

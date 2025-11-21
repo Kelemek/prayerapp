@@ -87,8 +87,9 @@ serve(async (req) => {
     }
 
     // Calculate the cutoff date for reminders
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - reminderIntervalDays)
+    const now = new Date()
+    const millisecondsInDay = 24 * 60 * 60 * 1000
+    const cutoffDate = new Date(now.getTime() - (reminderIntervalDays * millisecondsInDay))
 
     // Find prayers that need reminders:
     // - Status is 'current' (active prayers only)
@@ -261,8 +262,8 @@ serve(async (req) => {
     if (enableAutoArchive && daysBeforeArchive > 0) {
       // Calculate cutoff date for auto-archiving based on daysBeforeArchive
       // If a prayer had a reminder sent more than daysBeforeArchive days ago, it should be archived
-      const archiveCutoffDate = new Date()
-      archiveCutoffDate.setDate(archiveCutoffDate.getDate() - daysBeforeArchive)
+      const archiveNow = new Date()
+      const archiveCutoffDate = new Date(archiveNow.getTime() - (daysBeforeArchive * millisecondsInDay))
 
       console.log(`Auto-archive enabled: checking for prayers with reminders sent before ${archiveCutoffDate.toISOString()}`)
 

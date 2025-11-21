@@ -360,8 +360,10 @@ export interface Database {
           require_email_verification: boolean
           verification_code_length: number
           verification_code_expiry_minutes: number
-          days_before_ongoing: number
+          enable_reminders: boolean
           reminder_interval_days: number
+          enable_auto_archive: boolean
+          days_before_archive: number
           created_at: string
           updated_at: string
         }
@@ -373,8 +375,10 @@ export interface Database {
           require_email_verification?: boolean
           verification_code_length?: number
           verification_code_expiry_minutes?: number
-          days_before_ongoing?: number
+          enable_reminders?: boolean
           reminder_interval_days?: number
+          enable_auto_archive?: boolean
+          days_before_archive?: number
           created_at?: string
           updated_at?: string
         }
@@ -386,8 +390,10 @@ export interface Database {
           require_email_verification?: boolean
           verification_code_length?: number
           verification_code_expiry_minutes?: number
-          days_before_ongoing?: number
+          enable_reminders?: boolean
           reminder_interval_days?: number
+          enable_auto_archive?: boolean
+          days_before_archive?: number
           created_at?: string
           updated_at?: string
         }

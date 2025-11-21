@@ -61,17 +61,12 @@ case $FUNCTION_NAME in
         echo "   - SUPABASE_URL"
         echo "   - SUPABASE_SERVICE_ROLE_KEY"
         ;;
-    "auto-transition-prayers")
-        deploy_function "auto-transition-prayers" ""
-        echo "💡 This function runs on a schedule to auto-transition prayers"
-        ;;
     "all")
         echo "Deploying all functions..."
         echo ""
         deploy_function "send-notification" "--no-verify-jwt"
         deploy_function "send-verification-code" "--no-verify-jwt"
         deploy_function "send-prayer-reminders" ""
-        deploy_function "auto-transition-prayers" ""
         echo "🎉 All functions deployed successfully!"
         ;;
     *)
@@ -83,7 +78,6 @@ case $FUNCTION_NAME in
         echo "  send-notification        - Email sending (no JWT)"
         echo "  send-verification-code   - Email verification codes (no JWT)"
         echo "  send-prayer-reminders    - Automated prayer reminders"
-        echo "  auto-transition-prayers  - Auto-transition prayer statuses"
         echo "  all                      - Deploy all functions (default)"
         echo ""
         exit 1

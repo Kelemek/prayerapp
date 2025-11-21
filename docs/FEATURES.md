@@ -59,17 +59,9 @@ Complete guide to all Prayer App features and how to use them.
 #### Filter & Search Prayers
 
 - **Search**: Keywords in title or description
-- **Status Filter**: Current/Ongoing/Answered/Closed/Prompts
+- **Status Filter**: Current/Answered/Archived/Prompts
 - **Personal Filter**: Filter by your email to see only your prayers
 - **Real-time Updates**: List updates automatically as prayers are approved
-
-#### Auto-Transition to Ongoing
-
-Prayers automatically move from "Current" to "Ongoing" based on age:
-- Admins set transition threshold (default: 30 days)
-- Only affects approved prayers in "current" status
-- Keeps prayer list organized automatically
-- Can be disabled by admin (set to 0 days)
 
 ### 2. Prayer Updates
 
@@ -432,12 +424,7 @@ Located in Settings tab:
 - **Threshold**: Only send if no updates in X days
 - **Manual Trigger**: "Send Reminders Now" button
 - Sends emails to prayer requesters with stale prayers
-
-#### Auto-Transition Settings
-- **Days Before Ongoing**: Automatic status transition (default: 30)
-- **Range**: 1-365 days
-- **Disable**: Set to 0
-- **Manual Trigger**: "Run Transition Now" button
+- **Auto-Archive**: After reminder threshold, prayers can be automatically archived
 
 #### Analytics View
 - Today's page views
@@ -660,17 +647,17 @@ Features planned for future releases:
    - **Admin Password**: Set/change admin access password
    - **Notification Emails**: Admin email addresses (comma-separated)
    - **Reminder Interval**: Days before sending prayer reminders
-   - **Auto-Transition**: Enable automatic prayer status transitions
+   - **Auto-Archive**: Automatically archive prayers after reminders
 
 **Prayer Reminders**:
 - "Send Reminders Now" button
 - Sends emails to prayer requesters with no updates
 - Configurable threshold (default: 7 days)
 
-**Auto-Transition**:
-- Automatically moves prayers between statuses
-- Based on time and activity
-- Schedule in Edge Functions
+**Auto-Archive**:
+- Automatically archives prayers after reminder threshold
+- Only archives prayers with no recent updates
+- Configurable days before archive (default: 7 days after reminder)
 
 ## User Interface Features
 

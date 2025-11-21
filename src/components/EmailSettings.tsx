@@ -33,7 +33,7 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('require_email_verification, verification_code_length, verification_code_expiry_minutes, days_before_ongoing, enable_reminders, reminder_interval_days, enable_auto_archive, days_before_archive')
+        .select('require_email_verification, verification_code_length, verification_code_expiry_minutes, enable_reminders, reminder_interval_days, enable_auto_archive, days_before_archive')
         .eq('id', 1)
         .maybeSingle();
 
