@@ -232,7 +232,7 @@ function AppContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center transition-colors">
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center transition-colors">
         <div className="text-center">
           <div className="text-red-600 dark:text-red-400 mb-4">
             <p className="text-lg font-semibold">Connection Error</p>
