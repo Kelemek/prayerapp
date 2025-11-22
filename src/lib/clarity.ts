@@ -19,28 +19,51 @@ export const initializeClarity = (): void => {
     return;
   }
 
-  const clarityProjectId = import.meta.env.VITE_CLARITY_PROJECT_ID;
-  
-  // Debug logging to verify environment variable is loaded
-  console.log('Clarity environment check:', {
-    projectId: clarityProjectId,
-    hasValue: !!clarityProjectId,
-    type: typeof clarityProjectId,
-    allEnvVars: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
-  });
-  
-  // Only initialize if project ID is configured and valid
-  if (!clarityProjectId || typeof clarityProjectId !== 'string' || clarityProjectId.trim() === '') {
-    console.debug('Clarity not configured (VITE_CLARITY_PROJECT_ID not set or invalid)');
-    return;
-  }
-
   try {
+    const clarityProjectId = import.meta.env.VITE_CLARITY_PROJECT_ID;
+    
+    // Debug logging to verify environment variable is loaded
+    if (clarityProjectId) {
+      console.debug('Clarity environment check:', {
+        projectId: clarityProjectId,
+        hasValue: !!clarityProjectId,
+        isDefined: clarityProjectId !== undefined,
+        isEmpty: clarityProjectId === '',
+        type: typeof clarityProjectId,
+        mode: import.meta.env.MODE
+      });
+    }
+    
+    // Only initialize if project ID is explicitly set and not empty
+    // In production on Vercel, if not set, just skip silently
+    if (!clarityProjectId || clarityProjectId === '' || clarityProjectId === 'undefined') {
+      console.debug('Clarity not configured - skipping initialization');
+      return;
+    }
+
+    // Validate it's a string
+    if (typeof clarityProjectId !== 'string') {
+      console.warn('Clarity project ID is not a string:', typeof clarityProjectId);
+      return;
+    }
+
+    // Validate project ID format (should be alphanumeric, no special characters)
+    if (!/^[a-z0-9]{10,}$/.test(clarityProjectId)) {
+      console.warn('Clarity project ID format looks invalid:', clarityProjectId);
+      return;
+    }
+
+    // Validate the project ID is not a test/placeholder value
+    if (clarityProjectId === 'u9ubmxp15k') {
+      console.warn('Clarity project ID appears to be a placeholder - skipping initialization. Please set up a real Clarity project at https://clarity.microsoft.com');
+      return;
+    }
+
     // Initialize Clarity using the official npm package
     Clarity.init(clarityProjectId);
-    console.log('Clarity initialized successfully with project:', clarityProjectId);
+    console.log('✓ Clarity initialized with project:', clarityProjectId);
   } catch (error) {
-    console.error('Failed to initialize Clarity:', error);
+    console.error('✗ Failed to initialize Clarity:', error instanceof Error ? error.message : String(error));
   }
 };
 
