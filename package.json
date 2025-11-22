@@ -16,6 +16,7 @@
     "coverage:open": "open coverage/index.html || true"
   },
   "dependencies": {
+    "@microsoft/clarity": "^1.0.0",
     "@planningcenter/api-client": "^3.0.1",
     "@supabase/supabase-js": "^2.75.0",
     "@vercel/analytics": "^1.5.0",
