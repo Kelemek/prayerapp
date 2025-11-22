@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font optimization */
+html {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-display: swap; /* Show fallback font immediately */
+}
+
 /* Override Tailwind base to fix overscroll background */
 html {
   background-color: rgb(249 250 251) !important; /* gray-50 */

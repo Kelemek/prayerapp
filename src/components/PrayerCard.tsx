@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Trash2, ChevronDown } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { PrayerStatus } from '../types/prayer';
@@ -23,7 +23,7 @@ interface PrayerCardProps {
   allowUserUpdates?: boolean;
 }
 
-export const PrayerCard: React.FC<PrayerCardProps> = ({ 
+export const PrayerCard: React.FC<PrayerCardProps> = memo(({ 
   prayer, 
   onUpdateStatus, 
   onAddUpdate, 
@@ -784,4 +784,4 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({
       )}
     </div>
   );
-};
+});

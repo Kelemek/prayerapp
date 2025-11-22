@@ -19,9 +19,17 @@ const applyStoredTheme = () => {
 // Apply theme before React renders
 applyStoredTheme();
 
-createRoot(document.getElementById('root')!).render(
+const root = createRoot(document.getElementById('root')!);
+root.render(
   <StrictMode>
     <App />
     <SpeedInsights />
   </StrictMode>,
-)
+);
+
+// Defer non-critical work
+if ('requestIdleCallback' in window) {
+  requestIdleCallback(() => {
+    // Any non-critical initialization can go here
+  });
+}

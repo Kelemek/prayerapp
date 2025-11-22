@@ -11,8 +11,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
-    ,"coverage:summary": "node scripts/coverage-summary.js",
+    "test:coverage": "vitest run --coverage",
+    "coverage:summary": "node scripts/coverage-summary.js",
     "coverage:open": "open coverage/index.html || true"
   },
   "dependencies": {
@@ -43,6 +43,7 @@
     "jsdom": "^27.0.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
+    "terser": "^5.44.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
     "vite": "^7.1.7",

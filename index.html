@@ -3,7 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Cross Pointe Church prayer request platform. Submit prayer requests, view community prayers, and stay connected with our church community." />
+    <meta name="theme-color" content="#ffffff" />
+    <!-- Resource hints for performance -->
+    <link rel="preconnect" href="https://supabase-cdn.example.com" />
+    <link rel="dns-prefetch" href="https://api.planningcenteronline.com" />
+    <link rel="preload" as="script" href="/src/main.tsx" />
+    <!-- Inline critical CSS for faster FCP -->
+    <style>
+      :root { color-scheme: light dark; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9fafb; color: #1f2937; line-height: 1.5; }
+      html.dark { background-color: #111827; color: #f3f4f6; }
+      #root { display: flex; min-height: 100vh; }
+      .min-h-screen { min-height: 100vh; }
+    </style>
     <title>Cross Pointe Church - Prayer Requests</title>
     <script>
       // Apply theme immediately to prevent flash

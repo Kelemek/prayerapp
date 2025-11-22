@@ -106,17 +106,22 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
 
   // Lock body scroll when modal is open
   useEffect(() => {
-    if (isOpen) {
-      // Save original overflow value
-      const originalOverflow = document.body.style.overflow;
-      // Prevent scrolling
-      document.body.style.overflow = 'hidden';
-      
-      // Restore on cleanup
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
+    if (!isOpen) {
+      // Ensure scroll is restored if modal closes
+      document.body.style.overflow = '';
+      return;
     }
+    
+    // Save original overflow value
+    const originalOverflow = document.body.style.overflow;
+    // Prevent scrolling
+    document.body.style.overflow = 'hidden';
+    
+    // Restore on cleanup
+    return () => {
+      // Use empty string to properly reset to default
+      document.body.style.overflow = originalOverflow || '';
+    };
   }, [isOpen]);
 
   const formatTime = (seconds: number): string => {

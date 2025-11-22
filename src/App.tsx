@@ -253,10 +253,10 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors flex flex-col">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6" style={{ margin: '0 auto', maxWidth: '72rem' }}>
+      <header className="w-full bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-6xl mx-auto w-full px-4 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="min-w-0 flex-1">
@@ -389,7 +389,7 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6" style={{ margin: '0 auto', maxWidth: '72rem' }}>
+      <main className="w-full flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Filters */}
         <PrayerFiltersComponent 
           filters={filters} 
@@ -788,6 +788,10 @@ function AdminWrapper() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="w-full max-w-6xl px-4">
+          <div className="text-center mb-4">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Loading prayers...</p>
+            <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">If this takes more than 15 seconds, please refresh the page</p>
+          </div>
           <SkeletonLoader count={5} type="card" />
         </div>
       </div>

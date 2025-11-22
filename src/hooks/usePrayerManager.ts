@@ -49,6 +49,12 @@ export const usePrayerManager = () => {
       setLoading(true);
       setError(null);
 
+      // Add timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        setLoading(false);
+        setError('Loading timeout - please check your internet connection and try again');
+      }, 15000); // 15 second timeout
+
       // Fetch approved prayers with their approved updates
       const { data: prayersData, error: prayersError } = await supabase
         .from('prayers')
@@ -57,6 +63,8 @@ export const usePrayerManager = () => {
           prayer_updates (*)
         `)
         .eq('approval_status', 'approved');
+
+      clearTimeout(timeoutId);
 
       if (prayersError) throw prayersError;
 
@@ -88,6 +96,11 @@ export const usePrayerManager = () => {
         ? String((err as any).message)
         : 'Failed to load prayers';
       console.error('Failed to load prayers:', err);
+      console.error('Error details:', {
+        type: typeof err,
+        message: errorMessage,
+        stack: err instanceof Error ? err.stack : undefined
+      });
       setError(errorMessage);
     } finally {
       setLoading(false);
