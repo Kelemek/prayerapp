@@ -409,7 +409,7 @@ export const MobilePresentation: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
           <div className="text-gray-900 dark:text-white text-xl">
@@ -428,7 +428,7 @@ export const MobilePresentation: React.FC = () => {
       : 'Prayers or Prayer Prompts';
     
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-gray-900 dark:text-white text-center px-4">
           <h1 className="text-3xl font-bold mb-4">No {displayText} Available</h1>
           <p className="text-lg">Please add some {displayText.toLowerCase()} to display.</p>
@@ -465,7 +465,7 @@ export const MobilePresentation: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col">
+    <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col">
       {/* Prayer Content - scrollable and centered with swipe support */}
       <div 
         className="flex-1 overflow-y-auto px-4 py-6 pb-24 flex items-center"
@@ -553,7 +553,7 @@ export const MobilePresentation: React.FC = () => {
       )}
 
       {/* Fixed Controls Bar */}
-      <div className={`fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-4 border-t border-gray-200 dark:border-gray-700 transition-transform duration-300 ${
+      <div className={`w-full fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-4 border-t border-gray-200 dark:border-gray-700 transition-transform duration-300 ${
         showControls ? 'translate-y-0' : 'translate-y-full'
       }`}>
         <div className="max-w-2xl mx-auto">

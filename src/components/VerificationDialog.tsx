@@ -255,7 +255,7 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
         }
       }}
     >
-      <div className="min-h-screen px-4 py-8 flex items-center justify-center">
+      <div className="w-full min-h-screen px-4 py-8 flex items-center justify-center">
         <div
           className="relative w-full max-w-md overflow-y-auto rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800"
           style={{ maxHeight: 'calc(100vh - 4rem)' }}

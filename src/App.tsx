@@ -19,8 +19,7 @@ import { sendAdminNotification } from './lib/emailNotifications';
 import { setupGlobalErrorHandling, logPageView } from './lib/errorLogger';
 
 // Lazy load heavy components
-const PrayerPresentation = lazy(() => import('./components/PrayerPresentation').then(module => ({ default: module.PrayerPresentation })));
-const MobilePresentation = lazy(() => import('./components/MobilePresentation').then(module => ({ default: module.MobilePresentation })));
+const ResponsivePresentation = lazy(() => import('./components/ResponsivePresentation').then(module => ({ default: module.ResponsivePresentation })));
 const AdminPortal = lazy(() => import('./components/AdminPortal').then(module => ({ default: module.AdminPortal })));
 const AdminLogin = lazy(() => import('./components/AdminLogin').then(module => ({ default: module.AdminLogin })));
 
@@ -309,7 +308,7 @@ function AppContent() {
                 </button>
                 {/* Mobile: Prayer Mode button */}
                 <button
-                  onClick={() => window.location.hash = '#mobile-presentation'}
+                  onClick={() => window.location.hash = '#presentation'}
                   className="flex items-center gap-1 bg-green-600 text-white px-2 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-sm"
                   title="Prayer Mode"
                 >
@@ -737,8 +736,6 @@ function AdminWrapper() {
       
       if (hash === '#presentation') {
         setCurrentView('presentation');
-      } else if (hash === '#mobile-presentation') {
-        setCurrentView('mobile-presentation');
       } else if (hash.startsWith('#admin') || redirect === 'admin') {
         // Handle #admin or ?redirect=admin (during magic link callback)
         // If already logged in (session valid), go straight to portal
@@ -808,21 +805,7 @@ function AdminWrapper() {
           </div>
         </div>
       }>
-        <PrayerPresentation />
-      </Suspense>
-    );
-  }
-  
-  if (currentView === 'mobile-presentation') {
-    return (
-      <Suspense fallback={
-        <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="w-full max-w-6xl mx-auto px-4">
-            <SkeletonLoader count={3} type="card" />
-          </div>
-        </div>
-      }>
-        <MobilePresentation />
+        <ResponsivePresentation />
       </Suspense>
     );
   }

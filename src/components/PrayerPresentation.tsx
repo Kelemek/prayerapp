@@ -412,7 +412,7 @@ export const PrayerPresentation: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
           <div className="text-gray-900 dark:text-white text-xl">
@@ -431,7 +431,7 @@ export const PrayerPresentation: React.FC = () => {
       : 'Prayers or Prayer Prompts';
     
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-gray-900 dark:text-white text-center">
           <h1 className="text-4xl font-bold mb-4">No {displayText} Available</h1>
           <p className="text-xl">Please add some {displayText.toLowerCase()} to display.</p>
@@ -532,13 +532,13 @@ export const PrayerPresentation: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white relative">
+    <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white relative">
       {/* Main Prayer Display */}
       <div className={`h-screen flex flex-col justify-center px-6 py-6 transition-all duration-300 ${
         showControls ? 'pb-28' : 'pb-6'
       }`}>
         {/* Card Container */}
-        <div className="max-w-6xl mx-auto w-full h-full">
+        <div className="w-full max-w-6xl mx-auto h-full">
           <div className="h-full overflow-y-auto flex items-center px-2">
             {currentPrayer 
               ? renderPrayerCard(currentPrayer, sortedUpdates)
