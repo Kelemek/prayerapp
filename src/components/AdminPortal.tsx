@@ -33,6 +33,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('prayers');
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>('analytics');
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   // Redirect to valid tab if current tab is disabled
   useEffect(() => {
@@ -60,6 +61,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     deniedPreferenceChanges,
 
     loading,
+    error,
     approvePrayer,
     denyPrayer,
     approveUpdate,
@@ -71,7 +73,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     denyStatusChangeRequest,
     approveUpdateDeletionRequest,
     denyUpdateDeletionRequest,
-    editPrayer
+    editPrayer,
+    refresh
   } = useAdminData();
 
   // Dev seed loading states
@@ -383,12 +386,86 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
-  if (loading) {
+  // Set timeout for loading to prevent infinite spinner
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 15000); // 15 seconds timeout
+      
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [loading]);
+
+  if (loading && !loadingTimeout) {
     return (
       <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-300">Loading admin portal...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">This may take a few seconds</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && loadingTimeout) {
+    return (
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="text-amber-600 dark:text-amber-400 mb-4">
+            <Clock size={48} className="mx-auto mb-4" />
+            <p className="text-lg font-semibold mb-2">Loading is taking longer than expected</p>
+            <p className="text-sm">This might be due to a slow connection or server issue.</p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={refresh}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <RefreshCw size={16} />
+              Retry
+            </button>
+            <button
+              onClick={() => window.location.hash = ''}
+              className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Main
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="text-red-600 dark:text-red-400 mb-4">
+            <AlertTriangle size={48} className="mx-auto mb-4" />
+            <p className="text-lg font-semibold mb-2">Failed to Load Admin Portal</p>
+            <p className="text-sm">{error}</p>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={refresh}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <RefreshCw size={16} />
+              Try Again
+            </button>
+            <button
+              onClick={() => window.location.hash = ''}
+              className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              <ArrowLeft size={16} />
+              Back to Main
+            </button>
+          </div>
         </div>
       </div>
     );

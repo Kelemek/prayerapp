@@ -70,50 +70,80 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
     let body: string;
     let html: string | undefined;
 
-    if (payload.type === 'prayer') {
-      try {
-        const { getTemplate, applyTemplateVariables } = await import('./emailService');
-        const template = await getTemplate('admin_notification_prayer');
-        
-        if (template) {
-          const variables = {
+    // Load appropriate template based on payload type
+    try {
+      const { getTemplate, applyTemplateVariables } = await import('./emailService');
+      let templateKey: string;
+      let variables: Record<string, string>;
+      
+      switch (payload.type) {
+        case 'prayer':
+          templateKey = 'admin_notification_prayer';
+          variables = {
             prayerTitle: payload.title,
             requesterName: payload.requester || 'Anonymous',
             prayerDescription: payload.description || 'No description provided',
             adminLink: `${window.location.origin}/#admin`
           };
-          subject = applyTemplateVariables(template.subject, variables);
-          body = applyTemplateVariables(template.text_body, variables);
-          html = applyTemplateVariables(template.html_body, variables);
-        } else {
-          throw new Error('Template not found');
-        }
-      } catch (error) {
-        console.warn('Failed to load admin_notification_prayer template, using fallback:', error);
-        subject = `New Prayer Request: ${payload.title}`;
-        body = `A new prayer request has been submitted and is pending approval.\n\nTitle: ${payload.title}\nRequested by: ${payload.requester || 'Anonymous'}\n\nDescription: ${payload.description || 'No description provided'}\n\nPlease review and approve/deny this request in the admin portal.`;
-      }
-    } else {
-      // For other types, continue using hardcoded templates
-      switch (payload.type) {
+          break;
+          
         case 'update':
-          subject = `New Prayer Update: ${payload.title}`;
-          body = `A new prayer update has been submitted and is pending approval.\n\nPrayer: ${payload.title}\nUpdate by: ${payload.author || 'Anonymous'}\n\nContent: ${payload.content || 'No content provided'}\n\nPlease review and approve/deny this update in the admin portal.`;
+          templateKey = 'admin_notification_update';
+          variables = {
+            prayerTitle: payload.title,
+            authorName: payload.author || 'Anonymous',
+            updateContent: payload.content || 'No content provided',
+            adminLink: `${window.location.origin}/#admin`
+          };
           break;
-        
+          
         case 'deletion':
-          subject = `Deletion Request: ${payload.title}`;
-          body = `A deletion request has been submitted for a prayer.\n\nPrayer: ${payload.title}\nRequested by: ${payload.requestedBy || 'Anonymous'}\n\nReason: ${payload.reason || 'No reason provided'}\n\nPlease review and approve/deny this deletion request in the admin portal.`;
+          templateKey = 'admin_notification_deletion';
+          variables = {
+            prayerTitle: payload.title,
+            requestedBy: payload.requestedBy || 'Anonymous',
+            reason: payload.reason || 'No reason provided',
+            adminLink: `${window.location.origin}/#admin`
+          };
           break;
-        
+          
         case 'status-change':
+          // Fallback for status-change (not using template)
           subject = `Status Change Request: ${payload.title}`;
           body = `A status change request has been submitted for a prayer.\n\nPrayer: ${payload.title}\nRequested by: ${payload.requestedBy || 'Anonymous'}\nCurrent Status: ${payload.currentStatus || 'Unknown'}\nRequested Status: ${payload.requestedStatus || 'Unknown'}\n\nReason: ${payload.reason || 'No reason provided'}\n\nPlease review and approve/deny this status change request in the admin portal.`;
-          break;
-        
+          throw new Error('No template for status-change'); // Skip to catch block
+          
         default:
           subject = `New Admin Action Required: ${payload.title}`;
           body = `A new item requires your attention in the admin portal.`;
+          throw new Error('Unknown payload type'); // Skip to catch block
+      }
+      
+      const template = await getTemplate(templateKey);
+      
+      if (template) {
+        subject = applyTemplateVariables(template.subject, variables);
+        body = applyTemplateVariables(template.text_body, variables);
+        html = applyTemplateVariables(template.html_body, variables);
+      } else {
+        throw new Error(`Template ${templateKey} not found`);
+      }
+    } catch (error) {
+      // Only log as warning if we actually tried to load a template
+      if (payload.type === 'prayer' || payload.type === 'update' || payload.type === 'deletion') {
+        console.warn(`Failed to load admin notification template for ${payload.type}, using fallback:`, error);
+        
+        // Fallback for prayer, update, deletion if template loading fails
+        if (payload.type === 'prayer') {
+          subject = `New Prayer Request: ${payload.title}`;
+          body = `A new prayer request has been submitted and is pending approval.\n\nTitle: ${payload.title}\nRequested by: ${payload.requester || 'Anonymous'}\n\nDescription: ${payload.description || 'No description provided'}\n\nPlease review and approve/deny this request in the admin portal.`;
+        } else if (payload.type === 'update') {
+          subject = `New Prayer Update: ${payload.title}`;
+          body = `A new prayer update has been submitted and is pending approval.\n\nPrayer: ${payload.title}\nUpdate by: ${payload.author || 'Anonymous'}\n\nContent: ${payload.content || 'No content provided'}\n\nPlease review and approve/deny this update in the admin portal.`;
+        } else if (payload.type === 'deletion') {
+          subject = `Deletion Request: ${payload.title}`;
+          body = `A deletion request has been submitted for a prayer.\n\nPrayer: ${payload.title}\nRequested by: ${payload.requestedBy || 'Anonymous'}\n\nReason: ${payload.reason || 'No reason provided'}\n\nPlease review and approve/deny this deletion request in the admin portal.`;
+        }
       }
     }
 

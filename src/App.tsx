@@ -8,6 +8,7 @@ import { PrayerFiltersComponent } from './components/PrayerFilters';
 import { ToastProvider } from './components/ToastProvider';
 import { UserSettings } from './components/UserSettings';
 import { SkeletonLoader } from './components/SkeletonLoader';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { AdminAuthProvider } from './hooks/useAdminAuth';
 import { useAdminAuth } from './hooks/useAdminAuthHook';
 import type { PrayerStatus, PrayerPrompt } from './types/prayer';
@@ -155,31 +156,30 @@ function AppContent() {
   const fetchPrompts = async () => {
     setPromptsLoading(true);
     try {
-      // Fetch active prayer types
-      const { data: typesData, error: typesError } = await supabase
-        .from('prayer_types')
-        .select('name, display_order')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+      // Parallelize both queries for faster loading
+      const [typesResult, promptsResult] = await Promise.all([
+        supabase
+          .from('prayer_types')
+          .select('name, display_order')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true }),
+        supabase
+          .from('prayer_prompts')
+          .select('*')
+          .order('created_at', { ascending: false })
+      ]);
       
-      if (typesError) throw typesError;
+      if (typesResult.error) throw typesResult.error;
+      if (promptsResult.error) throw promptsResult.error;
       
       // Create a set of active type names for filtering
-      const activeTypeNames = new Set((typesData || []).map(t => t.name));
+      const activeTypeNames = new Set((typesResult.data || []).map(t => t.name));
       
       // Create a map of type name to display_order
-      const typeOrderMap = new Map(typesData?.map(t => [t.name, t.display_order]) || []);
-      
-      // Fetch all prompts
-      const { data: promptsData, error: promptsError } = await supabase
-        .from('prayer_prompts')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (promptsError) throw promptsError;
+      const typeOrderMap = new Map(typesResult.data?.map(t => [t.name, t.display_order]) || []);
       
       // Filter prompts to only include those with active types, then sort by type's display_order
-      const sortedPrompts = (promptsData || [])
+      const sortedPrompts = (promptsResult.data || [])
         .filter(p => activeTypeNames.has(p.type))
         .sort((a, b) => {
           const orderA = typeOrderMap.get(a.type) ?? 999;
@@ -798,44 +798,50 @@ function AdminWrapper() {
   
   if (currentView === 'presentation') {
     return (
-      <Suspense fallback={
-        <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="w-full max-w-6xl mx-auto px-4">
-            <SkeletonLoader count={3} type="card" />
+      <ErrorBoundary onReset={() => window.location.hash = ''}>
+        <Suspense fallback={
+          <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <div className="w-full max-w-6xl mx-auto px-4">
+              <SkeletonLoader count={3} type="card" />
+            </div>
           </div>
-        </div>
-      }>
-        <ResponsivePresentation />
-      </Suspense>
+        }>
+          <ResponsivePresentation />
+        </Suspense>
+      </ErrorBoundary>
     );
   }
   
   if (currentView === 'admin-login') {
     return (
-      <Suspense fallback={
-        <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="skeleton h-96 w-96 rounded-lg"></div>
-        </div>
-      }>
-        <AdminLogin />
-      </Suspense>
+      <ErrorBoundary onReset={() => window.location.hash = ''}>
+        <Suspense fallback={
+          <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <div className="skeleton h-96 w-96 rounded-lg"></div>
+          </div>
+        }>
+          <AdminLogin />
+        </Suspense>
+      </ErrorBoundary>
     );
   }
   
   if (currentView === 'admin-portal' && isAdmin) {
     return (
-      <Suspense fallback={
-        <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="w-full max-w-6xl mx-auto px-4">
-            <SkeletonLoader count={5} type="card" />
+      <ErrorBoundary onReset={() => window.location.hash = '#admin'}>
+        <Suspense fallback={
+          <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <div className="w-full max-w-6xl mx-auto px-4">
+              <SkeletonLoader count={5} type="card" />
+            </div>
           </div>
-        </div>
-      }>
-        <AdminPortal 
-          allowUserDeletions={allowUserDeletions}
-          allowUserUpdates={allowUserUpdates}
-        />
-      </Suspense>
+        }>
+          <AdminPortal 
+            allowUserDeletions={allowUserDeletions}
+            allowUserUpdates={allowUserUpdates}
+          />
+        </Suspense>
+      </ErrorBoundary>
     );
   }
   

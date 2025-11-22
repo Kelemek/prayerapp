@@ -81,160 +81,185 @@ export const useAdminData = () => {
     try {
       setData(prev => ({ ...prev, loading: true, error: null }));
 
-      // Fetch pending update deletion requests with update and prayer info
-      const { data: pendingUpdateDeletionRequests, error: updateDeletionError } = await supabase
-        .from('update_deletion_requests')
-        .select(`
-          *,
-          prayer_updates (
-            *,
-            prayers (prayer_for, title)
-          )
-        `)
-        .eq('approval_status', 'pending')
-        .order('created_at', { ascending: false });
+      // Create a timeout promise to prevent hanging indefinitely (30 seconds)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout - server took too long to respond')), 30000);
+      });
 
-      if (updateDeletionError && updateDeletionError.code !== '42P01') throw updateDeletionError;
+      // Parallelize all independent queries for much faster loading
+      const dataPromise = Promise.all([
+        // Pending update deletion requests
+        supabase
+          .from('update_deletion_requests')
+          .select(`*, prayer_updates (*, prayers (prayer_for, title))`)
+          .eq('approval_status', 'pending')
+          .order('created_at', { ascending: false }),
+        
+        // Pending prayers
+        supabase
+          .from('prayers')
+          .select('*')
+          .eq('approval_status', 'pending')
+          .order('created_at', { ascending: false }),
+        
+        // Pending updates
+        supabase
+          .from('prayer_updates')
+          .select(`*, prayers!inner(title)`)
+          .eq('approval_status', 'pending')
+          .order('created_at', { ascending: false }),
+        
+        // Pending deletion requests
+        supabase
+          .from('deletion_requests')
+          .select(`*, prayers!inner(title)`)
+          .eq('approval_status', 'pending')
+          .order('created_at', { ascending: false }),
+        
+        // Pending status change requests
+        supabase
+          .from('status_change_requests')
+          .select(`*, prayers!inner(title)`)
+          .eq('approval_status', 'pending')
+          .order('created_at', { ascending: false }),
+        
+        // Approved prayers count
+        supabase
+          .from('prayers')
+          .select('*', { count: 'exact', head: true })
+          .eq('approval_status', 'approved'),
+        
+        // Approved updates count
+        supabase
+          .from('prayer_updates')
+          .select('*', { count: 'exact', head: true })
+          .eq('approval_status', 'approved'),
+        
+        // Denied prayers count
+        supabase
+          .from('prayers')
+          .select('*', { count: 'exact', head: true })
+          .eq('approval_status', 'denied'),
+        
+        // Denied updates count
+        supabase
+          .from('prayer_updates')
+          .select('*', { count: 'exact', head: true })
+          .eq('approval_status', 'denied'),
+        
+        // Approved prayers list
+        supabase
+          .from('prayers')
+          .select('*')
+          .eq('approval_status', 'approved')
+          .order('approved_at', { ascending: false }),
+        
+        // Approved updates list
+        supabase
+          .from('prayer_updates')
+          .select(`*, prayers!inner(title)`)
+          .eq('approval_status', 'approved')
+          .order('approved_at', { ascending: false }),
+        
+        // Denied prayers list
+        supabase
+          .from('prayers')
+          .select('*')
+          .eq('approval_status', 'denied')
+          .order('denied_at', { ascending: false }),
+        
+        // Denied updates list
+        supabase
+          .from('prayer_updates')
+          .select(`*, prayers!inner(title)`)
+          .eq('approval_status', 'denied')
+          .order('denied_at', { ascending: false }),
+        
+        // Denied status change requests
+        supabase
+          .from('status_change_requests')
+          .select(`*, prayers!inner(title)`)
+          .eq('approval_status', 'denied')
+          .order('reviewed_at', { ascending: false }),
+        
+        // Denied deletion requests
+        supabase
+          .from('deletion_requests')
+          .select(`*, prayers!inner(title)`)
+          .eq('approval_status', 'denied')
+          .order('reviewed_at', { ascending: false }),
+        
+        // Denied update deletion requests
+        supabase
+          .from('update_deletion_requests')
+          .select(`*, prayer_updates (*, prayers (prayer_for, title))`)
+          .eq('approval_status', 'denied')
+          .order('reviewed_at', { ascending: false }),
+        
+        // Denied preference changes
+        supabase
+          .from('pending_preference_changes')
+          .select('*')
+          .eq('approval_status', 'denied')
+          .order('reviewed_at', { ascending: false })
+      ]);
 
-      // Fetch pending prayers
-      const { data: pendingPrayers, error: prayersError } = await supabase
-        .from('prayers')
-        .select('*')
-        .eq('approval_status', 'pending')
-        .order('created_at', { ascending: false });
-      if (prayersError) throw prayersError;
+      // Race the data fetch against the timeout
+      const [
+        updateDeletionResult,
+        prayersResult,
+        updatesResult,
+        deletionRequestsResult,
+        statusChangeRequestsResult,
+        approvedPrayersCountResult,
+        approvedUpdatesCountResult,
+        deniedPrayersCountResult,
+        deniedUpdatesCountResult,
+        approvedPrayersResult,
+        approvedUpdatesResult,
+        deniedPrayersResult,
+        deniedUpdatesResult,
+        deniedStatusChangeRequestsResult,
+        deniedDeletionRequestsResult,
+        deniedUpdateDeletionResult,
+        deniedPreferenceChangesResult
+      ] = await Promise.race([dataPromise, timeoutPromise]) as any[];
 
-      // Fetch pending updates with prayer titles
-      const { data: pendingUpdates, error: updatesError } = await supabase
-        .from('prayer_updates')
-        .select(`
-          *,
-          prayers!inner(title)
-        `)
-        .eq('approval_status', 'pending')
-        .order('created_at', { ascending: false });
-      if (updatesError) throw updatesError;
+      // Check for errors (ignore table-not-found errors for optional tables)
+      if (prayersResult.error) throw prayersResult.error;
+      if (updatesResult.error) throw updatesResult.error;
+      if (deletionRequestsResult.error) throw deletionRequestsResult.error;
+      if (approvedPrayersResult.error) throw approvedPrayersResult.error;
+      if (approvedUpdatesResult.error) throw approvedUpdatesResult.error;
+      if (deniedPrayersResult.error) throw deniedPrayersResult.error;
+      if (deniedUpdatesResult.error) throw deniedUpdatesResult.error;
+      if (deniedDeletionRequestsResult.error) throw deniedDeletionRequestsResult.error;
+      if (deniedPreferenceChangesResult.error) throw deniedPreferenceChangesResult.error;
+      
+      // Ignore 42P01 (table doesn't exist) for optional tables
+      if (updateDeletionResult.error && updateDeletionResult.error.code !== '42P01') throw updateDeletionResult.error;
+      if (statusChangeRequestsResult.error && statusChangeRequestsResult.error.code !== '42P01') throw statusChangeRequestsResult.error;
+      if (deniedStatusChangeRequestsResult.error && deniedStatusChangeRequestsResult.error.code !== '42P01') throw deniedStatusChangeRequestsResult.error;
+      if (deniedUpdateDeletionResult.error && deniedUpdateDeletionResult.error.code !== '42P01') throw deniedUpdateDeletionResult.error;
 
-      // Fetch pending deletion requests with prayer titles
-      const { data: pendingDeletionRequests, error: deletionRequestsError } = await supabase
-        .from('deletion_requests')
-        .select(`
-          *,
-          prayers!inner(title)
-        `)
-        .eq('approval_status', 'pending')
-        .order('created_at', { ascending: false });
-      if (deletionRequestsError) throw deletionRequestsError;
-
-      // Fetch pending status change requests with prayer titles
-      const { data: pendingStatusChangeRequests, error: statusChangeRequestsError } = await supabase
-        .from('status_change_requests')
-        .select(`
-          *,
-          prayers!inner(title)
-        `)
-        .eq('approval_status', 'pending')
-        .order('created_at', { ascending: false });
-      if (statusChangeRequestsError && statusChangeRequestsError.code !== '42P01') throw statusChangeRequestsError;
-
-      // Fetch approved/denied counts and lists
-      const { count: approvedPrayersCount } = await supabase
-        .from('prayers')
-        .select('*', { count: 'exact', head: true })
-        .eq('approval_status', 'approved');
-
-      const { count: approvedUpdatesCount } = await supabase
-        .from('prayer_updates')
-        .select('*', { count: 'exact', head: true })
-        .eq('approval_status', 'approved');
-
-      const { count: deniedPrayersCount } = await supabase
-        .from('prayers')
-        .select('*', { count: 'exact', head: true })
-        .eq('approval_status', 'denied');
-
-      const { count: deniedUpdatesCount } = await supabase
-        .from('prayer_updates')
-        .select('*', { count: 'exact', head: true })
-        .eq('approval_status', 'denied');
-
-      const { data: approvedPrayers, error: approvedPrayersError } = await supabase
-        .from('prayers')
-        .select('*')
-        .eq('approval_status', 'approved')
-        .order('approved_at', { ascending: false });
-      if (approvedPrayersError) throw approvedPrayersError;
-
-      const { data: approvedUpdates, error: approvedUpdatesError } = await supabase
-        .from('prayer_updates')
-        .select(`
-          *,
-          prayers!inner(title)
-        `)
-        .eq('approval_status', 'approved')
-        .order('approved_at', { ascending: false });
-      if (approvedUpdatesError) throw approvedUpdatesError;
-
-      const { data: deniedPrayers, error: deniedPrayersError } = await supabase
-        .from('prayers')
-        .select('*')
-        .eq('approval_status', 'denied')
-        .order('denied_at', { ascending: false });
-      if (deniedPrayersError) throw deniedPrayersError;
-
-      const { data: deniedUpdates, error: deniedUpdatesError } = await supabase
-        .from('prayer_updates')
-        .select(`
-          *,
-          prayers!inner(title)
-        `)
-        .eq('approval_status', 'denied')
-        .order('denied_at', { ascending: false });
-      if (deniedUpdatesError) throw deniedUpdatesError;
-
-      // Fetch denied status change requests with prayer titles
-      const { data: deniedStatusChangeRequests, error: deniedStatusChangeRequestsError } = await supabase
-        .from('status_change_requests')
-        .select(`
-          *,
-          prayers!inner(title)
-        `)
-        .eq('approval_status', 'denied')
-        .order('reviewed_at', { ascending: false });
-      if (deniedStatusChangeRequestsError && deniedStatusChangeRequestsError.code !== '42P01') throw deniedStatusChangeRequestsError;
-
-      // Fetch denied deletion requests with prayer titles
-      const { data: deniedDeletionRequests, error: deniedDeletionRequestsError } = await supabase
-        .from('deletion_requests')
-        .select(`
-          *,
-          prayers!inner(title)
-        `)
-        .eq('approval_status', 'denied')
-        .order('reviewed_at', { ascending: false });
-      if (deniedDeletionRequestsError) throw deniedDeletionRequestsError;
-
-      // Fetch denied update deletion requests with update and prayer info
-      const { data: deniedUpdateDeletionRequests, error: deniedUpdateDeletionError } = await supabase
-        .from('update_deletion_requests')
-        .select(`
-          *,
-          prayer_updates (
-            *,
-            prayers (prayer_for, title)
-          )
-        `)
-        .eq('approval_status', 'denied')
-        .order('reviewed_at', { ascending: false });
-      if (deniedUpdateDeletionError && deniedUpdateDeletionError.code !== '42P01') throw deniedUpdateDeletionError;
-
-      // Fetch denied preference changes
-      const { data: deniedPreferenceChanges, error: deniedPreferenceChangesError } = await supabase
-        .from('pending_preference_changes')
-        .select('*')
-        .eq('approval_status', 'denied')
-        .order('reviewed_at', { ascending: false });
-      if (deniedPreferenceChangesError) throw deniedPreferenceChangesError;
+      // Extract data from results
+      const pendingUpdateDeletionRequests = updateDeletionResult.data;
+      const pendingPrayers = prayersResult.data;
+      const pendingUpdates = updatesResult.data;
+      const pendingDeletionRequests = deletionRequestsResult.data;
+      const pendingStatusChangeRequests = statusChangeRequestsResult.data;
+      const approvedPrayersCount = approvedPrayersCountResult.count;
+      const approvedUpdatesCount = approvedUpdatesCountResult.count;
+      const deniedPrayersCount = deniedPrayersCountResult.count;
+      const deniedUpdatesCount = deniedUpdatesCountResult.count;
+      const approvedPrayers = approvedPrayersResult.data;
+      const approvedUpdates = approvedUpdatesResult.data;
+      const deniedPrayers = deniedPrayersResult.data;
+      const deniedUpdates = deniedUpdatesResult.data;
+      const deniedStatusChangeRequests = deniedStatusChangeRequestsResult.data;
+      const deniedDeletionRequests = deniedDeletionRequestsResult.data;
+      const deniedUpdateDeletionRequests = deniedUpdateDeletionResult.data;
+      const deniedPreferenceChanges = deniedPreferenceChangesResult.data;
 
       // Transform joins
       const transformedUpdates = (pendingUpdates || []).map((update: Record<string, unknown>) => ({
@@ -334,7 +359,11 @@ export const useAdminData = () => {
         .eq('id', (request as { update_id: string }).update_id);
       if (deleteError) throw deleteError;
 
-      await fetchAdminData();
+      // Optimistically remove from pending list immediately
+      setData(prev => ({
+        ...prev,
+        pendingUpdateDeletionRequests: prev.pendingUpdateDeletionRequests.filter(r => r.id !== requestId)
+      }));
     } catch (error) {
       console.error('Failed to approve update deletion request:', error);
       logError({
@@ -345,7 +374,7 @@ export const useAdminData = () => {
       alert('Failed to approve update deletion request. Please try again.');
       throw error; // Re-throw so the UI knows the approval failed
     }
-  }, [fetchAdminData]);
+  }, []);
 
   // Deny update deletion request
   const denyUpdateDeletionRequest = useCallback(async (requestId: string, reason: string) => {
@@ -355,7 +384,12 @@ export const useAdminData = () => {
         .update({ approval_status: 'denied', denial_reason: reason, reviewed_at: new Date().toISOString() })
         .eq('id', requestId);
       if (error) throw error;
-      await fetchAdminData();
+      
+      // Optimistically remove from pending list immediately
+      setData(prev => ({
+        ...prev,
+        pendingUpdateDeletionRequests: prev.pendingUpdateDeletionRequests.filter(r => r.id !== requestId)
+      }));
     } catch (error) {
       console.error('Failed to deny update deletion request:', error);
       logError({
@@ -366,7 +400,7 @@ export const useAdminData = () => {
       alert('Failed to deny update deletion request. Please try again.');
       throw error; // Re-throw so the UI knows the denial failed
     }
-  }, [fetchAdminData]);
+  }, []);
 
   const approvePrayer = useCallback(async (prayerId: string) => {
     try {
@@ -391,6 +425,12 @@ export const useAdminData = () => {
       
       if (error) throw error;
 
+      // Optimistically remove from pending list immediately
+      setData(prev => ({
+        ...prev,
+        pendingPrayers: prev.pendingPrayers.filter(p => p.id !== prayerId)
+      }));
+
       // Send email notifications (don't let email failures block the approval)
       // These run in parallel and failures are logged but don't stop the flow
       sendApprovedPrayerNotification({
@@ -408,9 +448,6 @@ export const useAdminData = () => {
         requesterEmail: prayer.email,
         prayerFor: prayer.prayer_for
       }).catch(err => console.error('Failed to send requester notification:', err));
-
-      // Refresh the admin data to remove this prayer from pending list
-      await fetchAdminData();
     } catch (error) {
       console.error('Failed to approve prayer:', error);
       logError({
@@ -421,7 +458,7 @@ export const useAdminData = () => {
       alert('Failed to approve prayer. Please try again.');
       throw error; // Re-throw so the UI knows the approval failed
     }
-  }, [fetchAdminData]);
+  }, []);
 
   const denyPrayer = useCallback(async (prayerId: string, reason: string) => {
     try {
@@ -447,6 +484,12 @@ export const useAdminData = () => {
       
       if (error) throw error;
 
+      // Optimistically remove from pending list immediately
+      setData(prev => ({
+        ...prev,
+        pendingPrayers: prev.pendingPrayers.filter(p => p.id !== prayerId)
+      }));
+
       // Send email notification to the requester (don't let email failures block the denial)
       if (prayer.email) {
         sendDeniedPrayerNotification({
@@ -457,9 +500,6 @@ export const useAdminData = () => {
           denialReason: reason
         }).catch(err => console.error('Failed to send denial notification:', err));
       }
-
-      // Refresh the admin data to update the UI
-      await fetchAdminData();
     } catch (error) {
       console.error('Failed to deny prayer:', error);
       logError({
@@ -470,7 +510,7 @@ export const useAdminData = () => {
       alert('Failed to deny prayer. Please try again.');
       throw error; // Re-throw so the UI knows the denial failed
     }
-  }, [fetchAdminData]);
+  }, []);
 
   const approveUpdate = useCallback(async (updateId: string) => {
     try {
@@ -534,8 +574,11 @@ export const useAdminData = () => {
         markedAsAnswered: update.mark_as_answered || false
       }).catch(err => console.error('Failed to send update notification:', err));
 
-      // Refresh the admin data to update the UI
-      await fetchAdminData();
+      // Optimistically remove from pending list immediately
+      setData(prev => ({
+        ...prev,
+        pendingUpdates: prev.pendingUpdates.filter(u => u.id !== updateId)
+      }));
     } catch (error) {
       console.error('Failed to approve update:', error);
       logError({
@@ -546,7 +589,7 @@ export const useAdminData = () => {
       alert('Failed to approve update. Please try again.');
       throw error; // Re-throw so the UI knows the approval failed
     }
-  }, [fetchAdminData]);
+  }, []);
 
   const denyUpdate = useCallback(async (updateId: string, reason: string) => {
     try {
@@ -586,8 +629,11 @@ export const useAdminData = () => {
         }).catch(err => console.error('Failed to send denial notification:', err));
       }
 
-      // Refresh the admin data to update the UI
-      await fetchAdminData();
+      // Optimistically remove from pending list immediately
+      setData(prev => ({
+        ...prev,
+        pendingUpdates: prev.pendingUpdates.filter(u => u.id !== updateId)
+      }));
     } catch (error) {
       console.error('Failed to deny update:', error);
       logError({
@@ -598,7 +644,7 @@ export const useAdminData = () => {
       alert('Failed to deny update. Please try again.');
       throw error; // Re-throw so the UI knows the denial failed
     }
-  }, [fetchAdminData]);
+  }, []);
 
   // Edit a pending update (admins can modify pending updates before approval)
   const editUpdate = useCallback(async (updateId: string, updates: { content?: string; author?: string }) => {
@@ -609,12 +655,19 @@ export const useAdminData = () => {
         .eq('id', updateId)
         .eq('approval_status', 'pending'); // only allow editing pending updates
       if (error) throw error;
-      await fetchAdminData();
+      
+      // Optimistically update the pending update in state
+      setData(prev => ({
+        ...prev,
+        pendingUpdates: prev.pendingUpdates.map(u => 
+          u.id === updateId ? { ...u, ...updates } : u
+        )
+      }));
     } catch (error) {
       console.error('Failed to edit update:', error);
       handleSupabaseError(error);
     }
-  }, [fetchAdminData]);
+  }, []);
 
   const editPrayer = useCallback(async (prayerId: string, updates: { title?: string; description?: string; requester?: string; prayer_for?: string; email?: string | null }) => {
     try {
@@ -624,12 +677,19 @@ export const useAdminData = () => {
         .eq('id', prayerId)
         .eq('approval_status', 'pending'); // Only allow editing pending prayers
       if (error) throw error;
-      await fetchAdminData();
+      
+      // Optimistically update the pending prayer in state
+      setData(prev => ({
+        ...prev,
+        pendingPrayers: prev.pendingPrayers.map(p => 
+          p.id === prayerId ? { ...p, ...updates } : p
+        )
+      }));
     } catch (error) {
       console.error('Failed to edit prayer:', error);
       throw error; // Re-throw to allow component to handle error state
     }
-  }, [fetchAdminData]);
+  }, []);
 
   const approveDeletionRequest = useCallback(async (requestId: string) => {
     try {
@@ -654,13 +714,18 @@ export const useAdminData = () => {
         .delete()
         .eq('id', (deletionRequest as { prayer_id: string }).prayer_id);
       if (deleteError) throw deleteError;
-      await fetchAdminData();
+      
+      // Optimistically remove from pending list immediately
+      setData(prev => ({
+        ...prev,
+        pendingDeletionRequests: prev.pendingDeletionRequests.filter(r => r.id !== requestId)
+      }));
     } catch (error) {
       console.error('Failed to approve deletion request:', error);
       alert('Failed to approve deletion request. Please try again.');
       throw error; // Re-throw so the UI knows the approval failed
     }
-  }, [fetchAdminData]);
+  }, []);
 
   const denyDeletionRequest = useCallback(async (requestId: string, reason: string) => {
     try {
@@ -673,13 +738,18 @@ export const useAdminData = () => {
         })
         .eq('id', requestId);
       if (error) throw error;
-      await fetchAdminData();
+      
+      // Optimistically remove from pending list immediately
+      setData(prev => ({
+        ...prev,
+        pendingDeletionRequests: prev.pendingDeletionRequests.filter(r => r.id !== requestId)
+      }));
     } catch (error) {
       console.error('Failed to deny deletion request:', error);
       alert('Failed to deny deletion request. Please try again.');
       throw error; // Re-throw so the UI knows the denial failed
     }
-  }, [fetchAdminData]);
+  }, []);
 
   const approveStatusChangeRequest = useCallback(async (requestId: string) => {
     try {
@@ -720,13 +790,12 @@ export const useAdminData = () => {
       if (updateError) throw updateError;
       
       setData(prev => ({ ...prev, pendingStatusChangeRequests: prev.pendingStatusChangeRequests.filter(req => req.id !== requestId) }));
-      setTimeout(async () => { await fetchAdminData(); }, 1000);
     } catch (error) {
       console.error('Error approving status change request:', error);
       handleSupabaseError(error);
       throw error; // Re-throw so the UI knows the approval failed
     }
-  }, [fetchAdminData]);
+  }, []);
 
   const denyStatusChangeRequest = useCallback(async (requestId: string, reason: string) => {
     try {
@@ -755,12 +824,11 @@ export const useAdminData = () => {
       if (error) throw error;
       
       setData(prev => ({ ...prev, pendingStatusChangeRequests: prev.pendingStatusChangeRequests.filter(req => req.id !== requestId) }));
-      setTimeout(async () => { await fetchAdminData(); }, 1000);
     } catch (error) {
       handleSupabaseError(error);
       throw error; // Re-throw so the UI knows the denial failed
     }
-  }, [fetchAdminData]);
+  }, []);
 
   // Initial data fetch
   useEffect(() => { fetchAdminData(); }, [fetchAdminData]);

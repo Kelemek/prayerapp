@@ -16,10 +16,10 @@ export const usePrayerManager = () => {
 
   // Convert database prayer to app prayer format
   const convertDbPrayer = (dbPrayer: DbPrayer, updates: DbPrayerUpdate[] = []): PrayerRequest => {
-    // Filter to only show approved updates and sort by newest first
-    const approvedUpdates = updates
-      .filter(update => update.approval_status === 'approved')
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    // Updates are already filtered by the query - just sort by newest first
+    const sortedUpdates = updates.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
     
     return {
       id: dbPrayer.id,
@@ -34,7 +34,7 @@ export const usePrayerManager = () => {
       date_answered: dbPrayer.date_answered,
       created_at: dbPrayer.created_at,
       updated_at: dbPrayer.updated_at,
-      updates: approvedUpdates.map(update => ({
+      updates: sortedUpdates.map(update => ({
         id: update.id,
         prayer_id: update.prayer_id,
         content: update.content,
@@ -50,55 +50,39 @@ export const usePrayerManager = () => {
       setLoading(true);
       setError(null);
 
-      // Add timeout to prevent infinite loading
-      const timeoutId = setTimeout(() => {
-        setLoading(false);
-        const timeoutMessage = 'Loading timeout - please check your internet connection and try again';
-        setError(timeoutMessage);
-        
-        // Log timeout to Vercel/external services
-        logWarning('Prayer loading timeout (15s)', {
-          tags: {
-            type: 'prayer_load_timeout',
-            hook: 'usePrayerManager'
-          }
-        });
-      }, 15000); // 15 second timeout
-
-      // Fetch approved prayers with their approved updates
+      // Fetch approved prayers with their approved updates, pre-sorted by date
       const { data: prayersData, error: prayersError } = await supabase
         .from('prayers')
         .select(`
           *,
-          prayer_updates (*)
+          prayer_updates!prayer_updates_prayer_id_fkey(*)
         `)
-        .eq('approval_status', 'approved');
-
-      clearTimeout(timeoutId);
+        .eq('approval_status', 'approved')
+        .eq('prayer_updates.approval_status', 'approved')
+        .order('created_at', { ascending: false });
 
       if (prayersError) throw prayersError;
 
       const formattedPrayers = (prayersData || []).map((prayer: any) => {
         const updates = prayer && typeof prayer === 'object' && 'prayer_updates' in prayer
-          ? (prayer.prayer_updates as DbPrayerUpdate[])
+          ? (Array.isArray(prayer.prayer_updates) ? prayer.prayer_updates : [prayer.prayer_updates]).filter((u: any) => u !== null)
           : [];
-        return convertDbPrayer(prayer as DbPrayer, updates);
+        return convertDbPrayer(prayer as DbPrayer, updates as DbPrayerUpdate[]);
       });
 
-      // Sort prayers by most recent activity (latest update or prayer creation)
-      const sortedPrayers = formattedPrayers.sort((a, b) => {
-        const aLatestUpdate = a.updates.length > 0
-          ? Math.max(...a.updates.map(u => new Date(u.created_at).getTime()))
-          : 0;
-        const bLatestUpdate = b.updates.length > 0
-          ? Math.max(...b.updates.map(u => new Date(u.created_at).getTime()))
-          : 0;
-
-        const aLatestActivity = Math.max(new Date(a.created_at).getTime(), aLatestUpdate);
-        const bLatestActivity = Math.max(new Date(b.created_at).getTime(), bLatestUpdate);
-
-        return bLatestActivity - aLatestActivity;
-      });
+      // Sort prayers by most recent activity - cache timestamps to avoid recalculating
+      const sortedPrayers = formattedPrayers
+        .map(prayer => ({
+          prayer,
+          latestActivity: Math.max(
+            new Date(prayer.created_at).getTime(),
+            prayer.updates.length > 0 
+              ? new Date(prayer.updates[0].created_at).getTime() // Already sorted, just take first
+              : 0
+          )
+        }))
+        .sort((a, b) => b.latestActivity - a.latestActivity)
+        .map(({ prayer }) => prayer);
 
       setPrayers(sortedPrayers);
     } catch (err: unknown) {
@@ -182,7 +166,15 @@ export const usePrayerManager = () => {
           loadPrayers();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Log subscription status for debugging
+        if (status === 'SUBSCRIBED') {
+          console.log('Prayer realtime subscription active');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('Prayer realtime subscription issue:', status);
+          // Don't reload on connection issues - just let it reconnect naturally
+        }
+      });
 
     return () => {
       supabase.removeChannel(prayersSubscription);
