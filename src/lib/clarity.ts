@@ -41,24 +41,6 @@ export const initializeClarity = (): void => {
       return;
     }
 
-    // Validate it's a string
-    if (typeof clarityProjectId !== 'string') {
-      console.warn('Clarity project ID is not a string:', typeof clarityProjectId);
-      return;
-    }
-
-    // Validate project ID format (should be alphanumeric, no special characters)
-    if (!/^[a-z0-9]{10,}$/.test(clarityProjectId)) {
-      console.warn('Clarity project ID format looks invalid:', clarityProjectId);
-      return;
-    }
-
-    // Validate the project ID is not a test/placeholder value
-    if (clarityProjectId === 'u9ubmxp15k') {
-      console.warn('Clarity project ID appears to be a placeholder - skipping initialization. Please set up a real Clarity project at https://clarity.microsoft.com');
-      return;
-    }
-
     // Initialize Clarity using the official npm package
     Clarity.init(clarityProjectId);
     console.log('✓ Clarity initialized with project:', clarityProjectId);
