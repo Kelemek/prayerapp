@@ -25,15 +25,32 @@ export const initializeClarity = (): void => {
     return;
   }
 
+  // Validate that the project ID looks reasonable (alphanumeric, reasonable length)
+  const projectIdRegex = /^[a-z0-9]{8,20}$/i;
+  if (!projectIdRegex.test(clarityProjectId)) {
+    console.warn('Clarity project ID has invalid format:', clarityProjectId);
+    return;
+  }
+
   try {
+    const clarityScriptUrl = `https://www.clarity.ms/tag/${clarityProjectId}`;
+    console.debug('Initializing Clarity with URL:', clarityScriptUrl);
+    
     // Initialize Microsoft Clarity
     (function(c, l, a, r, i, t, y) {
       c[a] = c[a] || function() { (c[a].q = c[a].q || []).push(arguments) };
-      t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
-      y = l.getElementsByTagName(r)[0]; y.parentNode?.insertBefore(t, y);
+      t = l.createElement(r);
+      t.async = 1;
+      t.src = "https://www.clarity.ms/tag/" + i;
+      y = l.getElementsByTagName(r)[0];
+      if (y && y.parentNode) {
+        y.parentNode.insertBefore(t, y);
+      } else {
+        console.warn('Could not insert Clarity script - no script tags found');
+      }
     })(window, document, "clarity", "script", clarityProjectId);
 
-    console.log('Clarity initialized with project:', clarityProjectId);
+    console.log('Clarity initialized successfully');
   } catch (error) {
     console.error('Failed to initialize Clarity:', error);
   }
