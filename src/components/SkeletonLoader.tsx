@@ -11,7 +11,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
 }) => {
   if (type === 'card') {
     return (
-      <div className="space-y-4">
+      <div className="w-full space-y-4">
         {Array.from({ length: count }).map((_, index) => (
           <div 
             key={index} 
@@ -46,7 +46,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
 
   if (type === 'list') {
     return (
-      <div className="space-y-3">
+      <div className="w-full space-y-3">
         {Array.from({ length: count }).map((_, index) => (
           <div key={index} className="skeleton h-16 w-full"></div>
         ))}
@@ -56,7 +56,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
 
   if (type === 'header') {
     return (
-      <div className="mb-6">
+      <div className="w-full mb-6">
         <div className="skeleton h-8 w-64 mb-2"></div>
         <div className="skeleton h-4 w-96"></div>
       </div>

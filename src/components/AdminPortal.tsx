@@ -385,7 +385,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-300">Loading admin portal...</p>
@@ -395,10 +395,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors flex flex-col">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-6xl mx-auto px-4 py-6">
+      <header className="w-full bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-6xl mx-auto w-full px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Shield className="text-red-600 dark:text-red-400" size={32} />
@@ -425,7 +425,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       </header>
 
       {/* Content */}
-      <main className="max-w-6xl mx-auto px-4 py-6">
+      <main className="w-full max-w-6xl mx-auto px-4 py-6">
         {/* Stats Grid - Clickable Filter Buttons */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-8">
           <button

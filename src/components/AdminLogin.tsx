@@ -73,8 +73,8 @@ export const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center transition-colors">
-      <div className="max-w-md w-full space-y-8 p-8">
+    <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center transition-colors">
+      <div className="max-w-md w-full mx-auto space-y-8 p-4 sm:p-8">
         <div className="text-center">
           <Shield className="mx-auto h-12 w-12 text-red-600 dark:text-red-400" />
           <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-gray-100">

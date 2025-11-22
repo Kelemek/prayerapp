@@ -786,8 +786,8 @@ function AdminWrapper() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="w-full max-w-6xl px-4">
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="w-full max-w-6xl mx-auto px-4">
           <div className="text-center mb-4">
             <p className="text-gray-600 dark:text-gray-400 text-sm">Loading prayers...</p>
             <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">If this takes more than 15 seconds, please refresh the page</p>
@@ -801,8 +801,8 @@ function AdminWrapper() {
   if (currentView === 'presentation') {
     return (
       <Suspense fallback={
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="w-full max-w-6xl px-4">
+        <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="w-full max-w-6xl mx-auto px-4">
             <SkeletonLoader count={3} type="card" />
           </div>
         </div>
@@ -815,8 +815,8 @@ function AdminWrapper() {
   if (currentView === 'mobile-presentation') {
     return (
       <Suspense fallback={
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="w-full max-w-6xl px-4">
+        <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="w-full max-w-6xl mx-auto px-4">
             <SkeletonLoader count={3} type="card" />
           </div>
         </div>
@@ -829,7 +829,7 @@ function AdminWrapper() {
   if (currentView === 'admin-login') {
     return (
       <Suspense fallback={
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
           <div className="skeleton h-96 w-96 rounded-lg"></div>
         </div>
       }>
@@ -841,8 +841,8 @@ function AdminWrapper() {
   if (currentView === 'admin-portal' && isAdmin) {
     return (
       <Suspense fallback={
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="w-full max-w-6xl px-4">
+        <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="w-full max-w-6xl mx-auto px-4">
             <SkeletonLoader count={5} type="card" />
           </div>
         </div>
