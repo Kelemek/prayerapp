@@ -133,12 +133,13 @@ export const usePrayerManager = () => {
     }
   }, []);
 
-  // Load prayers on mount
+  // Load prayers on mount only
   useEffect(() => {
     loadPrayers();
-  }, [loadPrayers]);
+  }, []); // Empty dependency array - only run on mount
 
   // Set up real-time subscription for changes from OTHER clients
+  // This should NOT recreate on every loadPrayers change to avoid loops
   useEffect(() => {
     const prayersSubscription = supabase
       .channel('prayers-realtime', {
@@ -177,6 +178,7 @@ export const usePrayerManager = () => {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'prayer_updates' },
         () => {
+          // Reload prayers when updates change
           loadPrayers();
         }
       )
@@ -185,7 +187,7 @@ export const usePrayerManager = () => {
     return () => {
       supabase.removeChannel(prayersSubscription);
     };
-  }, [loadPrayers]);
+  }, []); // Empty dependency array - subscription only set up once on mount
 
   const addPrayer = async (prayer: Omit<PrayerRequest, 'id' | 'date_requested' | 'created_at' | 'updated_at' | 'updates'>) => {
     try {
