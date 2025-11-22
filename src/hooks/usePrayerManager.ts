@@ -16,10 +16,12 @@ export const usePrayerManager = () => {
 
   // Convert database prayer to app prayer format
   const convertDbPrayer = (dbPrayer: DbPrayer, updates: DbPrayerUpdate[] = []): PrayerRequest => {
-    // Updates are already filtered by the query - just sort by newest first
-    const sortedUpdates = updates.sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    // Filter to only approved updates and sort by newest first
+    const sortedUpdates = updates
+      .filter(u => u.approval_status === 'approved')
+      .sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     
     return {
       id: dbPrayer.id,

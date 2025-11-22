@@ -92,21 +92,22 @@ describe('usePrayerManager extra flows', () => {
   });
 
   it('deletePrayer reverts optimistic update on error', async () => {
+    const testPrayer = { id: 'p1', title: 'T', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, approval_status: 'approved', prayer_updates: [] };
+    
     // Start with one prayer returned by initial load
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
         return {
-          select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [{ id: 'p1', title: 'T', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, updates: [] }], error: null }) }) })
+          select: () => ({ 
+            eq: () => ({ 
+              eq: () => ({
+                order: () => Promise.resolve({ data: [testPrayer], error: null })
+              })
+            })
+          }),
+          delete: () => ({ eq: async () => ({ error: { message: 'DB fail' } }) })
         } as any;
       }
-
-      // For delete operation, return an error
-      if (table === 'prayers' ) {
-        return {
-          delete: () => ({ eq: () => ({ then: async (cb: any) => cb({ error: { message: 'DB fail' } }) }) })
-        } as any;
-      }
-
       return makeSelectMaybeSingle(null) as any;
     });
 
@@ -115,20 +116,17 @@ describe('usePrayerManager extra flows', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.prayers.some(p => p.id === 'p1')).toBe(true);
 
-    // Now mock delete to return error when called
-    vi.mocked(supabase.from).mockImplementation((table: string) => {
-      if (table === 'prayers') {
-        return {
-          delete: () => ({ eq: async () => ({ error: { message: 'DB fail' } }) })
-        } as any;
+    // Delete should fail and prayer should be restored
+    await act(async () => { 
+      try {
+        await result.current.deletePrayer('p1');
+      } catch (e) {
+        // Expected to fail
       }
-      return makeSelectMaybeSingle(null) as any;
     });
 
-    await act(async () => { await result.current.deletePrayer('p1'); });
-
     // After failure, prayer should be restored
-    expect(result.current.prayers.some(p => p.id === 'p1')).toBe(true);
+    await waitFor(() => expect(result.current.prayers.some(p => p.id === 'p1')).toBe(true));
   });
 
   it('requestUpdateDeletion returns ok:true and sends admin notification when succeeds', async () => {
@@ -154,13 +152,13 @@ describe('usePrayerManager extra flows', () => {
   });
 
   it('updatePrayerStatus optimistically updates local state and persists on success', async () => {
-    const initialPrayer = { id: 'p1', title: 'T', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, updates: [] } as any;
+    const initialPrayer = { id: 'p1', title: 'T', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, approval_status: 'approved', prayer_updates: [] } as any;
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
         return {
-          select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }),
-          update: () => ({ eq: () => ({ error: null }) })
+          select: () => ({ eq: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [initialPrayer], error: null }) }) }) }),
+          update: () => ({ eq: () => Promise.resolve({ error: null }) })
         } as any;
       }
       return makeSelectMaybeSingle(null) as any;
@@ -177,15 +175,15 @@ describe('usePrayerManager extra flows', () => {
   });
 
   it('addPrayerUpdate inserts update and notifies admin (author preserved)', async () => {
-    const initialPrayer = { id: 'p1', title: 'PrayerTitle', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, updates: [] } as any;
+    const initialPrayer = { id: 'p1', title: 'PrayerTitle', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, approval_status: 'approved', prayer_updates: [] } as any;
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
-        return { select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }) } as any;
+        return { select: () => ({ eq: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [initialPrayer], error: null }) }) }) }) } as any;
       }
 
       if (table === 'prayer_updates') {
-        return { insert: () => ({ error: null }) } as any;
+        return { insert: () => Promise.resolve({ error: null }) } as any;
       }
 
       return makeSelectMaybeSingle(null) as any;
@@ -202,15 +200,15 @@ describe('usePrayerManager extra flows', () => {
   });
 
   it('addPrayerUpdate sends Anonymous as author when requested', async () => {
-    const initialPrayer = { id: 'p1', title: 'PrayerTitle', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, updates: [] } as any;
+    const initialPrayer = { id: 'p1', title: 'PrayerTitle', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, approval_status: 'approved', prayer_updates: [] } as any;
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
-        return { select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }) } as any;
+        return { select: () => ({ eq: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [initialPrayer], error: null }) }) }) }) } as any;
       }
 
       if (table === 'prayer_updates') {
-        return { insert: () => ({ error: null }) } as any;
+        return { insert: () => Promise.resolve({ error: null }) } as any;
       }
 
       return makeSelectMaybeSingle(null) as any;
@@ -227,12 +225,12 @@ describe('usePrayerManager extra flows', () => {
   });
 
   it('getFilteredPrayers filters by status and search term', async () => {
-  const p1 = { id: 'p1', title: 'FindMe', description: 'hello world', status: 'current', requester: 'A', prayer_for: 'X', email: null, is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, prayer_updates: [{ id: 'u1', prayer_id: 'p1', content: 'urgent update', author: 'A', created_at: new Date().toISOString(), approval_status: 'approved' }] } as any;
-    const p2 = { id: 'p2', title: 'Other', description: 'nothing', status: 'answered', requester: 'B', prayer_for: 'Y', email: null, is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: new Date().toISOString(), updates: [] } as any;
+    const p1 = { id: 'p1', title: 'FindMe', description: 'hello world', status: 'current', requester: 'A', prayer_for: 'X', email: null, is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, approval_status: 'approved', prayer_updates: [{ id: 'u1', prayer_id: 'p1', content: 'urgent update', author: 'A', created_at: new Date().toISOString(), approval_status: 'approved' }] } as any;
+    const p2 = { id: 'p2', title: 'Other', description: 'nothing', status: 'answered', requester: 'B', prayer_for: 'Y', email: null, is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: new Date().toISOString(), approval_status: 'approved', prayer_updates: [] } as any;
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
-        return { select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [p1, p2], error: null }) }) }) } as any;
+        return { select: () => ({ eq: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [p1, p2], error: null }) }) }) }) } as any;
       }
       return makeSelectMaybeSingle(null) as any;
     });
@@ -249,13 +247,13 @@ describe('usePrayerManager extra flows', () => {
   });
 
   it('updatePrayerStatus reverts optimistic update when DB update fails', async () => {
-    const initialPrayer = { id: 'p1', title: 'T', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, prayer_updates: [] } as any;
+    const initialPrayer = { id: 'p1', title: 'T', description: 'd', status: 'current', requester: 'A', prayer_for: 'X', email: 'a@b.com', is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, approval_status: 'approved', prayer_updates: [] } as any;
 
     // First render returns initial prayer list
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
         return {
-          select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [initialPrayer], error: null }) }) }),
+          select: () => ({ eq: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [initialPrayer], error: null }) }) }) }),
           update: () => ({ eq: () => Promise.resolve({ error: { message: 'DB fail' } }) })
         } as any;
       }
@@ -364,7 +362,7 @@ describe('usePrayerManager extra flows', () => {
   });
 
   it('convertDbPrayer uses fallback description and only includes approved updates in newest-first order', async () => {
-    const dbPrayer = { id: 'p-fb', title: 'Fallback', description: null, status: 'current', requester: 'Req', prayer_for: 'PF', email: null, is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, prayer_updates: [
+    const dbPrayer = { id: 'p-fb', title: 'Fallback', description: null, status: 'current', requester: 'Req', prayer_for: 'PF', email: null, is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, approval_status: 'approved', prayer_updates: [
       { id: 'u-old', prayer_id: 'p-fb', content: 'old', author: 'A', created_at: new Date(Date.now() - 10000).toISOString(), approval_status: 'approved' },
       { id: 'u-pend', prayer_id: 'p-fb', content: 'pending', author: 'B', created_at: new Date(Date.now() - 5000).toISOString(), approval_status: 'pending' },
       { id: 'u-new', prayer_id: 'p-fb', content: 'new', author: 'C', created_at: new Date().toISOString(), approval_status: 'approved' }
@@ -372,7 +370,7 @@ describe('usePrayerManager extra flows', () => {
 
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayers') {
-        return { select: () => ({ eq: () => ({ then: (cb: any) => cb({ data: [dbPrayer], error: null }) }) }) } as any;
+        return { select: () => ({ eq: () => ({ eq: () => ({ order: () => Promise.resolve({ data: [dbPrayer], error: null }) }) }) }) } as any;
       }
       return makeSelectMaybeSingle(null) as any;
     });
@@ -390,21 +388,21 @@ describe('usePrayerManager extra flows', () => {
 
   it('deletePrayerUpdate calls delete and refreshes prayers on success', async () => {
     // initial load returns one prayer
-    const initial = { id: 'p-x', title: 'X', description: 'd', status: 'current', requester: 'A', prayer_for: 'Z', email: null, is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, prayer_updates: [] } as any;
+    const initial = { id: 'p-x', title: 'X', description: 'd', status: 'current', requester: 'A', prayer_for: 'Z', email: null, is_anonymous: false, date_requested: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), date_answered: null, approval_status: 'approved', prayer_updates: [] } as any;
 
     // First call: loadPrayers returns initial
     let stage = 0;
     vi.mocked(supabase.from).mockImplementation((table: string) => {
       if (table === 'prayer_updates') {
         // delete path
-        return { delete: () => ({ eq: () => ({ error: null }) }) } as any;
+        return { delete: () => ({ eq: () => Promise.resolve({ error: null }) }) } as any;
       }
 
       if (table === 'prayers') {
-        return { select: () => ({ eq: () => ({ then: (cb: any) => {
-          if (stage === 0) return cb({ data: [initial], error: null });
-          return cb({ data: [], error: null });
-        } }) }) } as any;
+        return { select: () => ({ eq: () => ({ eq: () => ({ order: () => {
+          if (stage === 0) return Promise.resolve({ data: [initial], error: null });
+          return Promise.resolve({ data: [], error: null });
+        } }) }) }) } as any;
       }
       return makeSelectMaybeSingle(null) as any;
     });
