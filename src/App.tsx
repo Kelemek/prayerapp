@@ -16,6 +16,7 @@ import { useTheme } from './hooks/useTheme';
 import { supabase } from './lib/supabase';
 import type { PrayerFilters } from './types/prayer';
 import { sendAdminNotification } from './lib/emailNotifications';
+import { setupGlobalErrorHandling, logPageView } from './lib/errorLogger';
 
 // Lazy load heavy components
 const PrayerPresentation = lazy(() => import('./components/PrayerPresentation').then(module => ({ default: module.PrayerPresentation })));
@@ -859,6 +860,12 @@ function AdminWrapper() {
 }
 
 function App() {
+  // Initialize global error handling on first load
+  useEffect(() => {
+    setupGlobalErrorHandling();
+    logPageView('App');
+  }, []);
+
   return (
     <AdminAuthProvider>
       <ToastProvider>
