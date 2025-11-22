@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import './index.css'
 import App from './App.tsx'
+import { initializeClarity } from './lib/clarity'
+
+// Initialize Microsoft Clarity for session replays
+initializeClarity();
 
 // Ensure theme is applied immediately on app load
 const applyStoredTheme = () => {
