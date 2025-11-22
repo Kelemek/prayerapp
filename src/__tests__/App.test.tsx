@@ -193,13 +193,13 @@ describe('App', () => {
       });
     });
 
-    it('renders mobile presentation view when hash is #mobile-presentation', async () => {
-      window.location.hash = '#mobile-presentation';
+    it('renders responsive presentation view when hash is #presentation', async () => {
+      window.location.hash = '#presentation';
       
       render(<App />);
       
       await waitFor(() => {
-        expect(screen.getByTestId('mobile-presentation')).toBeDefined();
+        expect(screen.getByTestId('prayer-presentation')).toBeDefined();
       });
     });
 
