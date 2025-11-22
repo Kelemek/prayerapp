@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
+import { logError, logWarning } from '../lib/errorLogger';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 import type { Database } from '../lib/database.types';
@@ -52,7 +53,16 @@ export const usePrayerManager = () => {
       // Add timeout to prevent infinite loading
       const timeoutId = setTimeout(() => {
         setLoading(false);
-        setError('Loading timeout - please check your internet connection and try again');
+        const timeoutMessage = 'Loading timeout - please check your internet connection and try again';
+        setError(timeoutMessage);
+        
+        // Log timeout to Vercel/external services
+        logWarning('Prayer loading timeout (15s)', {
+          tags: {
+            type: 'prayer_load_timeout',
+            hook: 'usePrayerManager'
+          }
+        });
       }, 15000); // 15 second timeout
 
       // Fetch approved prayers with their approved updates
@@ -101,6 +111,22 @@ export const usePrayerManager = () => {
         message: errorMessage,
         stack: err instanceof Error ? err.stack : undefined
       });
+      
+      // Log error to Vercel/external services
+      logError({
+        message: 'Failed to load prayers from Supabase',
+        error: err,
+        context: {
+          tags: {
+            type: 'prayer_load_failed',
+            hook: 'usePrayerManager'
+          },
+          metadata: {
+            errorMessage
+          }
+        }
+      });
+      
       setError(errorMessage);
     } finally {
       setLoading(false);

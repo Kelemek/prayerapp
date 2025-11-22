@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
+import { logError } from '../lib/errorLogger';
 import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest, UpdateDeletionRequest } from '../types/prayer';
 import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification } from '../lib/emailNotifications';
 
@@ -294,10 +295,15 @@ export const useAdminData = () => {
       });
     } catch (error) {
       console.error('Error fetching admin data:', error);
+      logError({
+        message: 'Failed to fetch admin data',
+        error,
+        context: { tags: { hook: 'useAdminData', function: 'fetchData' } }
+      });
       setData(prev => ({
         ...prev,
         loading: false,
-        error: error instanceof Error ? error.message : 'Failed to load admin data'
+        error: error instanceof Error ? error.message : 'Failed to fetch admin data'
       }));
     }
   }, []);
@@ -331,6 +337,11 @@ export const useAdminData = () => {
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to approve update deletion request:', error);
+      logError({
+        message: 'Failed to approve update deletion request',
+        error,
+        context: { tags: { hook: 'useAdminData', function: 'approveUpdateDeletionRequest' }, metadata: { requestId } }
+      });
       alert('Failed to approve update deletion request. Please try again.');
       throw error; // Re-throw so the UI knows the approval failed
     }
@@ -347,6 +358,11 @@ export const useAdminData = () => {
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to deny update deletion request:', error);
+      logError({
+        message: 'Failed to deny update deletion request',
+        error,
+        context: { tags: { hook: 'useAdminData', function: 'denyUpdateDeletionRequest' }, metadata: { requestId, reason } }
+      });
       alert('Failed to deny update deletion request. Please try again.');
       throw error; // Re-throw so the UI knows the denial failed
     }
@@ -397,6 +413,11 @@ export const useAdminData = () => {
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to approve prayer:', error);
+      logError({
+        message: 'Failed to approve prayer',
+        error,
+        context: { tags: { hook: 'useAdminData', function: 'approvePrayer' }, metadata: { prayerId } }
+      });
       alert('Failed to approve prayer. Please try again.');
       throw error; // Re-throw so the UI knows the approval failed
     }
@@ -441,6 +462,11 @@ export const useAdminData = () => {
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to deny prayer:', error);
+      logError({
+        message: 'Failed to deny prayer',
+        error,
+        context: { tags: { hook: 'useAdminData', function: 'denyPrayer' }, metadata: { prayerId, reason } }
+      });
       alert('Failed to deny prayer. Please try again.');
       throw error; // Re-throw so the UI knows the denial failed
     }
@@ -512,6 +538,11 @@ export const useAdminData = () => {
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to approve update:', error);
+      logError({
+        message: 'Failed to approve prayer update',
+        error,
+        context: { tags: { hook: 'useAdminData', function: 'approveUpdate' }, metadata: { updateId } }
+      });
       alert('Failed to approve update. Please try again.');
       throw error; // Re-throw so the UI knows the approval failed
     }
@@ -559,6 +590,11 @@ export const useAdminData = () => {
       await fetchAdminData();
     } catch (error) {
       console.error('Failed to deny update:', error);
+      logError({
+        message: 'Failed to deny prayer update',
+        error,
+        context: { tags: { hook: 'useAdminData', function: 'denyUpdate' }, metadata: { updateId, reason } }
+      });
       alert('Failed to deny update. Please try again.');
       throw error; // Re-throw so the UI knows the denial failed
     }
