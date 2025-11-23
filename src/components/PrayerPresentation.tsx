@@ -76,82 +76,112 @@ export const PrayerPresentation: React.FC = () => {
 
   // Fetch prayers
   useEffect(() => {
+    let isMounted = true;
+    const abortController = new AbortController();
+
     const fetchData = async () => {
+      // Only set loading if still mounted
+      if (!isMounted) return;
       setLoading(true);
       
       try {
-        if (contentType === 'prayers') {
-          await fetchPrayers();
-        } else if (contentType === 'prompts') {
-          await fetchPrompts();
-        } else if (contentType === 'both') {
-          // Fetch both prayers and prompts in parallel
-          await Promise.all([fetchPrayers(), fetchPrompts()]);
-        }
+        // Add 30 second timeout for all fetch operations
+        const timeoutPromise = new Promise<void>((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout - prayers took too long to load')), 30000)
+        );
+
+        const fetchPromise = (async () => {
+          if (contentType === 'prayers') {
+            await fetchPrayers();
+          } else if (contentType === 'prompts') {
+            await fetchPrompts();
+          } else if (contentType === 'both') {
+            // Fetch both prayers and prompts in parallel
+            await Promise.all([fetchPrayers(), fetchPrompts()]);
+          }
+        })();
+
+        await Promise.race([fetchPromise, timeoutPromise]);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        // Only log error if component is still mounted
+        if (isMounted) {
+          console.error('Error fetching data:', error);
+        }
       } finally {
-        setLoading(false);
+        // Only update state if component is still mounted
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     
     fetchData();
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, timeFilter, contentType]);
 
   const fetchPrayers = async () => {
-    let query = supabase
-      .from('prayers')
-      .select(`
-        *,
-        prayer_updates(*)
-      `)
-      .eq('approval_status', 'approved');
+    try {
+      let query = supabase
+        .from('prayers')
+        .select(`
+          *,
+          prayer_updates(*)
+        `)
+        .eq('approval_status', 'approved');
 
-    // Only exclude archived prayers when a specific status filter is applied
-    // When statusFilter is 'all', show all prayers including archived
-    if (contentType === 'prayers' && statusFilter !== 'all') {
-      query = query.eq('status', statusFilter);
-    }
-
-    // Apply time filter only when viewing prayers alone
-    if (contentType === 'prayers' && timeFilter !== 'all') {
-      const now = new Date();
-      let dateThreshold: Date;
-      
-      switch (timeFilter) {
-        case 'week':
-          dateThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case 'month':
-          dateThreshold = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case 'year':
-          dateThreshold = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          dateThreshold = new Date(0);
+      // Only exclude archived prayers when a specific status filter is applied
+      // When statusFilter is 'all', show all prayers including archived
+      if (contentType === 'prayers' && statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
       }
-      
-      query = query.gte('created_at', dateThreshold.toISOString());
-    }
 
-    query = query.order('created_at', { ascending: false });
+      // Apply time filter only when viewing prayers alone
+      if (contentType === 'prayers' && timeFilter !== 'all') {
+        const now = new Date();
+        let dateThreshold: Date;
+        
+        switch (timeFilter) {
+          case 'week':
+            dateThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case 'month':
+            dateThreshold = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          case 'year':
+            dateThreshold = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            dateThreshold = new Date(0);
+        }
+        
+        query = query.gte('created_at', dateThreshold.toISOString());
+      }
 
-    const { data, error } = await query;
+      query = query.order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching prayers:', error);
-    } else {
-      // Filter to only include approved updates
-      const prayersWithApprovedUpdates = data?.map(prayer => ({
-        ...prayer,
-        prayer_updates: prayer.prayer_updates?.filter((update: any) => 
-          update.approval_status === 'approved'
-        ) || []
-      })) || [];
-      
-      setPrayers(prayersWithApprovedUpdates);
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching prayers:', error);
+      } else {
+        // Filter to only include approved updates
+        const prayersWithApprovedUpdates = data?.map(prayer => ({
+          ...prayer,
+          prayer_updates: prayer.prayer_updates?.filter((update: any) => 
+            update.approval_status === 'approved'
+          ) || []
+        })) || [];
+        
+        setPrayers(prayersWithApprovedUpdates);
+      }
+    } catch (error) {
+      console.error('Error in fetchPrayers:', error);
     }
   };
 
