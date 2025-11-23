@@ -79,16 +79,20 @@ export const PrayerPresentation: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       
-      if (contentType === 'prayers') {
-        await fetchPrayers();
-      } else if (contentType === 'prompts') {
-        await fetchPrompts();
-      } else if (contentType === 'both') {
-        // Fetch both prayers and prompts in parallel
-        await Promise.all([fetchPrayers(), fetchPrompts()]);
+      try {
+        if (contentType === 'prayers') {
+          await fetchPrayers();
+        } else if (contentType === 'prompts') {
+          await fetchPrompts();
+        } else if (contentType === 'both') {
+          // Fetch both prayers and prompts in parallel
+          await Promise.all([fetchPrayers(), fetchPrompts()]);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
     
     fetchData();
