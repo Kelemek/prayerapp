@@ -165,7 +165,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     };
   }, [isAdmin, lastActivity, sessionStart]);
 
-  const sendMagicLink = async (email: string): Promise<boolean> => {
+  const sendMagicLink = async (email: string): Promise<{ success: boolean; error?: string }> => {
     setLoading(true);
     
     try {
@@ -184,15 +184,25 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
 
       if (error) {
         console.error('Magic link error:', error.message, error);
-        return false;
+        // Check for rate limit error
+        if (error.message?.includes('over_email_send_rate_limit')) {
+          // Try to extract wait time from error message if available
+          const waitTimeMatch = error.message.match(/(\d+)\s*s(?:econds?)?/i);
+          const waitTime = waitTimeMatch ? waitTimeMatch[1] : null;
+          const message = waitTime 
+            ? `Too many login attempts. Please wait ${waitTime} seconds before requesting another link.`
+            : 'Too many login attempts. Please wait a few minutes before trying again.';
+          return { success: false, error: message };
+        }
+        return { success: false, error: error.message || 'Failed to send magic link' };
       }
 
       // Reset activity timer
       setLastActivity(Date.now());
-      return true;
+      return { success: true };
     } catch (error) {
       console.error('Magic link exception:', error);
-      return false;
+      return { success: false, error: 'An unexpected error occurred. Please try again.' };
     } finally {
       setLoading(false);
     }

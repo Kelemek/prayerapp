@@ -56,7 +56,7 @@ describe('AdminAuthProvider', () => {
     expect(screen.getByTestId('is-admin').textContent).toBe('true');
   });
 
-  it('sendMagicLink returns true on success', async () => {
+  it('sendMagicLink returns { success: true } on success', async () => {
     vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: null }, error: null });
     vi.mocked(supabase.auth.signInWithOtp).mockResolvedValue({ data: { user: null, session: null }, error: null } as any);
 
@@ -64,7 +64,7 @@ describe('AdminAuthProvider', () => {
       const ctx = useContext(AdminAuthContext)!;
       return (
         <div>
-          <button onClick={async () => { const ok = await ctx.sendMagicLink('me@example.com'); (window as any).last = ok; }}>Send</button>
+          <button onClick={async () => { const result = await ctx.sendMagicLink('me@example.com'); (window as any).last = result; }}>Send</button>
         </div>
       );
     };
@@ -76,7 +76,7 @@ describe('AdminAuthProvider', () => {
     );
 
     fireEvent.click(screen.getByText('Send'));
-    await waitFor(() => expect((window as any).last).toBe(true));
+    await waitFor(() => expect((window as any).last?.success).toBe(true));
     expect(supabase.auth.signInWithOtp).toHaveBeenCalled();
   });
 

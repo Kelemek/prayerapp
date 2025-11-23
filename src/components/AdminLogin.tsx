@@ -54,15 +54,15 @@ export const AdminLogin: React.FC = () => {
       }
 
       // Email is an admin, send magic link
-      const sent = await sendMagicLink(email);
+      const result = await sendMagicLink(email);
       
-      if (sent) {
+      if (result.success) {
         // Save to sessionStorage to persist across re-renders
         sessionStorage.setItem('magic_link_sent', 'true');
         sessionStorage.setItem('magic_link_email', email);
         setSuccess(true);
       } else {
-        setError('Failed to send magic link. Please try again.');
+        setError(result.error || 'Failed to send magic link. Please try again.');
       }
     } catch (err) {
       console.error('Error sending magic link:', err);
