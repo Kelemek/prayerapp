@@ -124,65 +124,6 @@ export const usePrayerManager = () => {
     loadPrayers();
   }, []); // Empty dependency array - only run on mount
 
-  // Set up real-time subscription for changes from OTHER clients
-  // This should NOT recreate on every loadPrayers change to avoid loops
-  useEffect(() => {
-    const prayersSubscription = supabase
-      .channel('prayers-realtime', {
-        config: {
-          broadcast: { self: false }, // Don't trigger for our own changes
-        },
-      })
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'prayers' },
-        (payload) => {
-          if (payload.new) {
-            const newPrayer = convertDbPrayer(payload.new as DbPrayer);
-            setPrayers(prev => [newPrayer, ...prev]);
-          }
-        }
-      )
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'prayers' },
-        (payload) => {
-          if (payload.new) {
-            const updatedPrayer = convertDbPrayer(payload.new as DbPrayer);
-            setPrayers(prev => prev.map(p => 
-              p.id === updatedPrayer.id ? { ...updatedPrayer, updates: p.updates } : p
-            ));
-          }
-        }
-      )
-      .on('postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'prayers' },
-        (payload) => {
-          if (payload.old) {
-            setPrayers(prev => prev.filter(p => p.id !== (payload.old as { id: string }).id));
-          }
-        }
-      )
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'prayer_updates' },
-        () => {
-          // Reload prayers when updates change
-          loadPrayers();
-        }
-      )
-      .subscribe((status) => {
-        // Log subscription status for debugging
-        if (status === 'SUBSCRIBED') {
-          console.log('Prayer realtime subscription active');
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.warn('Prayer realtime subscription issue:', status);
-          // Don't reload on connection issues - just let it reconnect naturally
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(prayersSubscription);
-    };
-  }, []); // Empty dependency array - subscription only set up once on mount
-
   const addPrayer = async (prayer: Omit<PrayerRequest, 'id' | 'date_requested' | 'created_at' | 'updated_at' | 'updates'>) => {
     try {
       // Prepare the base prayer data

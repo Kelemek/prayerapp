@@ -833,37 +833,6 @@ export const useAdminData = () => {
   // Initial data fetch
   useEffect(() => { fetchAdminData(); }, [fetchAdminData]);
 
-  // Set up real-time subscriptions for pending items
-  useEffect(() => {
-    const prayersSubscription = supabase.channel('admin_prayers')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'prayers', filter: 'approval_status=eq.pending' }, () => fetchAdminData())
-      .subscribe();
-
-    const updatesSubscription = supabase.channel('admin_updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'prayer_updates', filter: 'approval_status=eq.pending' }, () => fetchAdminData())
-      .subscribe();
-
-    const deletionRequestsSubscription = supabase.channel('admin_deletion_requests')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'deletion_requests' }, () => fetchAdminData())
-      .subscribe();
-
-    const statusChangeRequestsSubscription = supabase.channel('admin_status_change_requests')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'status_change_requests' }, () => fetchAdminData())
-      .subscribe();
-
-    const updateDeletionRequestsSubscription = supabase.channel('admin_update_deletion_requests')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'update_deletion_requests' }, () => fetchAdminData())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(prayersSubscription);
-      supabase.removeChannel(updatesSubscription);
-      supabase.removeChannel(deletionRequestsSubscription);
-      supabase.removeChannel(statusChangeRequestsSubscription);
-      supabase.removeChannel(updateDeletionRequestsSubscription);
-    };
-  }, [fetchAdminData]);
-
   return {
     ...data,
     approvePrayer,

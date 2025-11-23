@@ -105,12 +105,6 @@ describe('useAdminData', () => {
     expect(supabase.from).toHaveBeenCalledWith('prayer_updates');
   });
 
-  it('sets up realtime subscriptions', () => {
-    renderHook(() => useAdminData());
-
-    expect(supabase.channel).toHaveBeenCalled();
-  });
-
   it('provides counts for approved and denied items', async () => {
     const { result } = renderHook(() => useAdminData());
 

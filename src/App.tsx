@@ -98,37 +98,6 @@ function AppContent() {
     };
     
     fetchBranding();
-    
-    // Subscribe to real-time changes to admin_settings
-    const channel = supabase
-      .channel('app_settings_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'admin_settings',
-          filter: 'id=eq.1'
-        },
-        (payload) => {
-          if (payload.new) {
-            const newData = payload.new as any;
-            if (newData.app_title) setAppTitle(newData.app_title);
-            if (newData.app_subtitle) setAppSubtitle(newData.app_subtitle);
-            if (newData.allow_user_deletions !== null && newData.allow_user_deletions !== undefined) {
-              setAllowUserDeletions(newData.allow_user_deletions);
-            }
-            if (newData.allow_user_updates !== null && newData.allow_user_updates !== undefined) {
-              setAllowUserUpdates(newData.allow_user_updates);
-            }
-          }
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   // Track page view on initial load
@@ -696,35 +665,6 @@ function AdminWrapper() {
   
   useEffect(() => {
     fetchSettings();
-    
-    // Subscribe to real-time changes to admin_settings
-    const channel = supabase
-      .channel('admin_settings_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'admin_settings',
-          filter: 'id=eq.1'
-        },
-        (payload) => {
-          if (payload.new) {
-            const newData = payload.new as any;
-            if (newData.allow_user_deletions !== null && newData.allow_user_deletions !== undefined) {
-              setAllowUserDeletions(newData.allow_user_deletions);
-            }
-            if (newData.allow_user_updates !== null && newData.allow_user_updates !== undefined) {
-              setAllowUserUpdates(newData.allow_user_updates);
-            }
-          }
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
   
   // Handle hash changes for admin access

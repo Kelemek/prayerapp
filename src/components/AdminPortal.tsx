@@ -399,6 +399,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   }, [loading]);
 
+  const handleRefresh = () => {
+    setLoadingTimeout(false); // Reset timeout when user clicks retry
+    refresh();
+  };
+
   if (loading && !loadingTimeout) {
     return (
       <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -422,7 +427,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
           <div className="flex gap-3 justify-center">
             <button
-              onClick={refresh}
+              onClick={handleRefresh}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <RefreshCw size={16} />
@@ -452,7 +457,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
           <div className="flex gap-3 justify-center">
             <button
-              onClick={refresh}
+              onClick={handleRefresh}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <RefreshCw size={16} />

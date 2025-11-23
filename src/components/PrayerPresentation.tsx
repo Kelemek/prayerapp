@@ -226,6 +226,33 @@ export const PrayerPresentation: React.FC = () => {
     }
   };
 
+  const handleRefreshPrayers = async () => {
+    setLoading(true);
+    
+    try {
+      // Add 30 second timeout for refresh operations
+      const timeoutPromise = new Promise<void>((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout - prayers took too long to load')), 30000)
+      );
+
+      const fetchPromise = (async () => {
+        if (contentType === 'prayers') {
+          await fetchPrayers();
+        } else if (contentType === 'prompts') {
+          await fetchPrompts();
+        } else if (contentType === 'both') {
+          await Promise.all([fetchPrayers(), fetchPrompts()]);
+        }
+      })();
+
+      await Promise.race([fetchPromise, timeoutPromise]);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Auto-advance timer
   useEffect(() => {
     const items = contentType === 'prayers' ? prayers : prompts;
@@ -943,7 +970,7 @@ export const PrayerPresentation: React.FC = () => {
               </div>
 
               <button
-                onClick={fetchPrayers}
+                onClick={handleRefreshPrayers}
                 className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-lg font-semibold transition-colors"
               >
                 Refresh Prayers

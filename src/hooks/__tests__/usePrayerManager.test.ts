@@ -198,12 +198,6 @@ describe('usePrayerManager', () => {
     expect(result.current.prayers[1].id).toBe('2');
   });
 
-  it('sets up realtime subscriptions', () => {
-    renderHook(() => usePrayerManager());
-
-    expect(supabase.channel).toHaveBeenCalled();
-  });
-
   it('provides prayers array in result', async () => {
     const { result } = renderHook(() => usePrayerManager());
 
