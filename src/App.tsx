@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { PrayerForm } from './components/PrayerForm';
 import { PrayerCard } from './components/PrayerCard';
 import { PromptCard } from './components/PromptCard';
+import { AppLogo } from './components/AppLogo';
 import { PrayerFiltersComponent } from './components/PrayerFilters';
 import { ToastProvider } from './components/ToastProvider';
 import { UserSettings } from './components/UserSettings';
@@ -47,6 +48,10 @@ function AppContent() {
   // App branding
   const [appTitle, setAppTitle] = useState('Church Prayer Manager');
   const [appSubtitle, setAppSubtitle] = useState('Keeping our community connected in prayer');
+  const [useLogo, setUseLogo] = useState(false);
+  const [lightModeLogoUrl, setLightModeLogoUrl] = useState<string>('');
+  const [darkModeLogoUrl, setDarkModeLogoUrl] = useState<string>('');
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [allowUserDeletions, setAllowUserDeletions] = useState(true);
   const [allowUserUpdates, setAllowUserUpdates] = useState(true);
 
@@ -76,15 +81,22 @@ function AppContent() {
   useEffect(() => {
     const fetchBranding = async () => {
       try {
-        const { data, error } = await supabase
-          .from('admin_settings')
-          .select('app_title, app_subtitle, allow_user_deletions, allow_user_updates')
-          .eq('id', 1)
-          .maybeSingle();
-        
-        if (!error && data) {
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('app_title, app_subtitle, use_logo, light_mode_logo_blob, dark_mode_logo_blob, allow_user_deletions, allow_user_updates')
+        .eq('id', 1)
+        .maybeSingle();        if (!error && data) {
           if (data.app_title) setAppTitle(data.app_title);
           if (data.app_subtitle) setAppSubtitle(data.app_subtitle);
+          if (data.use_logo !== null && data.use_logo !== undefined) {
+            setUseLogo(data.use_logo);
+          }
+          if (data.light_mode_logo_blob) {
+            setLightModeLogoUrl(data.light_mode_logo_blob);
+          }
+          if (data.dark_mode_logo_blob) {
+            setDarkModeLogoUrl(data.dark_mode_logo_blob);
+          }
           if (data.allow_user_deletions !== null && data.allow_user_deletions !== undefined) {
             setAllowUserDeletions(data.allow_user_deletions);
           }
@@ -98,6 +110,26 @@ function AppContent() {
     };
     
     fetchBranding();
+  }, []);
+
+  // Detect dark mode changes
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setIsDarkMode(isDark);
+    };
+
+    // Initial check
+    checkDarkMode();
+
+    // Watch for dark mode changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { 
+      attributes: true, 
+      attributeFilter: ['class'] 
+    });
+
+    return () => observer.disconnect();
   }, []);
 
   // Track page view on initial load
@@ -228,9 +260,15 @@ function AppContent() {
         <div className="max-w-6xl mx-auto w-full px-4 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 truncate">{appTitle}</h1>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hidden sm:block mt-1">{appSubtitle}</p>
+            <div className="min-w-0 flex-1">
+                {useLogo ? (
+                  <AppLogo isDarkMode={isDarkMode} lightModeImageUrl={lightModeLogoUrl} darkModeImageUrl={darkModeLogoUrl} />
+                ) : (
+                  <>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 truncate">{appTitle}</h1>
+                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 hidden sm:block mt-1">{appSubtitle}</p>
+                  </>
+                )}
               </div>
             </div>
             <div className="flex flex-col gap-2">

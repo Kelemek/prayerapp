@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Settings } from 'lucide-react';
+import { Save, Settings, Upload, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface AppBrandingProps {
@@ -9,10 +9,14 @@ interface AppBrandingProps {
 export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
   const [appTitle, setAppTitle] = useState<string>('Church Prayer Manager');
   const [appSubtitle, setAppSubtitle] = useState<string>('Keeping our community connected in prayer');
+  const [useLogo, setUseLogo] = useState<boolean>(false);
+  const [lightModeLogoUrl, setLightModeLogoUrl] = useState<string>('');
+  const [darkModeLogoUrl, setDarkModeLogoUrl] = useState<string>('');
   const [allowUserDeletions, setAllowUserDeletions] = useState<boolean>(true);
   const [allowUserUpdates, setAllowUserUpdates] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -25,7 +29,7 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('app_title, app_subtitle, allow_user_deletions, allow_user_updates')
+        .select('app_title, app_subtitle, use_logo, light_mode_logo_blob, dark_mode_logo_blob, allow_user_deletions, allow_user_updates')
         .eq('id', 1)
         .maybeSingle();
 
@@ -40,6 +44,18 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
 
       if (data?.app_subtitle) {
         setAppSubtitle(data.app_subtitle);
+      }
+
+      if (data?.use_logo !== null && data?.use_logo !== undefined) {
+        setUseLogo(data.use_logo);
+      }
+
+      if (data?.light_mode_logo_blob) {
+        setLightModeLogoUrl(data.light_mode_logo_blob);
+      }
+
+      if (data?.dark_mode_logo_blob) {
+        setDarkModeLogoUrl(data.dark_mode_logo_blob);
       }
 
       if (data?.allow_user_deletions !== null && data?.allow_user_deletions !== undefined) {
@@ -57,6 +73,34 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
     }
   };
 
+  const handleLogoUpload = async (file: File, mode: 'light' | 'dark') => {
+    try {
+      setUploading(true);
+      setError(null);
+
+      // Convert file to base64 data URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64String = e.target?.result as string;
+        if (mode === 'light') {
+          setLightModeLogoUrl(base64String);
+        } else {
+          setDarkModeLogoUrl(base64String);
+        }
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        setError('Failed to read image file');
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: unknown) {
+      console.error('Error processing logo:', err);
+      setError('Failed to process logo');
+      setUploading(false);
+    }
+  };
+
   const saveBrandingSettings = async () => {
     try {
       setSaving(true);
@@ -68,6 +112,9 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
           id: 1,
           app_title: appTitle,
           app_subtitle: appSubtitle,
+          use_logo: useLogo,
+          light_mode_logo_blob: lightModeLogoUrl || null,
+          dark_mode_logo_blob: darkModeLogoUrl || null,
           allow_user_deletions: allowUserDeletions,
           allow_user_updates: allowUserUpdates,
           updated_at: new Date().toISOString()
@@ -84,6 +131,14 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
       setError('Failed to save branding settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteLogo = (mode: 'light' | 'dark') => {
+    if (mode === 'light') {
+      setLightModeLogoUrl('');
+    } else {
+      setDarkModeLogoUrl('');
     }
   };
 
@@ -148,6 +203,115 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
             Descriptive tagline shown under the title (hidden on mobile)
           </p>
         </div>
+
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useLogo}
+              onChange={(e) => setUseLogo(e.target.checked)}
+              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+            />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Use logo instead of title/subtitle
+            </span>
+          </label>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
+            When enabled, displays custom logo images instead of the app title and subtitle. Upload separate images for light and dark modes.
+          </p>
+        </div>
+
+        {useLogo && (
+          <>
+            {/* Light Mode Logo Upload */}
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Light Mode Logo
+              </label>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        handleLogoUpload(e.target.files[0], 'light');
+                      }
+                    }}
+                    disabled={uploading}
+                    className="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 disabled:opacity-50"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Recommended size: 200-300px width, transparent background
+                  </p>
+                </div>
+                {lightModeLogoUrl && (
+                  <button
+                    onClick={() => handleDeleteLogo('light')}
+                    className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                    Remove
+                  </button>
+                )}
+              </div>
+              {lightModeLogoUrl && (
+                <div className="mt-3 p-3 bg-white dark:bg-white rounded-lg border border-gray-200">
+                  <p className="text-xs font-medium text-gray-600 mb-2">Preview (Light Mode):</p>
+                  <img 
+                    src={lightModeLogoUrl} 
+                    alt="Light Mode Logo Preview" 
+                    className="h-16 w-auto max-w-xs"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Dark Mode Logo Upload */}
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Dark Mode Logo
+              </label>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        handleLogoUpload(e.target.files[0], 'dark');
+                      }
+                    }}
+                    disabled={uploading}
+                    className="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 disabled:opacity-50"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Recommended size: 200-300px width, transparent background
+                  </p>
+                </div>
+                {darkModeLogoUrl && (
+                  <button
+                    onClick={() => handleDeleteLogo('dark')}
+                    className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                    Remove
+                  </button>
+                )}
+              </div>
+              {darkModeLogoUrl && (
+                <div className="mt-3 p-3 bg-gray-800 dark:bg-gray-800 rounded-lg border border-gray-700">
+                  <p className="text-xs font-medium text-gray-300 mb-2">Preview (Dark Mode):</p>
+                  <img 
+                    src={darkModeLogoUrl} 
+                    alt="Dark Mode Logo Preview" 
+                    className="h-16 w-auto max-w-xs"
+                  />
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
           <label className="flex items-center gap-2 cursor-pointer">
