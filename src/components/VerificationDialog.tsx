@@ -280,13 +280,13 @@ export const VerificationDialog: React.FC<VerificationDialogProps> = ({
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
             <Mail size={32} className="text-blue-600 dark:text-blue-400" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
             Verify Your Email
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             We've sent a {codeLength}-digit code to
           </p>
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
             {email}
           </p>
         </div>

@@ -171,8 +171,8 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
   };
 
   const statusColors = {
-    current: '#3b82f6',
-    answered: '#10b981'
+    current: '#0047AB',
+    answered: '#39704D'
   };
 
   let prayerSectionsHTML = '';

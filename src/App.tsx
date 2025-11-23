@@ -316,7 +316,7 @@ function AppContent() {
                 {/* Mobile: Prayer Mode button */}
                 <button
                   onClick={() => window.location.hash = '#presentation'}
-                  className="flex items-center gap-1 bg-green-600 text-white px-2 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-sm"
+                  className="flex items-center gap-1 bg-[#2F5F54] text-white px-2 py-2 rounded-lg hover:bg-[#1a3a2e] focus:outline-none focus:ring-2 focus:ring-[#2F5F54] transition-colors text-sm"
                   title="Prayer Mode"
                 >
                   <span>Pray</span>
@@ -343,7 +343,7 @@ function AppContent() {
                   {/* Desktop: Prayer Mode button */}
                   <button
                     onClick={() => window.location.hash = '#presentation'}
-                    className="flex items-center gap-2 bg-green-600 dark:bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors text-base"
+                    className="flex items-center gap-2 bg-[#2F5F54] dark:bg-[#2F5F54] text-white px-4 py-2 rounded-lg hover:bg-[#1a3a2e] dark:hover:bg-[#1a3a2e] focus:outline-none focus:ring-2 focus:ring-[#2F5F54] transition-colors text-base"
                     title="Prayer Mode"
                   >
                     <span>Pray</span>
@@ -407,39 +407,39 @@ function AppContent() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <button
             onClick={() => { setShowPrompts(false); setFilters({...filters, status: 'current'}); }}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border-2 transition-all duration-200 min-w-0 ${
+            className={`rounded-lg shadow-md p-3 sm:p-4 text-center border-[2px] transition-all duration-200 min-w-0 ${
               !showPrompts && filters.status === 'current' 
-                ? 'border-blue-500 ring-2 ring-blue-500 ring-offset-0' 
-                : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg'
+                ? '!border-[#0047AB] dark:!border-[#0047AB] bg-blue-100 dark:bg-blue-950 ring-2 ring-[#0047AB] dark:ring-[#0047AB] ring-offset-0' 
+                : 'bg-white dark:bg-gray-800 !border-gray-200 dark:!border-gray-700 hover:!border-[#0047AB] dark:hover:!border-[#0047AB] hover:shadow-lg'
             }`}
           >
-            <div className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">
+            <div className="text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-300 tabular-nums">
               {prayers.filter(p => p.status === 'current').length}
             </div>
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis">Current</div>
           </button>
           <button
             onClick={() => { setShowPrompts(false); setFilters({...filters, status: 'answered'}); }}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border-2 transition-all duration-200 min-w-0 ${
+            className={`rounded-lg shadow-md p-3 sm:p-4 text-center border-[2px] transition-all duration-200 min-w-0 ${
               !showPrompts && filters.status === 'answered' 
-                ? 'border-green-500 ring-2 ring-green-500 ring-offset-0' 
-                : 'border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-600 hover:shadow-lg'
+                ? '!border-[#39704D] dark:!border-[#39704D] bg-green-100 dark:bg-green-950 ring-2 ring-[#39704D] dark:ring-[#39704D] ring-offset-0' 
+                : 'bg-white dark:bg-gray-800 !border-gray-200 dark:!border-gray-700 hover:!border-[#39704D] dark:hover:!border-[#39704D] hover:shadow-lg'
             }`}
           >
-            <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">
+            <div className="text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-300 tabular-nums">
               {prayers.filter(p => p.status === 'answered').length}
             </div>
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis">Answered</div>
           </button>
           <button
             onClick={() => { setShowPrompts(false); setFilters({}); }}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border-2 transition-all duration-200 min-w-0 ${
+            className={`rounded-lg shadow-md p-3 sm:p-4 text-center border-[2px] transition-all duration-200 min-w-0 ${
               !showPrompts && !filters.status 
-                ? 'border-purple-500 ring-2 ring-purple-500 ring-offset-0' 
-                : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-lg'
+                ? '!border-[#C9A961] dark:!border-[#C9A961] bg-amber-100 dark:bg-amber-900/40 ring-2 ring-[#C9A961] dark:ring-[#C9A961] ring-offset-0' 
+                : 'bg-white dark:bg-gray-800 !border-gray-200 dark:!border-gray-700 hover:!border-[#C9A961] dark:hover:!border-[#C9A961] hover:shadow-lg'
             }`}
           >
-            <div className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400 tabular-nums">{prayers.length || 0}</div>
+            <div className="text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-300 tabular-nums">{prayers.length || 0}</div>
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis">Total Prayers</div>
           </button>
           <button
@@ -448,13 +448,13 @@ function AppContent() {
               setFilters({}); 
               setSelectedPromptTypes([]); // Reset type filter when opening prompts
             }}
-            className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 text-center border-2 transition-all duration-200 min-w-0 ${
+            className={`rounded-lg shadow-md p-3 sm:p-4 text-center border-[2px] transition-all duration-200 min-w-0 ${
               showPrompts 
-                ? 'border-yellow-500 ring-2 ring-yellow-500 ring-offset-0' 
-                : 'border-gray-200 dark:border-gray-700 hover:border-yellow-300 dark:hover:border-yellow-600 hover:shadow-lg'
+                ? '!border-[#988F83] dark:!border-[#988F83] bg-stone-100 dark:bg-stone-900/40 ring-2 ring-[#988F83] dark:ring-[#988F83] ring-offset-0' 
+                : 'bg-white dark:bg-gray-800 !border-gray-200 dark:!border-gray-700 hover:!border-[#988F83] dark:hover:!border-[#988F83] hover:shadow-lg'
             }`}
           >
-            <div className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400 tabular-nums">
+            <div className="text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-300 tabular-nums">
               {prompts.length}
             </div>
             <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis">Prompts</div>
@@ -474,8 +474,8 @@ function AppContent() {
                     onClick={() => setSelectedPromptTypes([])}
                     className={`flex-1 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                       selectedPromptTypes.length === 0
-                        ? 'bg-yellow-500 text-white shadow-md'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-yellow-400 dark:hover:border-yellow-500'
+                        ? 'bg-[#988F83] text-white shadow-md'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-[#988F83] dark:hover:border-[#988F83]'
                     }`}
                   >
                     All Types ({prompts.length})
@@ -508,8 +508,8 @@ function AppContent() {
                           }}
                           className={`flex-1 whitespace-nowrap px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                             isSelected
-                              ? 'bg-yellow-500 text-white shadow-md'
-                              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-yellow-400 dark:hover:border-yellow-500'
+                              ? 'bg-[#988F83] text-white shadow-md'
+                              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:border-[#988F83] dark:hover:border-[#988F83]'
                           }`}
                         >
                           {type} ({count})

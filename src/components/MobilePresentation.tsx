@@ -41,7 +41,13 @@ export const MobilePresentation: React.FC = () => {
   const [contentType, setContentType] = useState<string>('prayers');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<string>('all');
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
+    if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system')) {
+      return savedTheme;
+    }
+    return 'system';
+  });
   const [randomize, setRandomize] = useState(false);
   const [showSmartModeDetails, setShowSmartModeDetails] = useState(false);
   const [prayerTimerMinutes, setPrayerTimerMinutes] = useState(10);
@@ -58,12 +64,6 @@ export const MobilePresentation: React.FC = () => {
   const minSwipeDistance = 50;
   // Double-tap threshold (in ms)
   const doubleTapThreshold = 300;
-
-  // Initialize theme
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
-    setTheme(savedTheme || 'system');
-  }, []);
 
   // Apply theme
   useEffect(() => {
@@ -334,13 +334,13 @@ export const MobilePresentation: React.FC = () => {
   const getStatusBadgeClasses = (status: string) => {
     switch (status) {
       case 'current':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700';
+        return 'bg-[#0047AB] bg-opacity-20 dark:bg-opacity-30 text-[#0047AB] dark:text-[#4A90E2] border border-[#0047AB]';
       case 'answered':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700';
+        return 'bg-[#39704D] bg-opacity-20 dark:bg-opacity-30 text-[#39704D] dark:text-[#5FB876] border border-[#39704D]';
       case 'archived':
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600';
+        return 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600';
       default:
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-600';
+        return 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600';
     }
   };
 
@@ -499,7 +499,7 @@ export const MobilePresentation: React.FC = () => {
             </div>
 
             {/* Date and Time */}
-            <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+            <div className="mb-4 text-sm text-gray-700 dark:text-gray-300">
               <span className="font-semibold">Date:</span> {new Date(currentPrayer.created_at).toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
@@ -519,7 +519,7 @@ export const MobilePresentation: React.FC = () => {
                 <div className="space-y-3">
                   {sortedUpdates.slice(0, 3).map((update) => (
                     <div key={update.id} className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                      <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      <div className="text-sm text-gray-700 dark:text-gray-300 mb-1">
                         {update.author} • {new Date(update.created_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -620,10 +620,10 @@ export const MobilePresentation: React.FC = () => {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h2>
               <button
                 onClick={() => setShowSettings(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
               >
                 <X size={24} />
               </button>
@@ -673,7 +673,7 @@ export const MobilePresentation: React.FC = () => {
                         <span className="text-xs font-medium text-gray-800 dark:text-gray-100">System</span>
                       </button>
                     </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                    <p className="text-xs text-gray-700 dark:text-gray-300 mt-2">
                       Choose your preferred color theme or use your system settings
                     </p>
                   </div>
@@ -688,14 +688,14 @@ export const MobilePresentation: React.FC = () => {
                     onChange={(e) => setSmartMode(e.target.checked)}
                     className="w-5 h-5 rounded cursor-pointer"
                   />
-                  <span className="text-base text-gray-900 dark:text-white">Smart Mode (adjust time based on content length)</span>
+                  <span className="text-base text-gray-900 dark:text-gray-100">Smart Mode (adjust time based on content length)</span>
                 </label>
               </div>
 
               {!smartMode && (
                 <>
                   <div>
-                    <label className="block text-base mb-2 text-gray-900 dark:text-white">Auto-advance interval (seconds)</label>
+                    <label className="block text-base mb-2 text-gray-900 dark:text-gray-100">Auto-advance interval (seconds)</label>
                     <input
                       type="range"
                       min="5"
@@ -705,25 +705,25 @@ export const MobilePresentation: React.FC = () => {
                       onChange={(e) => setDisplayDuration(Number(e.target.value))}
                       className="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                     />
-                    <div className="text-center text-xl mt-2 font-semibold text-gray-900 dark:text-white">{displayDuration}s</div>
+                    <div className="text-center text-xl mt-2 font-semibold text-gray-900 dark:text-gray-100">{displayDuration}s</div>
                   </div>
 
                   <div className="flex gap-2">
                     <button
                       onClick={() => setDisplayDuration(10)}
-                      className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm transition-colors"
+                      className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm transition-colors"
                     >
                       10s
                     </button>
                     <button
                       onClick={() => setDisplayDuration(20)}
-                      className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm transition-colors"
+                      className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm transition-colors"
                     >
                       20s
                     </button>
                     <button
                       onClick={() => setDisplayDuration(30)}
-                      className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm transition-colors"
+                      className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm transition-colors"
                     >
                       30s
                     </button>
@@ -733,7 +733,7 @@ export const MobilePresentation: React.FC = () => {
 
               {smartMode && (
                 <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg p-3">
-                  <p className="text-sm text-gray-800 dark:text-gray-200 mb-2">
+                  <p className="text-sm text-gray-800 dark:text-gray-100 mb-2">
                     Smart mode automatically adjusts display time based on prayer length, giving you more time to read longer prayers and updates.
                   </p>
                   <button
@@ -761,7 +761,7 @@ export const MobilePresentation: React.FC = () => {
 
               {/* Content Type Filter */}
               <div>
-                <label className="block text-base mb-2 text-gray-900 dark:text-white">Content Type</label>
+                <label className="block text-base mb-2 text-gray-900 dark:text-gray-100">Content Type</label>
                 <div className="relative">
                   <select
                     value={contentType}
@@ -769,7 +769,7 @@ export const MobilePresentation: React.FC = () => {
                       setContentType(e.target.value);
                       setCurrentIndex(0);
                     }}
-                    className="w-full appearance-none px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                    className="w-full appearance-none px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
                   >
                     <option value="prayers">Prayers</option>
                     <option value="prompts">Prayer Prompts</option>
@@ -782,7 +782,7 @@ export const MobilePresentation: React.FC = () => {
               {/* Randomize Toggle */}
               <div>
                 <label className="flex items-center justify-between cursor-pointer">
-                  <span className="text-base text-gray-900 dark:text-white">Randomize Order</span>
+                  <span className="text-base text-gray-900 dark:text-gray-100">Randomize Order</span>
                   <div className="relative">
                     <input
                       type="checkbox"
@@ -796,7 +796,7 @@ export const MobilePresentation: React.FC = () => {
                     <div className="w-11 h-6 bg-gray-300 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </div>
                 </label>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-xs text-gray-700 dark:text-gray-300 mt-1">
                   Shuffle the display order randomly
                 </p>
               </div>
@@ -804,12 +804,12 @@ export const MobilePresentation: React.FC = () => {
               {/* Time Filter - Only show for prayers */}
               {contentType === 'prayers' && (
               <div>
-                <label className="block text-base mb-2 text-gray-900 dark:text-white">Time Period</label>
+                <label className="block text-base mb-2 text-gray-900 dark:text-gray-100">Time Period</label>
                 <div className="relative">
                   <select
                     value={timeFilter}
                     onChange={(e) => setTimeFilter(e.target.value)}
-                    className="w-full appearance-none px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                    className="w-full appearance-none px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#0047AB] focus:border-transparent pr-10"
                   >
                     <option value="all">All Time</option>
                     <option value="week">Last Week</option>
@@ -823,14 +823,14 @@ export const MobilePresentation: React.FC = () => {
 
               {/* Prayer Timer */}
               <div className="border-t border-gray-300 dark:border-gray-600 pt-4 mt-4">
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-white">
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-gray-900 dark:text-gray-100">
                   <Timer size={20} />
                   Prayer Timer
                 </h3>
                 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-base mb-2 text-gray-900 dark:text-white">Timer Duration (minutes)</label>
+                    <label className="block text-base mb-2 text-gray-900 dark:text-gray-100">Timer Duration (minutes)</label>
                     <input
                       type="number"
                       min="1"
@@ -838,13 +838,13 @@ export const MobilePresentation: React.FC = () => {
                       value={prayerTimerMinutes}
                       onChange={(e) => setPrayerTimerMinutes(Math.max(1, parseInt(e.target.value) || 1))}
                       disabled={prayerTimerActive}
-                      className="w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg text-base border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg text-base border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#0047AB] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
 
                   {prayerTimerActive && (
                     <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg p-3 text-center">
-                      <div className="text-3xl font-bold mb-1 text-gray-900 dark:text-white">{formatTime(prayerTimerRemaining)}</div>
+                      <div className="text-3xl font-bold mb-1 text-gray-900 dark:text-gray-100">{formatTime(prayerTimerRemaining)}</div>
                       <div className="text-sm text-gray-700 dark:text-gray-300">Time Remaining</div>
                     </div>
                   )}

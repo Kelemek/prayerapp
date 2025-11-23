@@ -374,7 +374,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
-            <Settings className="text-purple-600 dark:text-purple-400" size={24} />
+            <Settings className="text-blue-600 dark:text-blue-400" size={24} />
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
               Settings
             </h2>
@@ -423,8 +423,8 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
                     onClick={() => handleThemeChange('light')}
                     className={`flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all ${
                       theme === 'light'
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'
                     }`}
                   >
                     <Sun size={18} className="text-amber-600 sm:w-5 sm:h-5" />
@@ -434,8 +434,8 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
                     onClick={() => handleThemeChange('dark')}
                     className={`flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all ${
                       theme === 'dark'
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'
                     }`}
                   >
                     <Moon size={18} className="text-blue-600 dark:text-blue-400 sm:w-5 sm:h-5" />
@@ -445,8 +445,8 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
                     onClick={() => handleThemeChange('system')}
                     className={`flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all ${
                       theme === 'system'
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'
                     }`}
                   >
                     <Monitor size={18} className="text-gray-600 dark:text-gray-400 sm:w-5 sm:h-5" />
@@ -492,7 +492,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
                 setSuccess(null);
               }}
               placeholder="your.email@example.com"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Your preferences will load automatically
@@ -510,7 +510,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           )}
@@ -538,14 +538,14 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
           {/* Notification Preferences */}
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
             <div className="flex items-start gap-2 sm:gap-3">
-              <Mail className="text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" size={18} />
+              <Mail className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" size={18} />
               <div className="flex-1">
                 <label className="flex items-start gap-2 sm:gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={receiveNotifications}
                     onChange={(e) => setReceiveNotifications(e.target.checked)}
-                    className="mt-1 rounded border-gray-300 dark:border-gray-600 text-purple-600 focus:ring-purple-500"
+                    className="mt-1 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                   />
                   <div>
                     <div className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base">
@@ -592,7 +592,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
           <button
             onClick={savePreferences}
             disabled={saving || !email.trim() || !name.trim()}
-            className="flex-1 px-4 py-2 sm:py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors text-sm sm:text-base font-medium"
+            className="flex-1 px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm sm:text-base font-medium"
           >
             {saving ? 'Submitting...' : 'Submit for Approval'}
           </button>

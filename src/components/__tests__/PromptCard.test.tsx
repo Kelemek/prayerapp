@@ -110,8 +110,8 @@ describe('PromptCard', () => {
       );
       
       const typeBadge = screen.getByText('Healing').closest('button');
-      expect(typeBadge?.className).toContain('bg-indigo-100');
-      expect(typeBadge?.className).not.toContain('bg-yellow-500');
+      expect(typeBadge?.className).toContain('bg-gray-100');
+      expect(typeBadge?.className).not.toContain('bg-[#988F83]');
     });
 
     it('displays selected styling when type is selected', () => {
@@ -125,8 +125,8 @@ describe('PromptCard', () => {
       );
       
       const typeBadge = screen.getByText('Healing').closest('button');
-      expect(typeBadge?.className).toContain('bg-yellow-500');
-      expect(typeBadge?.className).not.toContain('bg-indigo-100');
+      expect(typeBadge?.className).toContain('bg-[#988F83]');
+      expect(typeBadge?.className).toContain('text-white');
     });
 
     it('shows filter title when type is not selected', () => {

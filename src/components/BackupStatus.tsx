@@ -438,7 +438,7 @@ export default function BackupStatus() {
                       <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-gray-900 dark:text-white truncate">
+                      <div className="text-gray-900 dark:text-gray-100 truncate">
                         {formatDate(backup.backup_date)}
                       </div>
                       {backup.error_message && (
@@ -462,14 +462,14 @@ export default function BackupStatus() {
                   <div className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Backup ID</div>
-                        <div className="text-sm font-mono text-gray-900 dark:text-white truncate">
+                        <div className="text-xs text-gray-500 dark:text-gray-300">Backup ID</div>
+                        <div className="text-sm font-mono text-gray-900 dark:text-gray-100 truncate">
                           {backup.id}
                         </div>
                       </div>
                       
                       <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Status</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-300">Status</div>
                         <div className="text-sm">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                             backup.status === 'success'
@@ -484,29 +484,29 @@ export default function BackupStatus() {
                       </div>
 
                       <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Backup Date</div>
-                        <div className="text-sm text-gray-900 dark:text-white">
+                        <div className="text-xs text-gray-500 dark:text-gray-300">Backup Date</div>
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {formatDate(backup.backup_date)}
                         </div>
                       </div>
 
                       <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Created At</div>
-                        <div className="text-sm text-gray-900 dark:text-white">
+                        <div className="text-xs text-gray-500 dark:text-gray-300">Created At</div>
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {formatDate(backup.created_at)}
                         </div>
                       </div>
 
                       <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Total Records</div>
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                        <div className="text-xs text-gray-500 dark:text-gray-300">Total Records</div>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                           {backup.total_records.toLocaleString()}
                         </div>
                       </div>
 
                       <div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Duration</div>
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                        <div className="text-xs text-gray-500 dark:text-gray-300">Duration</div>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                           {formatDuration(backup.duration_seconds)}
                         </div>
                       </div>
@@ -523,7 +523,7 @@ export default function BackupStatus() {
 
                     {backup.tables_backed_up && Object.keys(backup.tables_backed_up).length > 0 && (
                       <div>
-                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-100 mb-2">
                           Tables Backed Up ({Object.keys(backup.tables_backed_up).length})
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -534,7 +534,7 @@ export default function BackupStatus() {
                                 key={table}
                                 className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-900/50 rounded text-xs"
                               >
-                                <span className="text-gray-700 dark:text-gray-300 truncate mr-2">
+                                <span className="text-gray-700 dark:text-gray-100 truncate mr-2">
                                   {table}
                                 </span>
                                 <span className="font-semibold text-indigo-600 dark:text-indigo-400 flex-shrink-0">

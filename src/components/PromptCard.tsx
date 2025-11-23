@@ -30,12 +30,12 @@ export const PromptCard: React.FC<PromptCardProps> = ({
   };
 
   return (
-    <div className="prompt-card bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+    <div className="prompt-card bg-white dark:bg-gray-800 rounded-lg shadow-md border-[2px] !border-[#988F83] dark:!border-[#988F83] p-6 hover:shadow-lg transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2 flex-1">
           <Lightbulb className="text-yellow-500 dark:text-yellow-400" size={24} />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-gray-700 dark:text-gray-300">
             {prompt.title}
           </h3>
         </div>
@@ -45,8 +45,8 @@ export const PromptCard: React.FC<PromptCardProps> = ({
             onClick={() => onTypeClick?.(prompt.type)}
             className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${
               isTypeSelected
-                ? 'bg-yellow-500 text-white shadow-md hover:bg-yellow-600'
-                : 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800'
+                ? 'bg-[#988F83] text-white shadow-md hover:bg-[#7a6e67]'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
             title={isTypeSelected ? `Remove ${prompt.type} filter` : `Filter by ${prompt.type}`}
           >

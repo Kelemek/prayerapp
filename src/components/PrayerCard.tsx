@@ -439,7 +439,13 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
   };
 
   return (
-  <div className="prayer-card bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-4 transition-colors relative">
+  <div className={`prayer-card bg-white dark:bg-gray-800 rounded-lg shadow-md border-[2px] p-6 mb-4 transition-colors relative ${
+    prayer.status === 'current' 
+      ? '!border-[#0047AB] dark:!border-[#0047AB]' 
+      : prayer.status === 'answered' 
+        ? '!border-[#39704D] dark:!border-[#39704D]' 
+        : '!border-[#C9A961] dark:!border-[#C9A961]'
+  }`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
@@ -448,9 +454,9 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
             {/* Status Badge */}
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
               prayer.status === 'current' 
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                ? 'bg-[#0047AB] bg-opacity-20 text-[#0047AB] dark:bg-[#0047AB] dark:bg-opacity-30 dark:text-[#4A90E2]'
                 : prayer.status === 'answered'
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                ? 'bg-[#39704D] bg-opacity-20 text-[#39704D] dark:bg-[#39704D] dark:bg-opacity-30 dark:text-[#5FB876]'
                 : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
             }`}>
               {prayer.status === 'current' ? 'Current' : prayer.status === 'answered' ? 'Answered' : 'Archived'}
@@ -488,7 +494,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
                 onClick={() => {
                   openForm(() => setShowAddUpdate(!showAddUpdate));
                 }}
-                className="px-3 py-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
+                className="px-3 py-1 text-xs bg-[#39704D] bg-opacity-10 dark:bg-opacity-20 text-[#39704D] dark:text-[#5FB876] rounded-md border border-[#39704D] hover:bg-opacity-20 dark:hover:bg-opacity-30"
               >
                 Add Update
               </button>
@@ -500,7 +506,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
                 onClick={() => {
                   openForm(() => setShowAddUpdate(!showAddUpdate));
                 }}
-                className="px-3 py-1 text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md border border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
+                className="px-3 py-1 text-xs bg-[#39704D] bg-opacity-10 dark:bg-opacity-20 text-[#39704D] dark:text-[#5FB876] rounded-md border border-[#39704D] hover:bg-opacity-20 dark:hover:bg-opacity-30"
               >
                 Add Update
               </button>
@@ -512,8 +518,8 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
 
       {/* Add Update Form */}
       {showAddUpdate && (
-        <form onSubmit={handleAddUpdate} className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <h4 className="text-sm font-medium text-green-800 dark:text-green-200 mb-3">Add Prayer Update</h4>
+        <form onSubmit={handleAddUpdate} className="mb-4 p-4 bg-[#39704D] bg-opacity-10 dark:bg-[#39704D] dark:bg-opacity-20 border border-[#39704D] dark:border-[#39704D] rounded-lg">
+          <h4 className="text-sm font-medium text-[#39704D] dark:text-[#5FB876] mb-3">Add Prayer Update</h4>
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <input
@@ -521,7 +527,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
                 placeholder="First name"
                 value={updateFirstName}
                 onChange={(e) => setUpdateFirstName(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-green-300 dark:border-green-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 text-sm border border-[#39704D] dark:border-[#39704D] rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#39704D]"
                 required
               />
               <input
@@ -529,7 +535,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
                 placeholder="Last name"
                 value={updateLastName}
                 onChange={(e) => setUpdateLastName(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-green-300 dark:border-green-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-3 py-2 text-sm border border-[#39704D] dark:border-[#39704D] rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#39704D]"
                 required
               />
             </div>
@@ -538,14 +544,14 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
               placeholder="Your email"
               value={updateAuthorEmail}
               onChange={(e) => setUpdateAuthorEmail(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-green-300 dark:border-green-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 text-sm border border-[#39704D] dark:border-[#39704D] rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#39704D]"
               required
             />
             <textarea
               placeholder="Prayer update..."
               value={updateText}
               onChange={(e) => setUpdateText(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-green-300 dark:border-green-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 h-20"
+              className="w-full px-3 py-2 text-sm border border-[#39704D] dark:border-[#39704D] rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#39704D] h-20"
               required
             />
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
@@ -562,14 +568,14 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
                 type="checkbox"
                 checked={updateMarkAsAnswered}
                 onChange={(e) => setUpdateMarkAsAnswered(e.target.checked)}
-                className="rounded border-gray-900 dark:border-white bg-white dark:bg-gray-800 text-green-600 focus:ring-2 focus:ring-green-500"
+                className="rounded border-gray-900 dark:border-white bg-white dark:bg-gray-800 text-[#39704D] focus:ring-2 focus:ring-[#39704D]"
               />
               <span>Mark this prayer as answered</span>
             </label>
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-3 py-1 text-sm bg-[#39704D] text-white rounded-md hover:bg-[#2d5a3f]"
               >
                 Add Update
               </button>

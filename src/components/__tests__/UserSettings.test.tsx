@@ -143,7 +143,7 @@ describe('UserSettings', () => {
       render(<UserSettings isOpen={true} onClose={mockOnClose} />);
       
       const systemButton = screen.getByText('System').closest('button');
-      expect(systemButton?.className).toContain('border-purple-500');
+      expect(systemButton?.className).toContain('border-blue-500');
     });
 
     it('applies light theme to document', async () => {

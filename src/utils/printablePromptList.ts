@@ -130,9 +130,9 @@ function generatePrintableHTML(prompts: PrayerPrompt[]): string {
 
   // Type colors for visual distinction
   const typeColors: { [key: string]: string } = {
-    'Praise': '#10b981',
-    'Confession': '#f59e0b',
-    'Thanksgiving': '#3b82f6',
+    'Praise': '#39704D',
+    'Confession': '#C9A961',
+    'Thanksgiving': '#0047AB',
     'Supplication': '#8b5cf6'
   };
 
