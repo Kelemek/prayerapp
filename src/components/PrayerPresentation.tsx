@@ -511,13 +511,13 @@ export const PrayerPresentation: React.FC = () => {
     <div className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-h-full overflow-y-auto">
       {/* Prayer For */}
       <div className="mb-6">
-        <div className="text-2xl font-semibold mb-2 text-blue-600 dark:text-blue-400">Prayer For:</div>
-        <div className="text-5xl font-bold leading-tight text-gray-900 dark:text-white">{prayer.prayer_for}</div>
+        <div className="text-2xl font-semibold mb-2 text-blue-600 dark:text-blue-300">Prayer For:</div>
+        <div className="text-5xl font-bold leading-tight text-gray-900 dark:text-gray-100">{prayer.prayer_for}</div>
       </div>
 
       {/* Description */}
       <div className="mb-6">
-        <div className="text-3xl leading-relaxed text-gray-800 dark:text-gray-200">{prayer.description}</div>
+        <div className="text-3xl leading-relaxed text-gray-800 dark:text-gray-100">{prayer.description}</div>
       </div>
 
       {/* Meta Info */}
@@ -547,7 +547,7 @@ export const PrayerPresentation: React.FC = () => {
       {/* Updates */}
       {updates.length > 0 && (
         <div className="border-t border-gray-300 dark:border-gray-600 pt-6">
-          <div className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Recent Updates ({updates.length})</div>
+          <div className="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Recent Updates ({updates.length})</div>
           <div className="space-y-4">
             {updates.slice(0, 3).map((update) => (
               <div key={update.id} className="bg-gray-100 dark:bg-gray-700 rounded-xl p-5">
