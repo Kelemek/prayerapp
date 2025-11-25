@@ -300,7 +300,7 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
                 )}
               </div>
               {darkModeLogoUrl && (
-                <div className="mt-3 p-3 bg-gray-800 dark:bg-gray-800 rounded-lg border border-gray-700">
+                <div className="mt-3 p-3 rounded-lg border border-gray-700" style={{ backgroundColor: '#1f2937' }}>
                   <p className="text-xs font-medium text-gray-300 mb-2">Preview (Dark Mode):</p>
                   <img 
                     src={darkModeLogoUrl} 
