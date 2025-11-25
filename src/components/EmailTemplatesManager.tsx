@@ -104,7 +104,7 @@ export const EmailTemplatesManager: React.FC = () => {
   if (error && templates.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Email Templates</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Email Templates</h3>
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded p-4">
           <p className="text-red-800 dark:text-red-200"><strong>Error:</strong> {error}</p>
           <p className="mt-2 text-sm text-red-700 dark:text-red-300">Please execute the database migration in Supabase SQL Editor to enable email templates.</p>
@@ -118,7 +118,7 @@ export const EmailTemplatesManager: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Mail size={24} className="text-blue-600 dark:text-blue-400" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Email Templates</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Email Templates</h3>
         </div>
         <button
           onClick={loadTemplates}
@@ -137,7 +137,7 @@ export const EmailTemplatesManager: React.FC = () => {
 
       {/* Templates List */}
       <div>
-        <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">Available Templates</label>
+        <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Available Templates</label>
         {templates.length === 0 ? (
           <p className="text-gray-600 dark:text-gray-400 text-sm">No templates available</p>
         ) : (
@@ -150,10 +150,10 @@ export const EmailTemplatesManager: React.FC = () => {
                   className={`w-full text-left p-3 rounded-lg border transition-colors ${
                     selectedTemplate?.id === template.id
                       ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600'
-                      : 'bg-gray-50 dark:bg-gray-700/50 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      : 'bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <div className="font-semibold text-gray-900 dark:text-white">{template.name}</div>
+                  <div className="font-semibold text-gray-900 dark:text-gray-100">{template.name}</div>
                   <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">{template.template_key}</div>
                 </button>
 
@@ -162,10 +162,10 @@ export const EmailTemplatesManager: React.FC = () => {
                   <div className="mt-3 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
                     {/* Preview/Edit Toggle */}
                     <div className="flex justify-between items-center">
-                      <label className="text-sm font-semibold text-gray-900 dark:text-white">Edit Template</label>
+                      <label className="text-sm font-semibold text-gray-900 dark:text-gray-100">Edit Template</label>
                       <button
                         onClick={() => setShowPreview(!showPreview)}
-                        className="flex items-center gap-2 px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                        className="flex items-center gap-2 px-3 py-1 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                       >
                         {showPreview ? (
                           <>
@@ -188,7 +188,7 @@ export const EmailTemplatesManager: React.FC = () => {
                           <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                             Subject:
                           </label>
-                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-900 dark:text-white">
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100">
                             {editedTemplate.subject}
                           </div>
                         </div>
@@ -198,7 +198,7 @@ export const EmailTemplatesManager: React.FC = () => {
                             HTML Preview:
                           </label>
                           <div
-                            className="p-4 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-auto max-h-64 text-sm"
+                            className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 overflow-auto max-h-64 text-sm"
                             dangerouslySetInnerHTML={{ __html: editedTemplate.html_body }}
                           />
                         </div>
@@ -207,7 +207,7 @@ export const EmailTemplatesManager: React.FC = () => {
                           <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                             Text Preview:
                           </label>
-                          <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg whitespace-pre-wrap font-mono text-xs text-gray-600 dark:text-gray-300 max-h-64 overflow-auto">
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg whitespace-pre-wrap font-mono text-xs text-gray-600 dark:text-gray-300 max-h-64 overflow-auto">
                             {editedTemplate.text_body}
                           </div>
                         </div>
@@ -231,7 +231,7 @@ export const EmailTemplatesManager: React.FC = () => {
                             onChange={(e) =>
                               setEditedTemplate({ ...editedTemplate, name: e.target.value })
                             }
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm email-templates-input"
                           />
                         </div>
 
@@ -240,7 +240,7 @@ export const EmailTemplatesManager: React.FC = () => {
                             Template Key <span className="text-gray-500">(read-only)</span>
                           </label>
                           <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Unique identifier used to reference this template in the system</p>
-                          <div className="w-full px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 font-mono text-xs text-gray-600 dark:text-gray-400">
+                          <div className="w-full px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-400">
                             {editedTemplate.template_key}
                           </div>
                         </div>
@@ -254,7 +254,7 @@ export const EmailTemplatesManager: React.FC = () => {
                             onChange={(e) =>
                               setEditedTemplate({ ...editedTemplate, subject: e.target.value })
                             }
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm email-templates-input"
                             placeholder="Subject with {{variables}}"
                           />
                         </div>
@@ -267,7 +267,7 @@ export const EmailTemplatesManager: React.FC = () => {
                             onChange={(e) =>
                               setEditedTemplate({ ...editedTemplate, html_body: e.target.value })
                             }
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-xs"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-xs email-templates-input"
                             rows={8}
                             placeholder="HTML content with {{variables}}"
                           />
@@ -281,7 +281,7 @@ export const EmailTemplatesManager: React.FC = () => {
                             onChange={(e) =>
                               setEditedTemplate({ ...editedTemplate, text_body: e.target.value })
                             }
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-xs"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-xs email-templates-input"
                             rows={6}
                             placeholder="Plain text content with {{variables}}"
                           />
@@ -296,7 +296,7 @@ export const EmailTemplatesManager: React.FC = () => {
                             onChange={(e) =>
                               setEditedTemplate({ ...editedTemplate, description: e.target.value })
                             }
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm email-templates-input"
                             placeholder="Template description"
                           />
                         </div>
