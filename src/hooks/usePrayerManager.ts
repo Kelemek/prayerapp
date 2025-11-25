@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
 import { logError, logWarning } from '../lib/errorLogger';
 import { PrayerStatus } from '../types/prayer';
@@ -13,6 +13,9 @@ export const usePrayerManager = () => {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track current load request to cancel if a new one comes in
+  const loadAbortControllerRef = useRef<AbortController | null>(null);
 
   // Convert database prayer to app prayer format
   const convertDbPrayer = (dbPrayer: DbPrayer, updates: DbPrayerUpdate[] = []): PrayerRequest => {
@@ -46,8 +49,22 @@ export const usePrayerManager = () => {
     } as PrayerRequest;
   };
 
-  // Load prayers from Supabase
+  // Load prayers from Supabase with timeout and abort support
   const loadPrayers = useCallback(async () => {
+    // Cancel previous request if it's still pending
+    if (loadAbortControllerRef.current) {
+      loadAbortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    loadAbortControllerRef.current = abortController;
+    
+    // Set timeout to prevent hanging requests (10 seconds)
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, 10000);
+    
     try {
       setLoading(true);
       setError(null);
@@ -62,6 +79,14 @@ export const usePrayerManager = () => {
         .eq('approval_status', 'approved')
         .eq('prayer_updates.approval_status', 'approved')
         .order('created_at', { ascending: false });
+
+      // Clear timeout if request completed
+      clearTimeout(timeoutId);
+      
+      // If this request was aborted, don't process the response
+      if (abortController.signal.aborted) {
+        return;
+      }
 
       if (prayersError) throw prayersError;
 
@@ -88,6 +113,16 @@ export const usePrayerManager = () => {
 
       setPrayers(sortedPrayers);
     } catch (err: unknown) {
+      // Clear timeout on error
+      clearTimeout(timeoutId);
+      
+      // Don't show error for aborted requests - they're expected
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.warn('Prayer load request timed out or was cancelled');
+        setError('Failed to load prayers - request timed out. Please refresh the page.');
+        return;
+      }
+      
       const errorMessage = err && typeof err === 'object' && 'message' in err
         ? String((err as any).message)
         : 'Failed to load prayers';
@@ -119,10 +154,22 @@ export const usePrayerManager = () => {
     }
   }, []);
 
-  // Load prayers on mount only
+  // Load prayers on mount and when page becomes visible
   useEffect(() => {
     loadPrayers();
-  }, []); // Empty dependency array - only run on mount
+
+    // Reload data when tab becomes visible (user returns from being away)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadPrayers();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadPrayers]);
 
   const addPrayer = async (prayer: Omit<PrayerRequest, 'id' | 'date_requested' | 'created_at' | 'updated_at' | 'updates'>) => {
     try {
