@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import { AdminAuthContext } from '../contexts/AdminAuthContext';
@@ -14,17 +14,33 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [sessionStart, setSessionStart] = useState<number | null>(null);
   
+  // Track abort controller for admin status checks to prevent hanging
+  const adminCheckAbortRef = useRef<AbortController | null>(null);
+  
   // Inactivity timeout: 30 minutes
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
   // Maximum session duration: 8 hours (even if active)
   const MAX_SESSION_DURATION = 8 * 60 * 60 * 1000;
 
-  // Check if the current user is an admin
+  // Check if the current user is an admin with timeout
   const checkAdminStatus = async (currentUser: User | null) => {
     if (!currentUser) {
       setIsAdmin(false);
       return;
     }
+
+    // Cancel previous check if still pending
+    if (adminCheckAbortRef.current) {
+      adminCheckAbortRef.current.abort();
+    }
+    
+    // Create new abort controller with 5 second timeout
+    const abortController = new AbortController();
+    adminCheckAbortRef.current = abortController;
+    
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, 5000);
 
     try {
       // Check if user has admin privileges in the database
@@ -35,6 +51,14 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         .eq('is_admin', true)
         .maybeSingle();
 
+      // Clear timeout if request completed
+      clearTimeout(timeoutId);
+      
+      // If this request was aborted, don't process the response
+      if (abortController.signal.aborted) {
+        return;
+      }
+
       if (error) {
         console.error('Error checking admin status:', error);
         setIsAdmin(false);
@@ -43,6 +67,15 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
 
       setIsAdmin(!!data);
     } catch (error) {
+      clearTimeout(timeoutId);
+      
+      // Handle abort errors gracefully
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('Admin status check timed out');
+        // Don't change admin status on timeout - keep current state
+        return;
+      }
+      
       console.error('Exception checking admin status:', error);
       setIsAdmin(false);
     }
@@ -117,6 +150,21 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       subscription.unsubscribe();
     };
   }, []);
+
+  // Re-check admin status when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user) {
+        console.log('Page became visible, re-checking admin status...');
+        checkAdminStatus(user);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
 
   // Auto-logout on inactivity or max session duration
   useEffect(() => {
