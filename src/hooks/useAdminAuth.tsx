@@ -176,6 +176,16 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
     events.forEach(event => window.addEventListener(event, updateActivity));
 
+    // Don't count time in background towards inactivity
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Reset activity timer when user returns - don't penalize them for being away
+        setLastActivity(Date.now());
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Check for inactivity AND max session duration every minute
     const interval = setInterval(() => {
       const now = Date.now();
@@ -209,6 +219,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
 
     return () => {
       events.forEach(event => window.removeEventListener(event, updateActivity));
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(interval);
     };
   }, [isAdmin, lastActivity, sessionStart]);
