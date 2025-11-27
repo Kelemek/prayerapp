@@ -4,6 +4,10 @@ import { SpeedInsights } from '@vercel/speed-insights/react'
 import './index.css'
 import App from './App.tsx'
 import { initializeClarity } from './lib/clarity'
+import { initializeSentry } from './lib/sentry'
+
+// Initialize Sentry for error tracking
+initializeSentry();
 
 // Initialize Microsoft Clarity for session replays
 initializeClarity();
