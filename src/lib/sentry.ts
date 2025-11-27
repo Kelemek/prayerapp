@@ -43,6 +43,9 @@ export const initializeSentry = () => {
 
     console.log('✅ Sentry initialized successfully');
     console.log('Sentry object:', Sentry);
+    
+    // Expose Sentry globally for manual testing
+    (window as any).Sentry = Sentry;
   } catch (error) {
     console.error('❌ Failed to initialize Sentry:', error);
   }
