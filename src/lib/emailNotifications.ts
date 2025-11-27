@@ -163,11 +163,9 @@ async function sendAdminNotificationToEmail(payload: EmailNotificationPayload, a
       const template = await getTemplate(templateKey);
       
       if (template) {
-        console.log('📧 Template loaded successfully:', templateKey);
         subject = applyTemplateVariables(template.subject, variables);
         body = applyTemplateVariables(template.text_body, variables);
         html = applyTemplateVariables(template.html_body, variables);
-        console.log('📧 Template variables applied, adminLink in email:', variables.adminLink);
       } else {
         throw new Error(`Template ${templateKey} not found`);
       }
@@ -437,7 +435,6 @@ async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void
       textBody: textContent
     });
 
-    console.log('Bulk email sent successfully:', result);
   } catch (error) {
     console.error('Error in sendBulkPrayerEmail:', error);
     // Don't re-throw - let the error be logged but don't block approval
@@ -482,7 +479,6 @@ export async function sendApprovedUpdateNotification(payload: ApprovedUpdatePayl
       textBody: textContent
     });
 
-    console.log('Update notification sent successfully:', result);
   } catch (error) {
     console.error('Error in sendApprovedUpdateNotification:', error);
   }
@@ -954,20 +950,16 @@ async function sendPreferenceChangeNotificationToAdmin(payload: PreferenceChange
     let approvalLink = `${typeof window !== 'undefined' ? window.location.origin : process.env.VITE_APP_URL || 'http://localhost:5173'}/#admin`;
     
     if (payload.requestId) {
-      console.log('🔗 Generating approval link for preference change:', { adminEmail, requestId: payload.requestId });
       const link = await generateApprovalLink(
         'preference-change',
         payload.requestId,
         adminEmail
       );
       if (link) {
-        console.log('✅ Approval link generated:', link);
         approvalLink = link;
       } else {
         console.warn('⚠️ Approval link generation returned null for preference change');
       }
-    } else {
-      console.log('⏭️ No requestId provided for preference change, using fallback');
     }
 
     const notificationStatus = payload.receiveNotifications ? 'Opt IN' : 'Opt OUT';
