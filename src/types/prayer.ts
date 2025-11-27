@@ -87,6 +87,15 @@ export const PrayerStatus = {
 
 export type PrayerStatus = typeof PrayerStatus[keyof typeof PrayerStatus];
 
+// Permission levels for user actions
+export type AllowanceLevel = 'everyone' | 'admin-only' | 'original-requestor';
+
+export const AllowanceLevel = {
+  EVERYONE: 'everyone' as const,
+  ADMIN_ONLY: 'admin-only' as const,
+  ORIGINAL_REQUESTOR: 'original-requestor' as const
+} as const;
+
 export const PrayerType = {
   HEALING: 'Healing',
   GUIDANCE: 'Guidance',

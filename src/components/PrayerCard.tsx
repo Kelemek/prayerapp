@@ -1,7 +1,7 @@
 import React, { useState, useEffect, memo } from 'react';
 import { Trash2, ChevronDown } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
-import { PrayerStatus } from '../types/prayer';
+import { PrayerStatus, type AllowanceLevel } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';
 import { useVerification } from '../hooks/useVerification';
@@ -19,8 +19,8 @@ interface PrayerCardProps {
   registerCloseCallback: (callback: () => void) => () => void;
   onFormOpen: () => void;
   isAdmin: boolean;
-  allowUserDeletions?: boolean;
-  allowUserUpdates?: boolean;
+  deletionsAllowed?: AllowanceLevel;
+  updatesAllowed?: AllowanceLevel;
 }
 
 export const PrayerCard: React.FC<PrayerCardProps> = memo(({ 
@@ -35,8 +35,8 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
   registerCloseCallback,
   onFormOpen,
   isAdmin,
-  allowUserDeletions = true,
-  allowUserUpdates = true
+  deletionsAllowed = 'everyone',
+  updatesAllowed = 'everyone'
 }) => {
   const displayedRequester = prayer.is_anonymous ? 'Anonymous' : prayer.requester;
   const [showAddUpdate, setShowAddUpdate] = useState(false);
@@ -113,6 +113,37 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
     return registerCloseCallback(closeAllForms);
   }, [registerCloseCallback]);
 
+  // Helper functions to check permissions based on allowance level
+  const canPerformAction = (allowanceLevel: AllowanceLevel, userEmail: string): boolean => {
+    if (allowanceLevel === 'everyone') {
+      return true;
+    } else if (allowanceLevel === 'admin-only') {
+      return false;
+    } else if (allowanceLevel === 'original-requestor') {
+      return userEmail.toLowerCase() === prayer.email.toLowerCase();
+    }
+    return false;
+  };
+
+  const shouldShowActionButton = (allowanceLevel: AllowanceLevel, userEmail?: string): boolean => {
+    if (allowanceLevel === 'everyone') {
+      return true;
+    } else if (allowanceLevel === 'admin-only') {
+      return false;
+    } else if (allowanceLevel === 'original-requestor' && userEmail) {
+      return true; // Show button, but validation happens on submit
+    }
+    return false;
+  };
+
+  const getPermissionMessage = (actionType: 'delete' | 'update'): string => {
+    const allowanceLevel = actionType === 'delete' ? deletionsAllowed : updatesAllowed;
+    if (allowanceLevel === 'original-requestor') {
+      return `Only the person who originally requested this prayer can submit ${actionType} requests.`;
+    }
+    return '';
+  };
+
   // Helper to open a form (closes all other forms first)
   const openForm = (formSetter: () => void) => {
     onFormOpen(); // Close all forms in all cards
@@ -122,6 +153,17 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
   const handleAddUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!updateText.trim() || !updateFirstName.trim() || !updateLastName.trim() || !updateAuthorEmail.trim()) return;
+    
+    // Check permissions based on allowance level
+    if (!isAdmin && updatesAllowed === 'original-requestor') {
+      if (updateAuthorEmail.toLowerCase() !== prayer.email.toLowerCase()) {
+        showToast(
+          'Only the person who originally requested this prayer can submit updates.',
+          'error'
+        );
+        return;
+      }
+    }
     
     // Concatenate first and last name
     const fullName = `${updateFirstName.trim()} ${updateLastName.trim()}`;
@@ -196,6 +238,17 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
   const handleDeleteRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!deleteReason.trim() || !deleteRequesterFirstName.trim() || !deleteRequesterLastName.trim() || !deleteRequesterEmail.trim()) return;
+    
+    // Check permissions based on allowance level
+    if (!isAdmin && deletionsAllowed === 'original-requestor') {
+      if (deleteRequesterEmail.toLowerCase() !== prayer.email.toLowerCase()) {
+        showToast(
+          'Only the person who originally requested this prayer can submit deletion requests.',
+          'error'
+        );
+        return;
+      }
+    }
     
     // Concatenate first and last name
     const fullName = `${deleteRequesterFirstName.trim()} ${deleteRequesterLastName.trim()}`;
@@ -358,6 +411,17 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
     e.preventDefault();
     if (!updateDeleteReason.trim() || !updateDeleteRequesterFirstName.trim() || !updateDeleteRequesterLastName.trim() || !updateDeleteRequesterEmail.trim() || !showUpdateDeleteRequest) return;
     
+    // Check permissions based on allowance level
+    if (!isAdmin && deletionsAllowed === 'original-requestor') {
+      if (updateDeleteRequesterEmail.toLowerCase() !== prayer.email.toLowerCase()) {
+        showToast(
+          'Only the person who originally requested this prayer can submit deletion requests for its updates.',
+          'error'
+        );
+        return;
+      }
+    }
+    
     // Concatenate first and last name
     const fullName = `${updateDeleteRequesterFirstName.trim()} ${updateDeleteRequesterLastName.trim()}`;
     
@@ -464,7 +528,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
             <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Requested by <span className="font-medium text-gray-800 dark:text-gray-100">{displayedRequester}</span></span>
           </div>
         </div>
-        {(isAdmin || allowUserDeletions) && (
+        {(isAdmin || shouldShowActionButton(deletionsAllowed, deleteRequesterEmail)) && (
           <button
             onClick={() => {
               if (isAdmin) {
@@ -500,7 +564,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
               </button>
           </div>
         ) : (
-          allowUserUpdates && (
+          shouldShowActionButton(updatesAllowed, updateAuthorEmail) && (
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
@@ -674,7 +738,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {update.is_anonymous ? 'Anonymous' : update.author}
                     </span>
-                    {(isAdmin || allowUserDeletions) && (
+                    {(isAdmin || shouldShowActionButton(deletionsAllowed, prayer.email)) && (
                       <button
                         onClick={async () => {
                           if (isAdmin) {

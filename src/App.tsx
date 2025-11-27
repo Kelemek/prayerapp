@@ -12,7 +12,7 @@ import { SkeletonLoader } from './components/SkeletonLoader';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AdminAuthProvider } from './hooks/useAdminAuth';
 import { useAdminAuth } from './hooks/useAdminAuthHook';
-import type { PrayerStatus, PrayerPrompt } from './types/prayer';
+import type { PrayerStatus, PrayerPrompt, AllowanceLevel } from './types/prayer';
 import { usePrayerManager } from './hooks/usePrayerManager';
 import { useTheme } from './hooks/useTheme';
 import { supabase } from './lib/supabase';
@@ -69,8 +69,8 @@ function AppContent() {
   const [lightModeLogoUrl, setLightModeLogoUrl] = useState<string>('');
   const [darkModeLogoUrl, setDarkModeLogoUrl] = useState<string>('');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [allowUserDeletions, setAllowUserDeletions] = useState(true);
-  const [allowUserUpdates, setAllowUserUpdates] = useState(true);
+  const [deletionsAllowed, setDeletionsAllowed] = useState<AllowanceLevel>('everyone');
+  const [updatesAllowed, setUpdatesAllowed] = useState<AllowanceLevel>('everyone');
 
   const [showForm, setShowForm] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -100,7 +100,7 @@ function AppContent() {
       try {
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('app_title, app_subtitle, use_logo, light_mode_logo_blob, dark_mode_logo_blob, allow_user_deletions, allow_user_updates')
+        .select('app_title, app_subtitle, use_logo, light_mode_logo_blob, dark_mode_logo_blob, deletions_allowed, updates_allowed')
         .eq('id', 1)
         .maybeSingle();        if (!error && data) {
           if (data.app_title) setAppTitle(data.app_title);
@@ -114,11 +114,11 @@ function AppContent() {
           if (data.dark_mode_logo_blob) {
             setDarkModeLogoUrl(data.dark_mode_logo_blob);
           }
-          if (data.allow_user_deletions !== null && data.allow_user_deletions !== undefined) {
-            setAllowUserDeletions(data.allow_user_deletions);
+          if (data.deletions_allowed) {
+            setDeletionsAllowed(data.deletions_allowed);
           }
-          if (data.allow_user_updates !== null && data.allow_user_updates !== undefined) {
-            setAllowUserUpdates(data.allow_user_updates);
+          if (data.updates_allowed) {
+            setUpdatesAllowed(data.updates_allowed);
           }
         }
       } catch (error) {
@@ -645,8 +645,8 @@ function AppContent() {
                 onUpdateStatus={updatePrayerStatus}
                 onAddUpdate={addPrayerUpdate}
                 onDelete={deletePrayer}
-                allowUserDeletions={allowUserDeletions}
-                allowUserUpdates={allowUserUpdates}
+                deletionsAllowed={deletionsAllowed}
+                updatesAllowed={updatesAllowed}
                 registerCloseCallback={registerCloseCallback}
                 onFormOpen={closeAllForms}
                 onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => {
@@ -769,8 +769,8 @@ function AppContent() {
 function AdminWrapper() {
   const { isAdmin, loading } = useAdminAuth();
   const [currentView, setCurrentView] = useState<'public' | 'admin-login' | 'admin-portal' | 'presentation' | 'mobile-presentation'>('public');
-  const [allowUserDeletions, setAllowUserDeletions] = useState(true);
-  const [allowUserUpdates, setAllowUserUpdates] = useState(true);
+  const [deletionsAllowed, setDeletionsAllowed] = useState<AllowanceLevel>('everyone');
+  const [updatesAllowed, setUpdatesAllowed] = useState<AllowanceLevel>('everyone');
   
   // Track if this is a magic link redirect
   const hasRedirectedRef = useRef(false);
@@ -784,16 +784,16 @@ function AdminWrapper() {
     try {
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('allow_user_deletions, allow_user_updates')
+        .select('deletions_allowed, updates_allowed')
         .eq('id', 1)
         .maybeSingle();
       
       if (!error && data) {
-        if (data.allow_user_deletions !== null && data.allow_user_deletions !== undefined) {
-          setAllowUserDeletions(data.allow_user_deletions);
+        if (data.deletions_allowed) {
+          setDeletionsAllowed(data.deletions_allowed);
         }
-        if (data.allow_user_updates !== null && data.allow_user_updates !== undefined) {
-          setAllowUserUpdates(data.allow_user_updates);
+        if (data.updates_allowed) {
+          setUpdatesAllowed(data.updates_allowed);
         }
       }
     } catch (error) {
@@ -950,8 +950,8 @@ function AdminWrapper() {
           </div>
         }>
           <AdminPortal 
-            allowUserDeletions={allowUserDeletions}
-            allowUserUpdates={allowUserUpdates}
+            deletionsAllowed={deletionsAllowed}
+            updatesAllowed={updatesAllowed}
           />
         </Suspense>
       </ErrorBoundary>

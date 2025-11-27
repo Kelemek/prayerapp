@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Settings, Upload, Trash2 } from 'lucide-react';
+import { Save, Settings, Upload, Trash2, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import type { AllowanceLevel } from '../types/prayer';
 
 interface AppBrandingProps {
   onSave?: () => void;
@@ -12,8 +13,8 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
   const [useLogo, setUseLogo] = useState<boolean>(false);
   const [lightModeLogoUrl, setLightModeLogoUrl] = useState<string>('');
   const [darkModeLogoUrl, setDarkModeLogoUrl] = useState<string>('');
-  const [allowUserDeletions, setAllowUserDeletions] = useState<boolean>(true);
-  const [allowUserUpdates, setAllowUserUpdates] = useState<boolean>(true);
+  const [deletionsAllowed, setDeletionsAllowed] = useState<AllowanceLevel>('everyone');
+  const [updatesAllowed, setUpdatesAllowed] = useState<AllowanceLevel>('everyone');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -29,7 +30,7 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
       setLoading(true);
       const { data, error } = await supabase
         .from('admin_settings')
-        .select('app_title, app_subtitle, use_logo, light_mode_logo_blob, dark_mode_logo_blob, allow_user_deletions, allow_user_updates')
+        .select('app_title, app_subtitle, use_logo, light_mode_logo_blob, dark_mode_logo_blob')
         .eq('id', 1)
         .maybeSingle();
 
@@ -58,12 +59,24 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
         setDarkModeLogoUrl(data.dark_mode_logo_blob);
       }
 
-      if (data?.allow_user_deletions !== null && data?.allow_user_deletions !== undefined) {
-        setAllowUserDeletions(data.allow_user_deletions);
-      }
+      // Try to load permission columns separately in case migration hasn't been run
+      try {
+        const { data: permissionData } = await supabase
+          .from('admin_settings')
+          .select('deletions_allowed, updates_allowed')
+          .eq('id', 1)
+          .maybeSingle();
 
-      if (data?.allow_user_updates !== null && data?.allow_user_updates !== undefined) {
-        setAllowUserUpdates(data.allow_user_updates);
+        if (permissionData?.deletions_allowed) {
+          setDeletionsAllowed(permissionData.deletions_allowed);
+        }
+
+        if (permissionData?.updates_allowed) {
+          setUpdatesAllowed(permissionData.updates_allowed);
+        }
+      } catch {
+        // Permission columns don't exist yet, use defaults
+        console.log('Permission columns not available yet, using defaults');
       }
     } catch (err: unknown) {
       console.error('Error loading branding settings:', err);
@@ -106,21 +119,46 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
       setSaving(true);
       setError(null);
 
-      const { error } = await supabase
-        .from('admin_settings')
-        .upsert({
-          id: 1,
-          app_title: appTitle,
-          app_subtitle: appSubtitle,
-          use_logo: useLogo,
-          light_mode_logo_blob: lightModeLogoUrl || null,
-          dark_mode_logo_blob: darkModeLogoUrl || null,
-          allow_user_deletions: allowUserDeletions,
-          allow_user_updates: allowUserUpdates,
-          updated_at: new Date().toISOString()
-        });
+      // Save basic branding fields first
+      const basicData = {
+        id: 1,
+        app_title: appTitle,
+        app_subtitle: appSubtitle,
+        use_logo: useLogo,
+        light_mode_logo_blob: lightModeLogoUrl || null,
+        dark_mode_logo_blob: darkModeLogoUrl || null,
+        updated_at: new Date().toISOString()
+      };
 
-      if (error) throw error;
+      const { error: basicError } = await supabase
+        .from('admin_settings')
+        .upsert(basicData);
+
+      if (basicError) {
+        console.error('Basic save error:', basicError);
+        throw basicError;
+      }
+
+      // Try to save permission columns separately in case migration hasn't been run yet
+      try {
+        const permissionData = {
+          id: 1,
+          deletions_allowed: deletionsAllowed,
+          updates_allowed: updatesAllowed
+        };
+
+        const { error: permError } = await supabase
+          .from('admin_settings')
+          .upsert(permissionData);
+
+        if (permError) {
+          console.warn('Could not save permission levels (columns may not exist yet):', permError);
+          // Don't throw - the basic settings were saved successfully
+        }
+      } catch (permErr) {
+        console.warn('Permission columns not available yet:', permErr);
+        // Don't throw - the basic settings were saved successfully
+      }
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -314,36 +352,56 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
         )}
 
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={allowUserDeletions}
-              onChange={(e) => setAllowUserDeletions(e.target.checked)}
-              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-            />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Allow users to delete prayers and updates
-            </span>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Prayer & Update Deletion Policy
           </label>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
-            When enabled, users can request to delete prayer requests and updates from the front-end interface. Deletions require admin approval before taking effect. When disabled, all delete (trash can) icons are hidden from users (admins can still delete).
+          <div className="relative">
+            <select
+              value={deletionsAllowed}
+              onChange={(e) => setDeletionsAllowed(e.target.value as AllowanceLevel)}
+              className="w-full appearance-none px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
+            >
+              <option value="everyone">Everyone</option>
+              <option value="original-requestor">Original Requestor Only</option>
+              <option value="admin-only">Admin Only</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={18} />
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+            <strong className="text-gray-700 dark:text-gray-300">Everyone:</strong> Users can request to delete any prayer requests and updates. Deletions require admin approval before taking effect.
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <strong className="text-gray-700 dark:text-gray-300">Original Requestor Only:</strong> Only the prayer creator can request deletion (verified by email). Admins must approve.
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <strong className="text-gray-700 dark:text-gray-300">Admin Only:</strong> All delete (trash can) icons are hidden from users. Admins can still delete directly.
           </p>
         </div>
 
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={allowUserUpdates}
-              onChange={(e) => setAllowUserUpdates(e.target.checked)}
-              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-            />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Allow users to add updates to prayers
-            </span>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Prayer Update Policy
           </label>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
-            When enabled, users can submit updates to existing prayer requests. Updates require admin approval before being displayed. When disabled, "Add Update" buttons are hidden from users (admins can still add updates).
+          <div className="relative">
+            <select
+              value={updatesAllowed}
+              onChange={(e) => setUpdatesAllowed(e.target.value as AllowanceLevel)}
+              className="w-full appearance-none px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 cursor-pointer"
+            >
+              <option value="everyone">Everyone</option>
+              <option value="original-requestor">Original Requestor Only</option>
+              <option value="admin-only">Admin Only</option>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={18} />
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+            <strong className="text-gray-700 dark:text-gray-300">Everyone:</strong> Users can submit updates to any existing prayer requests. Updates require admin approval before being displayed.
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <strong className="text-gray-700 dark:text-gray-300">Original Requestor Only:</strong> Only the prayer creator can submit updates (verified by email). Admins must approve.
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <strong className="text-gray-700 dark:text-gray-300">Admin Only:</strong> "Add Update" buttons are hidden from users. Admins can still add updates directly.
           </p>
         </div>
       </div>

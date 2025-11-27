@@ -18,18 +18,19 @@ import { useAdminAuth } from '../hooks/useAdminAuthHook';
 import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
 import { supabase } from '../lib/supabase';
 import { sendApprovedPreferenceChangeNotification, sendDeniedPreferenceChangeNotification } from '../lib/emailNotifications';
+import type { AllowanceLevel } from '../types/prayer';
 
 type AdminTab = 'prayers' | 'updates' | 'deletions' | 'preferences' | 'settings';
 type SettingsTab = 'analytics' | 'email' | 'users' | 'content' | 'tools';
 
 interface AdminPortalProps {
-  allowUserDeletions?: boolean;
-  allowUserUpdates?: boolean;
+  deletionsAllowed?: AllowanceLevel;
+  updatesAllowed?: AllowanceLevel;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({ 
-  allowUserDeletions = true,
-  allowUserUpdates = true 
+  deletionsAllowed = 'everyone',
+  updatesAllowed = 'everyone'
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('prayers');
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>('analytics');
@@ -74,13 +75,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   
   // Redirect to valid tab if current tab is disabled
   useEffect(() => {
-    if (activeTab === 'updates' && !allowUserUpdates) {
+    if (activeTab === 'updates' && updatesAllowed === 'admin-only') {
       setActiveTab('prayers');
     }
-    if (activeTab === 'deletions' && !allowUserDeletions) {
+    if (activeTab === 'deletions' && deletionsAllowed === 'admin-only') {
       setActiveTab('prayers');
     }
-  }, [activeTab, allowUserUpdates, allowUserDeletions]);
+  }, [activeTab, updatesAllowed, deletionsAllowed]);
   
   const {
     pendingPrayers,
@@ -614,7 +615,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </div>
           </button>
           
-          {allowUserUpdates && (
+          {updatesAllowed !== 'admin-only' && (
             <button
               onClick={() => setActiveTab('updates')}
               className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
@@ -633,7 +634,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             </button>
           )}
 
-          {allowUserDeletions && (
+          {deletionsAllowed !== 'admin-only' && (
             <button
               onClick={() => setActiveTab('deletions')}
               className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-2 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 ${
@@ -738,7 +739,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
         )}
 
-        {activeTab === 'updates' && allowUserUpdates && (
+        {activeTab === 'updates' && updatesAllowed !== 'admin-only' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
               Pending Prayer Updates ({pendingUpdates.length})
@@ -774,7 +775,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
         )}
 
-        {activeTab === 'deletions' && allowUserDeletions && (
+        {activeTab === 'deletions' && deletionsAllowed !== 'admin-only' && (
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">
               Pending Deletion Requests ({pendingDeletionRequests.length + pendingUpdateDeletionRequests.length})

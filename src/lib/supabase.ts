@@ -26,13 +26,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       'x-client-info': 'supabase-js'
-    },
-    fetch: (url, options?: RequestInit) => {
-      return fetch(url, {
-        ...options,
-        keepalive: true,
-        signal: options?.signal
-      });
     }
   },
   db: {
