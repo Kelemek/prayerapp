@@ -34,15 +34,16 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       adminCheckAbortRef.current.abort();
     }
     
-    // Create new abort controller with 5 second timeout
+    // Create new abort controller with 10 second timeout
     const abortController = new AbortController();
     adminCheckAbortRef.current = abortController;
     
     const timeoutId = setTimeout(() => {
       abortController.abort();
-    }, 5000);
+    }, 10000);
 
     try {
+      
       // Check if user has admin privileges in the database
       const { data, error } = await supabase
         .from('email_subscribers')
@@ -90,7 +91,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         if (error) throw error;
         
         setUser(session?.user ?? null);
-        checkAdminStatus(session?.user ?? null);
+        await checkAdminStatus(session?.user ?? null);
 
         // If there's an existing session on initialize, treat it as a signed-in session
         // and set sessionStart/lastActivity so the auto-logout logic can run.
@@ -125,12 +126,10 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
           setSessionStart(null);
         }
         
-        // Clean up URL hash after magic link authentication
+        // Clean up URL hash AFTER admin check completes
+        // This ensures isAdmin is set before routing logic runs
         if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
-          console.log('🧹 Cleaning URL hash...');
-          // Remove the auth tokens from the URL and redirect to #admin
           window.location.hash = '#admin';
-          console.log('✅ Redirected to #admin');
         }
         
         // Update last sign in timestamp for admins
@@ -155,7 +154,6 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && user) {
-        console.log('Page became visible, re-checking admin status...');
         checkAdminStatus(user);
       }
     };
@@ -185,6 +183,18 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Database heartbeat - ping every 4 minutes to prevent database from sleeping
+    // Supabase free tier pauses after ~5 minutes of inactivity
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        // Simple lightweight query to keep database awake
+        await supabase.from('prayers').select('id').limit(1).maybeSingle();
+      } catch (error) {
+        // Silently fail - don't disrupt user experience
+        console.debug('Database heartbeat failed:', error);
+      }
+    }, 4 * 60 * 1000); // Every 4 minutes
 
     // Check for inactivity AND max session duration every minute
     const interval = setInterval(() => {
@@ -221,6 +231,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       events.forEach(event => window.removeEventListener(event, updateActivity));
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(interval);
+      clearInterval(heartbeatInterval);
     };
   }, [isAdmin, lastActivity, sessionStart]);
 
@@ -231,8 +242,6 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       // Use current origin, which works for any environment (localhost, preview, production)
       // Just make sure to add each environment's URL to Supabase redirect URLs list
       const redirectUrl = `${window.location.origin}?redirect=admin`;
-      
-      console.log('🔗 Magic link redirect URL:', redirectUrl);
       
       const { error } = await supabase.auth.signInWithOtp({
         email,

@@ -342,7 +342,7 @@ export default function BackupStatus() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
         <div className="flex items-center gap-3 mb-4">
           <Database className="h-6 w-6 text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-gray-900 dark:!text-white">
             Database Backup Status
           </h3>
         </div>
@@ -363,7 +363,7 @@ export default function BackupStatus() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <Database className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-gray-900 dark:!text-white">
             Database Backup Status
           </h3>
         </div>

@@ -69,8 +69,11 @@ export const usePrayerManager = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch approved prayers with their approved updates, pre-sorted by date
-      const { data: prayersData, error: prayersError } = await supabase
+      // Fetch approved prayers with retry on network errors
+      let prayersData: any;
+      let prayersError: any;
+      
+      const result = await supabase
         .from('prayers')
         .select(`
           *,
@@ -79,6 +82,9 @@ export const usePrayerManager = () => {
         .eq('approval_status', 'approved')
         .eq('prayer_updates.approval_status', 'approved')
         .order('created_at', { ascending: false });
+      
+      prayersData = result.data;
+      prayersError = result.error;
 
       // Clear timeout if request completed
       clearTimeout(timeoutId);

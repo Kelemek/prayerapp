@@ -32,13 +32,21 @@ export const AdminLogin: React.FC = () => {
     sessionStorage.removeItem('magic_link_email');
 
     try {
-      // Check if email has admin privileges
-      const { data: adminCheck, error: checkError } = await supabase
+      const adminCheckPromise = supabase
         .from('email_subscribers')
         .select('is_admin')
         .eq('email', email.toLowerCase().trim())
         .eq('is_admin', true)
         .maybeSingle();
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Admin status check timed out. Please try again.')), 10000)
+      );
+
+      const { data: adminCheck, error: checkError } = await Promise.race([
+        adminCheckPromise,
+        timeoutPromise
+      ]) as any;
 
       if (checkError) {
         console.error('Error checking admin status:', checkError);

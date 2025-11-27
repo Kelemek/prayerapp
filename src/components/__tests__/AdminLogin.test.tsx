@@ -15,7 +15,18 @@ vi.mock('../../lib/supabase', () => ({
         })
       })
     })
-  }
+  },
+  createFreshSupabaseClient: () => ({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({ data: { is_admin: true }, error: null })
+          })
+        })
+      })
+    })
+  })
 }));
 
 // Mock the useAdminAuth hook

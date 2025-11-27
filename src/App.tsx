@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { Shield, LogOut, Settings } from 'lucide-react';
 import { Analytics } from '@vercel/analytics/react';
 import { PrayerForm } from './components/PrayerForm';
@@ -20,10 +20,26 @@ import type { PrayerFilters } from './types/prayer';
 import { sendAdminNotification } from './lib/emailNotifications';
 import { setupGlobalErrorHandling, logPageView } from './lib/errorLogger';
 
-// Lazy load heavy components
-const ResponsivePresentation = lazy(() => import('./components/ResponsivePresentation').then(module => ({ default: module.ResponsivePresentation })));
-const AdminPortal = lazy(() => import('./components/AdminPortal').then(module => ({ default: module.AdminPortal })));
-const AdminLogin = lazy(() => import('./components/AdminLogin').then(module => ({ default: module.AdminLogin })));
+// Lazy load heavy components with timeout protection
+const lazyWithTimeout = (importFn: () => Promise<any>, timeoutMs: number = 10000) => {
+  return lazy(() => {
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+    
+    return Promise.race([
+      importFn(),
+      new Promise((_, reject) => {
+        abortController.signal.addEventListener('abort', () => {
+          reject(new Error(`Lazy component load timed out after ${timeoutMs}ms`));
+        });
+      })
+    ]).finally(() => clearTimeout(timeoutId));
+  });
+};
+
+const ResponsivePresentation = lazyWithTimeout(() => import('./components/ResponsivePresentation').then(module => ({ default: module.ResponsivePresentation })));
+const AdminPortal = lazyWithTimeout(() => import('./components/AdminPortal').then(module => ({ default: module.AdminPortal })));
+const AdminLogin = lazyWithTimeout(() => import('./components/AdminLogin').then(module => ({ default: module.AdminLogin })));
 
 function AppContent() {
   // Initialize theme system
@@ -154,7 +170,20 @@ function AppContent() {
   }, []);
 
   // Fetch prayer prompts
-  const fetchPrompts = async () => {
+  const fetchPromptsAbortRef = useRef<AbortController | null>(null);
+  
+  const fetchPrompts = useCallback(async () => {
+    if (fetchPromptsAbortRef.current) {
+      fetchPromptsAbortRef.current.abort();
+    }
+    
+    const abortController = new AbortController();
+    fetchPromptsAbortRef.current = abortController;
+    
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, 15000);
+    
     setPromptsLoading(true);
     try {
       // Parallelize both queries for faster loading
@@ -170,9 +199,18 @@ function AppContent() {
           .order('created_at', { ascending: false })
       ]);
       
-      if (typesResult.error) throw typesResult.error;
-      if (promptsResult.error) throw promptsResult.error;
+      clearTimeout(timeoutId);
       
+      if (abortController.signal.aborted) {
+        return;
+      }
+      
+      if (typesResult.error) {
+        throw typesResult.error;
+      }
+      if (promptsResult.error) {
+        throw promptsResult.error;
+      }
       // Create a set of active type names for filtering
       const activeTypeNames = new Set((typesResult.data || []).map(t => t.name));
       
@@ -190,11 +228,15 @@ function AppContent() {
       
       setPrompts(sortedPrompts);
     } catch (error) {
-      console.error('Error fetching prompts:', error);
+      clearTimeout(timeoutId);
+      
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
     } finally {
       setPromptsLoading(false);
     }
-  };
+  }, []);
 
   // Delete prompt (admin only)
   const deletePrompt = async (id: string) => {
@@ -219,13 +261,29 @@ function AppContent() {
   // Fetch prompts on initial load and when showing prompts
   useEffect(() => {
     fetchPrompts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (showPrompts) {
       fetchPrompts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPrompts]);
+
+  // Re-fetch prompts when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        fetchPrompts();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchPrompts]);
 
   const filteredPrayers = useMemo(() => {
     return getFilteredPrayers(filters.status, filters.searchTerm);
@@ -520,7 +578,7 @@ function AppContent() {
                 </div>
               )}
               
-              {promptsLoading ? (
+              {promptsLoading && prompts.length === 0 ? (
               <SkeletonLoader count={3} type="card" />
             ) : prompts.length === 0 ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center border border-gray-200 dark:border-gray-700">
@@ -679,6 +737,14 @@ function AdminWrapper() {
   const [allowUserDeletions, setAllowUserDeletions] = useState(true);
   const [allowUserUpdates, setAllowUserUpdates] = useState(true);
   
+  // Track if this is a magic link redirect (capture before URL gets cleaned)
+  // Use a ref to prevent infinite loops - once we redirect, we're done
+  const hasRedirectedRef = useRef(false);
+  const isMagicLinkRedirect = useRef(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('redirect') === 'admin';
+  }).current();
+  
   // Fetch app settings for admin controls
   const fetchSettings = async () => {
     try {
@@ -712,10 +778,19 @@ function AdminWrapper() {
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect');
       
+      // Check if we're in a magic link callback (has redirect param or access_token in URL)
+      const hasMagicLinkTokens = window.location.hash.includes('access_token') || redirect === 'admin';
+      
       if (hash === '#presentation') {
         setCurrentView('presentation');
       } else if (hash.startsWith('#admin') || redirect === 'admin') {
         // Handle #admin or ?redirect=admin (during magic link callback)
+        // If magic link is being processed, wait for auth to complete
+        if (hasMagicLinkTokens && loading) {
+          // Don't change view yet - still waiting for auth state to settle
+          return;
+        }
+        
         // If already logged in (session valid), go straight to portal
         // Otherwise, show login page
         if (isAdmin && !loading) {
@@ -736,10 +811,8 @@ function AdminWrapper() {
       }
     };
 
-    // Only handle hash changes after loading is complete
-    if (!loading) {
-      handleHashChange();
-    }
+    // Handle hash changes whenever loading or isAdmin state changes
+    handleHashChange();
     
     // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
@@ -749,24 +822,28 @@ function AdminWrapper() {
     };
   }, [isAdmin, loading]);
 
-  // Auto-redirect to admin portal after login
+  // Auto-redirect to admin portal after login via magic link
   useEffect(() => {
-    if (isAdmin && !loading) {
-      // If user is admin and on login page or public page with #admin hash, go to portal
-      if (currentView === 'admin-login' || (window.location.hash.startsWith('#admin') && currentView === 'public')) {
-        setCurrentView('admin-portal');
-        window.location.hash = '#admin';
-      }
+    if (isMagicLinkRedirect && !hasRedirectedRef.current && isAdmin && !loading) {
+      hasRedirectedRef.current = true;
+      setCurrentView('admin-portal');
+      window.location.hash = '#admin';
     }
-  }, [isAdmin, currentView, loading]);
+  }, [isAdmin, loading, isMagicLinkRedirect, currentView]);
 
   if (loading) {
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get('redirect');
+    const hasMagicLinkTokens = window.location.hash.includes('access_token') || redirect === 'admin';
+    const message = hasMagicLinkTokens ? 'Signing you in...' : 'Loading prayers...';
+    const submessage = hasMagicLinkTokens ? 'Please wait while we verify your credentials' : 'If this takes more than 15 seconds, please refresh the page';
+    
     return (
       <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="w-full max-w-6xl mx-auto px-4">
           <div className="text-center mb-4">
-            <p className="text-gray-600 dark:text-gray-400 text-sm">Loading prayers...</p>
-            <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">If this takes more than 15 seconds, please refresh the page</p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">{message}</p>
+            <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">{submessage}</p>
           </div>
           <SkeletonLoader count={5} type="card" />
         </div>

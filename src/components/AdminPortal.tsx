@@ -77,6 +77,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     refresh
   } = useAdminData();
 
+  // Re-fetch admin data when page becomes visible (handles network recovery after idle)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      console.log('[AdminPortal Visibility] Visibility state changed:', document.visibilityState);
+      if (document.visibilityState === 'visible') {
+        console.log('[AdminPortal Visibility] Page became visible, re-fetching admin data...');
+        // Fetch fresh data when page becomes visible
+        refresh();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refresh]);
+
   // Dev seed loading states
   const [seedLoading, setSeedLoading] = useState(false);
   const [cleanupLoading, setCleanupLoading] = useState(false);

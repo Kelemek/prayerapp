@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, handleSupabaseError } from '../lib/supabase';
 import { logError } from '../lib/errorLogger';
 import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest, UpdateDeletionRequest } from '../types/prayer';
@@ -77,13 +77,20 @@ export const useAdminData = () => {
     error: null
   });
 
+  const isFetchingRef = useRef(false);
+
   const fetchAdminData = useCallback(async () => {
+    if (isFetchingRef.current) {
+      return;
+    }
+    
     try {
+      isFetchingRef.current = true;
       setData(prev => ({ ...prev, loading: true, error: null }));
 
-      // Create a timeout promise to prevent hanging indefinitely (30 seconds)
+      // Increase timeout to 2 minutes to allow Supabase free tier database to wake up
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout - server took too long to respond')), 30000);
+        setTimeout(() => reject(new Error('Request timeout')), 120000);
       });
 
       // Parallelize all independent queries for much faster loading
@@ -330,6 +337,8 @@ export const useAdminData = () => {
         loading: false,
         error: error instanceof Error ? error.message : 'Failed to fetch admin data'
       }));
+    } finally {
+      isFetchingRef.current = false;
     }
   }, []);
 
@@ -831,7 +840,9 @@ export const useAdminData = () => {
   }, []);
 
   // Initial data fetch
-  useEffect(() => { fetchAdminData(); }, [fetchAdminData]);
+  useEffect(() => {
+    fetchAdminData();
+  }, [fetchAdminData]);
 
   return {
     ...data,

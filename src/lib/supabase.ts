@@ -22,11 +22,47 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true
+  },
+  global: {
+    headers: {
+      'x-client-info': 'supabase-js'
+    },
+    fetch: (url, options?: RequestInit) => {
+      return fetch(url, {
+        ...options,
+        keepalive: true,
+        signal: options?.signal
+      });
+    }
+  },
+  db: {
+    schema: 'public'
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 });
 
-// Type-safe wrapper for common operations
-export const supabaseClient = supabase;
+// Helper to detect if an error is a network/connection error
+export const isNetworkError = (error: unknown): boolean => {
+  if (!error) return false;
+  
+  const errorStr = String(error).toLowerCase();
+  return (
+    errorStr.includes('failed to fetch') ||
+    errorStr.includes('network') ||
+    errorStr.includes('timeout') ||
+    errorStr.includes('aborted') ||
+    errorStr.includes('connection') ||
+    (error instanceof Error && (
+      error.message.includes('Failed to fetch') ||
+      error.message.includes('Network') ||
+      error.message.includes('Timeout')
+    ))
+  );
+};
 
 // Re-export the error helper from a small testable module so tests can import it
 export { handleSupabaseError } from './supabaseHelpers'

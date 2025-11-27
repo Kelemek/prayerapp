@@ -15,7 +15,10 @@ vi.mock('../../lib/supabase', async () => {
   sup.auth.signOut = vi.fn();
   sup.rpc = vi.fn();
   sup.removeChannel = vi.fn();
-  return { supabase: sup };
+  return { 
+    supabase: sup,
+    createFreshSupabaseClient: () => sup
+  };
 });
 
 import { supabase } from '../../lib/supabase';
