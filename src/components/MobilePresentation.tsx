@@ -553,22 +553,22 @@ export const MobilePresentation: React.FC = () => {
       )}
 
       {/* Fixed Controls Bar */}
-      <div className={`w-full fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-4 border-t border-gray-200 dark:border-gray-700 transition-transform duration-300 ${
+      <div className={`w-full fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-2 border-t border-gray-200 dark:border-gray-700 transition-transform duration-300 ${
         showControls ? 'translate-y-0' : 'translate-y-full'
       }`}>
         <div className="max-w-2xl mx-auto">
           {/* Top Row: Play/Pause and Close */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsPlaying(!isPlaying)}
-                className="p-3 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-200 rounded-full transition-colors"
+                className="p-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-200 rounded-full transition-colors"
                 title={isPlaying ? 'Pause' : 'Play'}
               >
-                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
               </button>
               {isPlaying && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <Timer size={16} className="text-blue-600 dark:text-blue-400" />
                   <span className="text-sm font-mono font-semibold text-blue-900 dark:text-blue-100">
                     {countdownRemaining}s
@@ -583,23 +583,23 @@ export const MobilePresentation: React.FC = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-3 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-200 rounded-full transition-colors"
+                className="p-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-200 rounded-full transition-colors"
                 title="Settings"
               >
-                <Settings size={24} />
+                <Settings size={20} />
               </button>
               <button
                 onClick={() => window.location.hash = ''}
-                className="p-3 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-200 rounded-full transition-colors"
+                className="p-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-900 dark:text-blue-200 rounded-full transition-colors"
                 title="Exit Presentation"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
           </div>
 
           {/* Bottom Row: Status */}
-          <div className="text-center text-sm text-gray-900 dark:text-white">
+          <div className="text-center text-sm text-gray-900 dark:text-gray-100">
             {isPlaying 
               ? smartMode 
                 ? 'Auto-advancing (Smart Mode)' 
@@ -607,7 +607,7 @@ export const MobilePresentation: React.FC = () => {
               : 'Paused'
             } • {currentIndex + 1} of {currentItems.length} • Swipe to navigate • Double-tap to hide
             {(statusFilter !== 'all' || timeFilter !== 'all') && contentType === 'prayers' && (
-              <div className="text-xs mt-1 text-gray-600 dark:text-gray-400">
+              <div className="text-xs mt-1 text-gray-600 dark:text-gray-300">
                 Filtered: {statusFilter !== 'all' ? statusFilter : ''}{statusFilter !== 'all' && timeFilter !== 'all' ? ', ' : ''}{timeFilter !== 'all' ? timeFilter : ''}
               </div>
             )}
