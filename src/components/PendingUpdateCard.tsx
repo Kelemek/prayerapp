@@ -212,7 +212,7 @@ export const PendingUpdateCard: React.FC<PendingUpdateCardProps> = ({
             value={denyReason}
             onChange={(e) => setDenyReason(e.target.value)}
             placeholder="Explain why this prayer update cannot be approved..."
-            className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-red-900/30 text-gray-900 dark:text-red-100 placeholder-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+            className="w-full px-3 py-2 text-sm border border-red-300 dark:border-red-600 rounded-md bg-white dark:bg-red-900/40 text-gray-900 dark:!text-white placeholder-red-400 dark:placeholder-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
             rows={3}
             required
           />
