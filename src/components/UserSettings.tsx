@@ -273,18 +273,21 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
   const submitPreference = async (preferenceData: any) => {
     try {
       // Submit as pending preference change for admin approval
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('pending_preference_changes')
-        .insert(preferenceData);
+        .insert(preferenceData)
+        .select('id');
 
       if (error) throw error;
 
       // Send admin notification email (don't let this block the save)
       try {
+        const requestId = data && data.length > 0 ? data[0].id : undefined;
         await sendPreferenceChangeNotification({
           name: preferenceData.name,
           email: preferenceData.email,
-          receiveNotifications: preferenceData.receive_new_prayer_notifications
+          receiveNotifications: preferenceData.receive_new_prayer_notifications,
+          requestId
         });
       } catch (emailError) {
         console.warn('⚠️ Admin notification email failed (but preference was saved):', emailError);

@@ -12,13 +12,13 @@ import { supabase } from './supabase';
  * 
  * Format: https://app.com?code=abc123xyz&approval_type=prayer&approval_id=xyz789
  * 
- * @param requestType - Type of request to approve: 'prayer', 'update', 'deletion', or 'status_change'
+ * @param requestType - Type of request to approve: 'prayer', 'update', 'deletion', 'status_change', or 'preference-change'
  * @param requestId - UUID of the request record
  * @param adminEmail - Email of the admin receiving this approval
  * @returns Full approval URL with code, or null if code generation failed
  */
 export async function generateApprovalLink(
-  requestType: 'prayer' | 'update' | 'deletion' | 'status_change',
+  requestType: 'prayer' | 'update' | 'deletion' | 'status_change' | 'preference-change',
   requestId: string,
   adminEmail: string
 ): Promise<string | null> {
