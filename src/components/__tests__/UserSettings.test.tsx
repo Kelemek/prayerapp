@@ -349,17 +349,25 @@ describe('UserSettings', () => {
     it('clears success message when email is changed', async () => {
       const user = userEvent.setup();
       
-      const mockInsert = vi.fn().mockResolvedValue({ error: null });
+      // Mock insert().select('id') to return the preference change ID
+      const mockSelectId = vi.fn().mockResolvedValue({ data: [{ id: 'test-id-123' }], error: null });
+      const mockInsert = vi.fn().mockReturnValue({ select: mockSelectId });
+      
       const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
       const mockLimit = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));
       const mockOrder = vi.fn(() => ({ limit: mockLimit }));
       const mockEq2 = vi.fn(() => ({ order: mockOrder }));
       const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
-      const mockSelect = vi.fn(() => ({ eq: mockEq1 }));
+      const mockSelectChain = vi.fn(() => ({ eq: mockEq1 }));
 
-      (supabase.from as any).mockReturnValue({ 
-        select: mockSelect,
-        insert: mockInsert,
+      (supabase.from as any).mockImplementation((table: string) => {
+        if (table === 'pending_preference_changes') {
+          return { insert: mockInsert };
+        }
+        return {
+          select: mockSelectChain,
+          insert: mockInsert,
+        };
       });
 
       render(<UserSettings isOpen={true} onClose={mockOnClose} />);
@@ -427,17 +435,25 @@ describe('UserSettings', () => {
     it('successfully saves preferences', async () => {
       const user = userEvent.setup();
       
-      const mockInsert = vi.fn().mockResolvedValue({ error: null });
+      // Mock insert().select('id') to return the preference change ID
+      const mockSelect = vi.fn().mockResolvedValue({ data: [{ id: 'test-id-123' }], error: null });
+      const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
+      
       const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
       const mockLimit = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));
       const mockOrder = vi.fn(() => ({ limit: mockLimit }));
       const mockEq2 = vi.fn(() => ({ order: mockOrder }));
       const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
-      const mockSelect = vi.fn(() => ({ eq: mockEq1 }));
+      const mockSelectChain = vi.fn(() => ({ eq: mockEq1 }));
 
-      (supabase.from as any).mockReturnValue({ 
-        select: mockSelect,
-        insert: mockInsert,
+      (supabase.from as any).mockImplementation((table: string) => {
+        if (table === 'pending_preference_changes') {
+          return { insert: mockInsert };
+        }
+        return {
+          select: mockSelectChain,
+          insert: mockInsert,
+        };
       });
 
       render(<UserSettings isOpen={true} onClose={mockOnClose} />);
@@ -539,19 +555,27 @@ describe('UserSettings', () => {
     it('displays error when save fails', async () => {
       const user = userEvent.setup();
       
-      const mockInsert = vi.fn().mockResolvedValue({ 
+      // Mock insert().select() to return an error
+      const mockSelect = vi.fn().mockResolvedValue({ 
         error: { message: 'Database error' } 
       });
+      const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
+      
       const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
       const mockLimit = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));
       const mockOrder = vi.fn(() => ({ limit: mockLimit }));
       const mockEq2 = vi.fn(() => ({ order: mockOrder }));
       const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
-      const mockSelect = vi.fn(() => ({ eq: mockEq1 }));
+      const mockSelectChain = vi.fn(() => ({ eq: mockEq1 }));
 
-      (supabase.from as any).mockReturnValue({ 
-        select: mockSelect,
-        insert: mockInsert,
+      (supabase.from as any).mockImplementation((table: string) => {
+        if (table === 'pending_preference_changes') {
+          return { insert: mockInsert };
+        }
+        return {
+          select: mockSelectChain,
+          insert: mockInsert,
+        };
       });
 
       render(<UserSettings isOpen={true} onClose={mockOnClose} />);
@@ -573,24 +597,32 @@ describe('UserSettings', () => {
     it('shows Submitting... text while saving', async () => {
       const user = userEvent.setup();
       
-      let resolveInsert: () => void;
-      const insertPromise = new Promise<void>((resolve) => {
-        resolveInsert = resolve;
+      let resolveSelect: () => void;
+      const selectPromise = new Promise<void>((resolve) => {
+        resolveSelect = resolve;
       });
       
-      const mockInsert = vi.fn().mockReturnValue(
-        insertPromise.then(() => ({ error: null }))
+      // Mock insert().select() to delay resolution
+      const mockSelect = vi.fn().mockReturnValue(
+        selectPromise.then(() => ({ data: [{ id: 'test-id' }], error: null }))
       );
+      const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
+      
       const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
       const mockLimit = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));
       const mockOrder = vi.fn(() => ({ limit: mockLimit }));
       const mockEq2 = vi.fn(() => ({ order: mockOrder }));
       const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
-      const mockSelect = vi.fn(() => ({ eq: mockEq1 }));
+      const mockSelectChain = vi.fn(() => ({ eq: mockEq1 }));
 
-      (supabase.from as any).mockReturnValue({ 
-        select: mockSelect,
-        insert: mockInsert,
+      (supabase.from as any).mockImplementation((table: string) => {
+        if (table === 'pending_preference_changes') {
+          return { insert: mockInsert };
+        }
+        return {
+          select: mockSelectChain,
+          insert: mockInsert,
+        };
       });
 
       render(<UserSettings isOpen={true} onClose={mockOnClose} />);
@@ -610,7 +642,7 @@ describe('UserSettings', () => {
       });
       
       // Resolve the promise
-      resolveInsert!();
+      resolveSelect!();
       
       // Should show success
       await waitFor(() => {

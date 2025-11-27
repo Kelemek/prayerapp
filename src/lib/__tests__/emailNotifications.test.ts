@@ -147,11 +147,18 @@ describe('emailNotifications', () => {
   });
 
   it('sends preference change admin notification when subscribers exist', async () => {
-    // Make supabase.from(...).select() chainable and return one admin email
-  const finalResult = Promise.resolve({ data: [{ email: 'admin2@example.com' }], error: null });
-  // For preference change, code calls select().eq('is_active', true) once — make eq return the final promise
-  const selectChain = { select: () => ({ eq: () => finalResult }) };
-    (supabase.from as any).mockReturnValue(selectChain);
+    // Mock supabase.from(...).select().eq().eq().eq() chain
+    const finalResult = Promise.resolve({ data: [{ email: 'admin2@example.com' }], error: null });
+    const mockSelect = {
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue(finalResult)
+        })
+      })
+    };
+    (supabase.from as any).mockReturnValue({
+      select: vi.fn().mockReturnValue(mockSelect)
+    });
 
     (sendEmail as any).mockResolvedValue(undefined);
 
