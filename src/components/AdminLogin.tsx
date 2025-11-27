@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Mail, AlertCircle, CheckCircle } from 'lucide-react';
+import { Shield, Mail, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { useAdminAuth } from '../hooks/useAdminAuthHook';
 import { supabase } from '../lib/supabase';
 
@@ -207,6 +207,16 @@ export const AdminLogin: React.FC = () => {
           <p className="text-xs text-gray-500 dark:text-gray-400">
             🔒 Passwordless authentication via Supabase Magic Link
           </p>
+        </div>
+
+        <div className="mt-6 text-center">
+          <a
+            href="#/"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back to Main Page
+          </a>
         </div>
       </div>
     </div>
