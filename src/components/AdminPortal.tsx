@@ -34,6 +34,43 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [activeTab, setActiveTab] = useState<AdminTab>('prayers');
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>('analytics');
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [approvalToScroll, setApprovalToScroll] = useState<{ type: 'prayer' | 'update' | 'deletion' | 'status_change'; id: string } | null>(null);
+  const approvalScrollRef = useRef<HTMLDivElement | null>(null);
+  
+  // Handle approval links - scroll to approved item if one was just validated
+  useEffect(() => {
+    const approvalEmail = localStorage.getItem('approvalAdminEmail');
+    const approvalValidated = localStorage.getItem('approvalSessionValidated');
+    
+    if (approvalEmail && approvalValidated === 'true') {
+      const approvalType = localStorage.getItem('approvalApprovalType');
+      const approvalId = localStorage.getItem('approvalApprovalId');
+      
+      if (approvalType && approvalId) {
+        setApprovalToScroll({
+          type: approvalType as 'prayer' | 'update' | 'deletion' | 'status_change',
+          id: approvalId,
+        });
+        
+        // Navigate to the correct tab based on approval type
+        if (approvalType === 'prayer') {
+          setActiveTab('prayers');
+        } else if (approvalType === 'update') {
+          setActiveTab('updates');
+        } else if (approvalType === 'deletion') {
+          setActiveTab('deletions');
+        } else if (approvalType === 'status_change') {
+          setActiveTab('preferences');
+        }
+        
+        // Clear the approval session markers
+        localStorage.removeItem('approvalAdminEmail');
+        localStorage.removeItem('approvalSessionValidated');
+        localStorage.removeItem('approvalApprovalType');
+        localStorage.removeItem('approvalApprovalId');
+      }
+    }
+  }, []);
   
   // Redirect to valid tab if current tab is disabled
   useEffect(() => {
@@ -76,6 +113,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     editPrayer,
     refresh
   } = useAdminData();
+  
+  // Scroll to the approval item when data loads and we have a target
+  useEffect(() => {
+    if (approvalToScroll && approvalScrollRef.current && !loading) {
+      // Small delay to ensure DOM is fully rendered
+      const timeout = setTimeout(() => {
+        approvalScrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Clear the approval to scroll after handling
+        setApprovalToScroll(null);
+      }, 100);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [approvalToScroll, loading]);
 
   // Re-fetch admin data when page becomes visible (handles network recovery after idle)
   useEffect(() => {
@@ -452,7 +503,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               Retry
             </button>
             <button
-              onClick={() => window.location.hash = ''}
+              onClick={() => {
+                localStorage.removeItem('approvalAdminEmail');
+                localStorage.removeItem('approvalSessionValidated');
+                localStorage.removeItem('approvalApprovalType');
+                localStorage.removeItem('approvalApprovalId');
+                window.location.href = window.location.origin;
+              }}
               className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
             >
               <ArrowLeft size={16} />
@@ -482,7 +539,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
               Try Again
             </button>
             <button
-              onClick={() => window.location.hash = ''}
+              onClick={() => {
+                localStorage.removeItem('approvalAdminEmail');
+                localStorage.removeItem('approvalSessionValidated');
+                localStorage.removeItem('approvalApprovalType');
+                localStorage.removeItem('approvalApprovalId');
+                window.location.href = window.location.origin;
+              }}
               className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
             >
               <ArrowLeft size={16} />
@@ -512,7 +575,13 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             <div className="flex items-center gap-3">
               <button
                 onClick={() => {
-                  window.location.hash = '';
+                  // Clear approval session from localStorage
+                  localStorage.removeItem('approvalAdminEmail');
+                  localStorage.removeItem('approvalSessionValidated');
+                  localStorage.removeItem('approvalApprovalType');
+                  localStorage.removeItem('approvalApprovalId');
+                  // Navigate to home without the approval code in URL
+                  window.location.href = window.location.origin;
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               >
@@ -652,13 +721,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             ) : (
               <div className="space-y-4">
                 {pendingPrayers.map((prayer) => (
-                  <PendingPrayerCard
+                  <div
                     key={prayer.id}
-                    prayer={prayer}
-                    onApprove={(id) => approvePrayer(id)}
-                    onDeny={(id, reason) => denyPrayer(id, reason)}
-                    onEdit={(id, updates) => editPrayer(id, updates)}
-                  />
+                    ref={approvalToScroll?.type === 'prayer' && approvalToScroll?.id === prayer.id ? approvalScrollRef : null}
+                  >
+                    <PendingPrayerCard
+                      prayer={prayer}
+                      onApprove={(id) => approvePrayer(id)}
+                      onDeny={(id, reason) => denyPrayer(id, reason)}
+                      onEdit={(id, updates) => editPrayer(id, updates)}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -684,13 +757,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             ) : (
               <div className="space-y-4">
                 {pendingUpdates.map((update) => (
-                  <PendingUpdateCard
+                  <div
                     key={update.id}
-                    update={update}
-                    onApprove={(id) => approveUpdate(id)}
-                    onDeny={(id, reason) => denyUpdate(id, reason)}
-                    onEdit={(id, updates) => editUpdate(id, updates)}
-                  />
+                    ref={approvalToScroll?.type === 'update' && approvalToScroll?.id === update.id ? approvalScrollRef : null}
+                  >
+                    <PendingUpdateCard
+                      update={update}
+                      onApprove={(id) => approveUpdate(id)}
+                      onDeny={(id, reason) => denyUpdate(id, reason)}
+                      onEdit={(id, updates) => editUpdate(id, updates)}
+                    />
+                  </div>
                 ))}
               </div>
             )}
@@ -712,12 +789,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 ) : (
                   <div className="space-y-4">
                     {pendingDeletionRequests.map((request) => (
-                      <PendingDeletionCard
+                      <div
                         key={request.id}
-                        deletionRequest={request}
-                        onApprove={(id: string) => approveDeletionRequest(id)}
-                        onDeny={(id: string, reason: string) => denyDeletionRequest(id, reason)}
-                      />
+                        ref={approvalToScroll?.type === 'deletion' && approvalToScroll?.id === request.id ? approvalScrollRef : null}
+                      >
+                        <PendingDeletionCard
+                          deletionRequest={request}
+                          onApprove={(id: string) => approveDeletionRequest(id)}
+                          onDeny={(id: string, reason: string) => denyDeletionRequest(id, reason)}
+                        />
+                      </div>
                     ))}
                   </div>
                 )}
@@ -732,12 +813,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 ) : (
                   <div className="space-y-4">
                     {pendingUpdateDeletionRequests.map((request) => (
-                      <PendingUpdateDeletionCard
+                      <div
                         key={request.id}
-                        deletionRequest={request}
-                        onApprove={(id: string) => approveUpdateDeletionRequest(id)}
-                        onDeny={(id: string, reason: string) => denyUpdateDeletionRequest(id, reason)}
-                      />
+                        ref={approvalToScroll?.type === 'deletion' && approvalToScroll?.id === request.id ? approvalScrollRef : null}
+                      >
+                        <PendingUpdateDeletionCard
+                          deletionRequest={request}
+                          onApprove={(id: string) => approveUpdateDeletionRequest(id)}
+                          onDeny={(id: string, reason: string) => denyUpdateDeletionRequest(id, reason)}
+                        />
+                      </div>
                     ))}
                   </div>
                 )}
@@ -770,12 +855,16 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             ) : (
               <div className="space-y-4">
                 {pendingPreferenceChanges.map((change) => (
-                  <PendingPreferenceChangeCard
+                  <div
                     key={change.id}
-                    change={change}
-                    onApprove={approvePreferenceChange}
-                    onDeny={denyPreferenceChange}
-                  />
+                    ref={approvalToScroll?.type === 'status_change' && approvalToScroll?.id === change.id ? approvalScrollRef : null}
+                  >
+                    <PendingPreferenceChangeCard
+                      change={change}
+                      onApprove={approvePreferenceChange}
+                      onDeny={denyPreferenceChange}
+                    />
+                  </div>
                 ))}
               </div>
             )}

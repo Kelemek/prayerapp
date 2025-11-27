@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { sendEmail, getTemplate, applyTemplateVariables } from './emailService';
+import { generateApprovalLink } from './approvalLinks';
 
 /**
  * Helper function to send email using new Graph API service
@@ -31,6 +32,8 @@ interface EmailNotificationPayload {
   currentStatus?: string;
   requestedStatus?: string;
   requestedBy?: string;
+  requestId?: string; // ID of the request for direct approval links
+  adminEmails?: string[]; // List of admin emails for generating approval codes
 }
 
 /**
@@ -46,26 +49,64 @@ interface EmailNotificationPayload {
 export async function sendAdminNotification(payload: EmailNotificationPayload): Promise<void> {
   try {
     // Get admin emails from email_subscribers table (admins who want notifications)
-    const { data: admins, error: adminsError } = await supabase
-      .from('email_subscribers')
-      .select('email')
-      .eq('is_admin', true)
-      .eq('is_active', true)
-      .eq('receive_admin_emails', true);
+    let adminList = payload.adminEmails;
+    
+    if (!adminList || adminList.length === 0) {
+      const { data: admins, error: adminsError } = await supabase
+        .from('email_subscribers')
+        .select('email')
+        .eq('is_admin', true)
+        .eq('is_active', true)
+        .eq('receive_admin_emails', true);
 
-    if (adminsError) {
-      console.error('Error fetching admin emails:', adminsError);
-      return;
+      if (adminsError) {
+        console.error('Error fetching admin emails:', adminsError);
+        return;
+      }
+
+      if (!admins || admins.length === 0) {
+        console.warn('No admins configured to receive notifications. Please enable admin email notifications in Admin User Management.');
+        return;
+      }
+
+      adminList = admins.map(admin => admin.email);
     }
 
-    if (!admins || admins.length === 0) {
-      console.warn('No admins configured to receive notifications. Please enable admin email notifications in Admin User Management.');
-      return;
+    // Send individual emails to each admin with their own approval code
+    for (const adminEmail of adminList) {
+      await sendAdminNotificationToEmail(payload, adminEmail);
+    }
+  } catch (error) {
+    console.error('Error in sendAdminNotification:', error);
+    // Don't throw - we don't want email failures to break the app
+  }
+}
+
+/**
+ * Send notification to a single admin with their personalized approval code
+ */
+async function sendAdminNotificationToEmail(payload: EmailNotificationPayload, adminEmail: string): Promise<void> {
+  try {
+    // Generate approval link if requestId is provided
+    let approvalLink = `${typeof window !== 'undefined' ? window.location.origin : process.env.VITE_APP_URL || 'http://localhost:5173'}#admin`;
+    
+    if (payload.requestId && payload.type !== 'status-change') {
+      console.log('🔗 Generating approval link for', { type: payload.type, adminEmail, requestId: payload.requestId });
+      const link = await generateApprovalLink(
+        payload.type as 'prayer' | 'update' | 'deletion',
+        payload.requestId,
+        adminEmail
+      );
+      if (link) {
+        console.log('✅ Approval link generated:', link);
+        approvalLink = link;
+      } else {
+        console.warn('⚠️ Approval link generation returned null, using fallback');
+      }
+    } else {
+      console.log('⏭️ Skipping approval code generation:', { hasRequestId: !!payload.requestId, type: payload.type });
     }
 
-    const emails = admins.map(admin => admin.email);
-
-    // For prayer notifications, try to use template; fall back to hardcoded for other types
     let subject: string;
     let body: string;
     let html: string | undefined;
@@ -83,7 +124,7 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
             prayerTitle: payload.title,
             requesterName: payload.requester || 'Anonymous',
             prayerDescription: payload.description || 'No description provided',
-            adminLink: `${window.location.origin}/#admin`
+            adminLink: approvalLink
           };
           break;
           
@@ -93,7 +134,7 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
             prayerTitle: payload.title,
             authorName: payload.author || 'Anonymous',
             updateContent: payload.content || 'No content provided',
-            adminLink: `${window.location.origin}/#admin`
+            adminLink: approvalLink
           };
           break;
           
@@ -103,7 +144,7 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
             prayerTitle: payload.title,
             requestedBy: payload.requestedBy || 'Anonymous',
             reason: payload.reason || 'No reason provided',
-            adminLink: `${window.location.origin}/#admin`
+            adminLink: approvalLink
           };
           break;
           
@@ -122,9 +163,11 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
       const template = await getTemplate(templateKey);
       
       if (template) {
+        console.log('📧 Template loaded successfully:', templateKey);
         subject = applyTemplateVariables(template.subject, variables);
         body = applyTemplateVariables(template.text_body, variables);
         html = applyTemplateVariables(template.html_body, variables);
+        console.log('📧 Template variables applied, adminLink in email:', variables.adminLink);
       } else {
         throw new Error(`Template ${templateKey} not found`);
       }
@@ -136,23 +179,23 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
         // Fallback for prayer, update, deletion if template loading fails
         if (payload.type === 'prayer') {
           subject = `New Prayer Request: ${payload.title}`;
-          body = `A new prayer request has been submitted and is pending approval.\n\nTitle: ${payload.title}\nRequested by: ${payload.requester || 'Anonymous'}\n\nDescription: ${payload.description || 'No description provided'}\n\nPlease review and approve/deny this request in the admin portal.`;
+          body = `A new prayer request has been submitted and is pending approval.\n\nTitle: ${payload.title}\nRequested by: ${payload.requester || 'Anonymous'}\n\nDescription: ${payload.description || 'No description provided'}\n\nApprove this request here: ${approvalLink}`;
         } else if (payload.type === 'update') {
           subject = `New Prayer Update: ${payload.title}`;
-          body = `A new prayer update has been submitted and is pending approval.\n\nPrayer: ${payload.title}\nUpdate by: ${payload.author || 'Anonymous'}\n\nContent: ${payload.content || 'No content provided'}\n\nPlease review and approve/deny this update in the admin portal.`;
+          body = `A new prayer update has been submitted and is pending approval.\n\nPrayer: ${payload.title}\nUpdate by: ${payload.author || 'Anonymous'}\n\nContent: ${payload.content || 'No content provided'}\n\nApprove this request here: ${approvalLink}`;
         } else if (payload.type === 'deletion') {
           subject = `Deletion Request: ${payload.title}`;
-          body = `A deletion request has been submitted for a prayer.\n\nPrayer: ${payload.title}\nRequested by: ${payload.requestedBy || 'Anonymous'}\n\nReason: ${payload.reason || 'No reason provided'}\n\nPlease review and approve/deny this deletion request in the admin portal.`;
+          body = `A deletion request has been submitted for a prayer.\n\nPrayer: ${payload.title}\nRequested by: ${payload.requestedBy || 'Anonymous'}\n\nReason: ${payload.reason || 'No reason provided'}\n\nApprove this request here: ${approvalLink}`;
         }
       }
     }
 
-    // Send email via Supabase Edge Function
+    // Send email via Supabase Edge Function (to individual admin)
     const { error: functionError } = await invokeSendNotification({
-      to: emails,
+      to: [adminEmail],
       subject,
       body,
-      html: html || generateEmailHTML(payload)
+      html: html || generateEmailHTML(payload, approvalLink)
     });
 
     if (functionError) {
@@ -172,10 +215,9 @@ export async function sendAdminNotification(payload: EmailNotificationPayload): 
 /**
  * Generate HTML email template
  */
-function generateEmailHTML(payload: EmailNotificationPayload): string {
-  const baseUrl = window.location.origin;
-  // Link to the app root - user will see login if not authenticated, or admin portal if authenticated
-  const loginUrl = `${baseUrl}/#admin`;
+function generateEmailHTML(payload: EmailNotificationPayload, approvalLink?: string): string {
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : process.env.VITE_APP_URL || 'http://localhost:5173';
+  const loginUrl = approvalLink || `${baseUrl}#admin`;
 
   switch (payload.type) {
     case 'prayer':

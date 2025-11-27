@@ -19,6 +19,7 @@ import { supabase } from './lib/supabase';
 import type { PrayerFilters } from './types/prayer';
 import { sendAdminNotification } from './lib/emailNotifications';
 import { setupGlobalErrorHandling, logPageView } from './lib/errorLogger';
+import { validateApprovalCode } from './lib/approvalLinks';
 
 // Lazy load heavy components with timeout protection
 const lazyWithTimeout = (importFn: () => Promise<any>, timeoutMs: number = 10000) => {
@@ -650,7 +651,7 @@ function AppContent() {
                 onFormOpen={closeAllForms}
                 onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => {
                   try {
-                    const { error } = await supabase
+                    const { data, error } = await supabase
                       .from('status_change_requests')
                       .insert({ prayer_id: prayerId, requested_status: newStatus, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' })
                       .select()
@@ -660,7 +661,25 @@ function AppContent() {
                     // send admin notification
                     try {
                       const { data: prayerRow } = await supabase.from('prayers').select('title, status').eq('id', prayerId).single();
-                      await sendAdminNotification({ type: 'status-change', title: prayerRow?.title || 'Unknown Prayer', reason, requestedBy: requesterName, currentStatus: prayerRow?.status, requestedStatus: newStatus });
+                      
+                      // Fetch admin emails for approval code generation
+                      const { data: admins } = await supabase
+                        .from('email_subscribers')
+                        .select('email')
+                        .eq('is_admin', true)
+                        .eq('is_active', true)
+                        .eq('receive_admin_emails', true);
+
+                      await sendAdminNotification({ 
+                        type: 'status-change', 
+                        title: prayerRow?.title || 'Unknown Prayer', 
+                        reason, 
+                        requestedBy: requesterName, 
+                        currentStatus: prayerRow?.status, 
+                        requestedStatus: newStatus, 
+                        requestId: data?.id,
+                        adminEmails: admins?.map(a => a.email) || []
+                      });
                     } catch (notifyErr) {
                       console.warn('Failed to send status change notification', notifyErr);
                     }
@@ -671,7 +690,7 @@ function AppContent() {
                 }}
                 onRequestDelete={async (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => {
                   try {
-                    const { error } = await supabase
+                    const { data, error } = await supabase
                       .from('deletion_requests')
                       .insert({ prayer_id: prayerId, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' })
                       .select()
@@ -681,7 +700,23 @@ function AppContent() {
                     // send admin notification
                     try {
                       const { data: prayerRow } = await supabase.from('prayers').select('title').eq('id', prayerId).single();
-                      await sendAdminNotification({ type: 'deletion', title: prayerRow?.title || 'Unknown Prayer', reason, requestedBy: requesterName });
+                      
+                      // Fetch admin emails for approval code generation
+                      const { data: admins } = await supabase
+                        .from('email_subscribers')
+                        .select('email')
+                        .eq('is_admin', true)
+                        .eq('is_active', true)
+                        .eq('receive_admin_emails', true);
+
+                      await sendAdminNotification({ 
+                        type: 'deletion', 
+                        title: prayerRow?.title || 'Unknown Prayer', 
+                        reason, 
+                        requestedBy: requesterName, 
+                        requestId: data?.id,
+                        adminEmails: admins?.map(a => a.email) || []
+                      });
                     } catch (notifyErr) {
                       console.warn('Failed to send deletion notification', notifyErr);
                     }
@@ -737,8 +772,7 @@ function AdminWrapper() {
   const [allowUserDeletions, setAllowUserDeletions] = useState(true);
   const [allowUserUpdates, setAllowUserUpdates] = useState(true);
   
-  // Track if this is a magic link redirect (capture before URL gets cleaned)
-  // Use a ref to prevent infinite loops - once we redirect, we're done
+  // Track if this is a magic link redirect
   const hasRedirectedRef = useRef(false);
   const isMagicLinkRedirect = useRef(() => {
     const params = new URLSearchParams(window.location.search);
@@ -771,6 +805,40 @@ function AdminWrapper() {
     fetchSettings();
   }, []);
   
+  // Handle approval code in URL - validate and store session
+  useEffect(() => {
+    const handleApprovalCode = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      
+      if (!code) return;
+      
+      // Check if already validated
+      const existingEmail = localStorage.getItem('approvalAdminEmail');
+      if (existingEmail) {
+        window.location.href = window.location.origin + '/#admin';
+        return;
+      }
+      
+      try {
+        const result = await validateApprovalCode(code);
+        
+        if (result?.user?.email) {
+          localStorage.setItem('approvalAdminEmail', result.user.email);
+          localStorage.setItem('approvalSessionValidated', 'true');
+          localStorage.setItem('approvalApprovalType', result.approval_type);
+          localStorage.setItem('approvalApprovalId', result.approval_id);
+          
+          window.location.href = window.location.origin + '/#admin';
+        }
+      } catch (error) {
+        // Silently fail - user can use login page instead
+      }
+    };
+    
+    handleApprovalCode();
+  }, []);
+  
   // Handle hash changes for admin access
   useEffect(() => {
     const handleHashChange = () => {
@@ -778,30 +846,26 @@ function AdminWrapper() {
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect');
       
-      // Check if we're in a magic link callback (has redirect param or access_token in URL)
+      // Check if we're in an approval code flow
+      const approvalEmail = localStorage.getItem('approvalAdminEmail');
+      const isApprovalFlow = !!approvalEmail;
+      
+      // Check if we're in a magic link callback
       const hasMagicLinkTokens = window.location.hash.includes('access_token') || redirect === 'admin';
       
       if (hash === '#presentation') {
         setCurrentView('presentation');
       } else if (hash.startsWith('#admin') || redirect === 'admin') {
-        // Handle #admin or ?redirect=admin (during magic link callback)
-        // If magic link is being processed, wait for auth to complete
-        if (hasMagicLinkTokens && loading) {
-          // Don't change view yet - still waiting for auth state to settle
-          return;
-        }
+        if (hasMagicLinkTokens && loading) return;
+        if (isApprovalFlow && loading) return;
         
-        // If already logged in (session valid), go straight to portal
-        // Otherwise, show login page
-        if (isAdmin && !loading) {
+        if ((isAdmin || isApprovalFlow) && !loading) {
           setCurrentView('admin-portal');
-          // Clean up redirect param if present
           if (redirect === 'admin') {
             window.history.replaceState(null, '', window.location.pathname + '#admin');
           }
         } else if (!loading) {
           setCurrentView('admin-login');
-          // Clean up redirect param if present
           if (redirect === 'admin') {
             window.history.replaceState(null, '', window.location.pathname + '#admin');
           }
@@ -811,15 +875,9 @@ function AdminWrapper() {
       }
     };
 
-    // Handle hash changes whenever loading or isAdmin state changes
     handleHashChange();
-    
-    // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
-    
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, [isAdmin, loading]);
 
   // Auto-redirect to admin portal after login via magic link

@@ -43,8 +43,36 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     }, 10000);
 
     try {
+      // For approval code sessions, use the Edge Function to check admin status
+      // since the user isn't authenticated in Supabase yet
+      if (currentUser.app_metadata?.provider === 'approval_code') {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+        
+        const response = await fetch(
+          `${supabaseUrl}/functions/v1/check-admin-status`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${anonKey}`,
+            },
+            body: JSON.stringify({ email: currentUser.email }),
+            signal: abortController.signal,
+          }
+        );
+
+        if (abortController.signal.aborted) {
+          return;
+        }
+
+        const data = await response.json();
+        setIsAdmin(data.is_admin || false);
+        clearTimeout(timeoutId);
+        return;
+      }
       
-      // Check if user has admin privileges in the database
+      // Check if user has admin privileges in the database (for authenticated users)
       const { data, error } = await supabase
         .from('email_subscribers')
         .select('is_admin')
@@ -66,13 +94,13 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         return;
       }
 
-      setIsAdmin(!!data);
+      const isAdminUser = !!data;
+      setIsAdmin(isAdminUser);
     } catch (error) {
       clearTimeout(timeoutId);
       
       // Handle abort errors gracefully
       if (error instanceof Error && error.name === 'AbortError') {
-        console.warn('Admin status check timed out');
         // Don't change admin status on timeout - keep current state
         return;
       }
@@ -87,10 +115,38 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     // Get initial session
     const initializeAuth = async () => {
       try {
+        // Check if there's an approval session first
+        const approvalEmail = localStorage.getItem('approvalAdminEmail');
+        const approvalValidated = localStorage.getItem('approvalSessionValidated');
+        
+        if (approvalEmail && approvalValidated === 'true') {
+          // Create a temporary user object from the approval email
+          const tempUser = {
+            id: 'approval-' + Date.now(),
+            email: approvalEmail,
+            user_metadata: {},
+            app_metadata: { provider: 'approval_code' },
+            aud: 'authenticated',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            confirmation_sent_at: undefined,
+            recovery_sent_at: undefined,
+          } as any;
+          
+          setUser(tempUser);
+          // Wait for checkAdminStatus to complete before setting loading to false
+          await checkAdminStatus(tempUser);
+          setSessionStart(Date.now());
+          setLastActivity(Date.now());
+          setLoading(false);
+          return;
+        }
+        
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
         
         setUser(session?.user ?? null);
+        // Wait for checkAdminStatus to complete before setting loading to false
         await checkAdminStatus(session?.user ?? null);
 
         // If there's an existing session on initialize, treat it as a signed-in session
@@ -99,9 +155,9 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
           setSessionStart(Date.now());
           setLastActivity(Date.now());
         }
+        setLoading(false);
       } catch (error) {
         console.error('Error getting session:', error);
-      } finally {
         setLoading(false);
       }
     };

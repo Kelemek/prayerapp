@@ -233,11 +233,21 @@ export const usePrayerManager = () => {
       }
       
       // Send email notification to admins
+      // Fetch admin emails for approval code generation
+      const { data: admins } = await supabase
+        .from('email_subscribers')
+        .select('email')
+        .eq('is_admin', true)
+        .eq('is_active', true)
+        .eq('receive_admin_emails', true);
+
       sendAdminNotification({
         type: 'prayer',
         title: prayer.title,
         description: prayer.description,
-        requester: prayer.requester
+        requester: prayer.requester,
+        requestId: data.id,
+        adminEmails: admins?.map(a => a.email) || []
       }).catch(err => console.error('Failed to send email notification:', err));
       
       // Don't add to local state since it's pending approval
@@ -293,7 +303,7 @@ export const usePrayerManager = () => {
       const finalAuthor = isAnonymous ? 'Anonymous' : author;
       
       // Submit update for admin approval
-      const { error } = await supabase
+      const { data: updateData, error } = await supabase
         .from('prayer_updates')
         .insert({
           prayer_id: prayerId,
@@ -303,7 +313,9 @@ export const usePrayerManager = () => {
           is_anonymous: isAnonymous || false,
           mark_as_answered: markAsAnswered || false,
           approval_status: 'pending' // Require admin approval
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         throw error;
@@ -311,11 +323,21 @@ export const usePrayerManager = () => {
 
       // Send email notification to admins
       if (prayer) {
+        // Fetch admin emails for approval code generation
+        const { data: admins } = await supabase
+          .from('email_subscribers')
+          .select('email')
+          .eq('is_admin', true)
+          .eq('is_active', true)
+          .eq('receive_admin_emails', true);
+
         sendAdminNotification({
           type: 'update',
           title: prayer.title,
           author: finalAuthor,
-          content
+          content,
+          requestId: updateData.id,
+          adminEmails: admins?.map(a => a.email) || []
         }).catch(err => console.error('Failed to send email notification:', err));
       }
 
@@ -407,13 +429,23 @@ export const usePrayerManager = () => {
         const author = updateRow?.author || undefined;
         const content = updateRow?.content || undefined;
 
+        // Fetch admin emails for approval code generation
+        const { data: admins } = await supabase
+          .from('email_subscribers')
+          .select('email')
+          .eq('is_admin', true)
+          .eq('is_active', true)
+          .eq('receive_admin_emails', true);
+
         sendAdminNotification({
           type: 'deletion',
           title,
           reason,
           requester: requester,
           author,
-          content
+          content,
+          requestId: data.id,
+          adminEmails: admins?.map(a => a.email) || []
         }).catch(err => console.error('Failed to send email notification for update deletion request:', err));
       } catch (notifyErr) {
         console.warn('Could not fetch update/prayer details for notification:', notifyErr);
