@@ -286,13 +286,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       }
 
       if (existing) {
-        // Update existing subscriber
+        // Update existing subscriber - only update notification preference and name
+        // Do NOT change admin status or active status - only opt out of mass emails
         const { error: updateError } = await supabase
           .from('email_subscribers')
           .update({
             name: change.name,
-            is_active: change.receive_new_prayer_notifications,
-            is_admin: false // Ensure marked as regular user, not admin
+            is_active: change.receive_new_prayer_notifications
+            // Note: is_admin is NOT changed - preserves existing admin status
           })
           .eq('email', change.email);
 
@@ -301,14 +302,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           throw updateError;
         }
       } else {
-        // Insert new subscriber
+        // Insert new subscriber - only if they don't already exist
         const { error: insertError } = await supabase
           .from('email_subscribers')
           .insert({
             email: change.email,
             name: change.name,
             is_active: change.receive_new_prayer_notifications,
-            is_admin: false // Regular user, not admin
+            is_admin: false // New subscribers are not admins by default
           });
 
         if (insertError) {
