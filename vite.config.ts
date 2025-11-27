@@ -28,7 +28,7 @@ export default defineConfig({
         comments: false,
       },
       compress: {
-        drop_console: true,
+        drop_console: false, // Temporarily enabled for Sentry debugging
         drop_debugger: true,
         passes: 3, // More aggressive compression
       },
