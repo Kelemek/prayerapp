@@ -6,12 +6,21 @@ import { SpeedInsights } from '@vercel/speed-insights/react'
 import './index.css'
 import App from './App.tsx'
 import { initializeClarity } from './lib/clarity'
-import { initializeSentry } from './lib/sentry'
 
-// Initialize Sentry for error tracking
-console.log('📍 About to call initializeSentry()');
-initializeSentry();
-console.log('📍 initializeSentry() called');
+// Initialize Sentry - moved to after React renders to avoid blocking
+const initSentryLater = async () => {
+  try {
+    const { initializeSentry } = await import('./lib/sentry');
+    console.log('📍 About to call initializeSentry()');
+    initializeSentry();
+    console.log('📍 initializeSentry() called');
+  } catch (error) {
+    console.error('Failed to load Sentry module:', error);
+  }
+};
+
+// Initialize Sentry asynchronously
+initSentryLater();
 
 // Initialize Microsoft Clarity for session replays
 initializeClarity();

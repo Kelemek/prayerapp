@@ -47,5 +47,3 @@ export const initializeSentry = () => {
     console.error('❌ Failed to initialize Sentry:', error);
   }
 };
-
-export default Sentry;
