@@ -1,3 +1,5 @@
+console.log('🚀 App.tsx is loading...');
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { SpeedInsights } from '@vercel/speed-insights/react'
@@ -7,7 +9,9 @@ import { initializeClarity } from './lib/clarity'
 import { initializeSentry } from './lib/sentry'
 
 // Initialize Sentry for error tracking
+console.log('📍 About to call initializeSentry()');
 initializeSentry();
+console.log('📍 initializeSentry() called');
 
 // Initialize Microsoft Clarity for session replays
 initializeClarity();
