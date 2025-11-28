@@ -238,7 +238,24 @@ const sendToErrorTracking = async (payload: unknown): Promise<void> => {
   // Check if Sentry is available
   if ((window as any).Sentry) {
     try {
-      (window as any).Sentry.captureException(payload);
+      // Create a proper Error object for Sentry
+      const error = new Error((payload as any).message || 'Unknown error');
+      if ((payload as any).stack) {
+        error.stack = (payload as any).stack;
+      }
+      
+      // Capture with context
+      (window as any).Sentry.captureException(error, {
+        tags: (payload as any).context?.tags || {},
+        contexts: {
+          error_details: {
+            severity: (payload as any).severity,
+            environment: (payload as any).environment,
+            ...(payload as any).context?.metadata
+          }
+        },
+        extra: (payload as any).context
+      });
     } catch (e) {
       console.debug('Failed to log to Sentry:', e);
     }
