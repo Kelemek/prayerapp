@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/react';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -9,7 +10,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
     hasKey: !!supabaseAnonKey,
     envMode: import.meta.env.MODE
   });
-  throw new Error('Missing Supabase environment variables. Please check your .env file.');
+  const error = new Error('Missing Supabase environment variables. Please check your .env file.');
+  Sentry.captureException(error);
+  throw error;
 }
 
 console.log('Supabase client initializing...', {
@@ -59,3 +62,33 @@ export const isNetworkError = (error: unknown): boolean => {
 
 // Re-export the error helper from a small testable module so tests can import it
 export { handleSupabaseError } from './supabaseHelpers'
+
+/**
+ * Wrapper to monitor Supabase operations with Sentry (Free Tier Compatible)
+ * Captures errors without using performance transactions
+ */
+export const monitorSupabaseQuery = async <T>(
+  operation: string,
+  queryFn: () => Promise<T>
+): Promise<T> => {
+  try {
+    return await queryFn();
+  } catch (error) {
+    // Capture error in Sentry with context (free tier - no transaction tracking)
+    Sentry.captureException(error, {
+      tags: {
+        operation_type: 'supabase',
+        query: operation,
+      },
+      contexts: {
+        supabase: {
+          operation,
+          is_network_error: isNetworkError(error),
+        },
+      },
+    });
+    
+    throw error;
+  }
+};
+
