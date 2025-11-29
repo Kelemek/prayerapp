@@ -98,21 +98,33 @@ function AppContent() {
   useEffect(() => {
     const fetchBranding = async () => {
       try {
-      const { data, error } = await supabase
-        .from('admin_settings')
-        .select('app_title, app_subtitle, use_logo, light_mode_logo_blob, dark_mode_logo_blob, deletions_allowed, updates_allowed')
-        .eq('id', 1)
-        .maybeSingle();        if (!error && data) {
+        // Load from window cache first (set by index.html script)
+        const windowCache = (window as any).__cachedLogos;
+        if (windowCache?.light) setLightModeLogoUrl(windowCache.light);
+        if (windowCache?.dark) setDarkModeLogoUrl(windowCache.dark);
+        if (windowCache?.useLogo !== undefined) setUseLogo(windowCache.useLogo);
+
+        // Fetch fresh data from DB
+        const { data, error } = await supabase
+          .from('admin_settings')
+          .select('app_title, app_subtitle, use_logo, light_mode_logo_blob, dark_mode_logo_blob, deletions_allowed, updates_allowed')
+          .eq('id', 1)
+          .maybeSingle();
+
+        if (!error && data) {
           if (data.app_title) setAppTitle(data.app_title);
           if (data.app_subtitle) setAppSubtitle(data.app_subtitle);
           if (data.use_logo !== null && data.use_logo !== undefined) {
             setUseLogo(data.use_logo);
+            localStorage.setItem('branding_use_logo', String(data.use_logo));
           }
           if (data.light_mode_logo_blob) {
             setLightModeLogoUrl(data.light_mode_logo_blob);
+            localStorage.setItem('branding_light_logo', data.light_mode_logo_blob);
           }
           if (data.dark_mode_logo_blob) {
             setDarkModeLogoUrl(data.dark_mode_logo_blob);
+            localStorage.setItem('branding_dark_logo', data.dark_mode_logo_blob);
           }
           if (data.deletions_allowed) {
             setDeletionsAllowed(data.deletions_allowed);
@@ -125,7 +137,7 @@ function AppContent() {
         console.error('Failed to fetch branding settings:', error);
       }
     };
-    
+
     fetchBranding();
   }, []);
 

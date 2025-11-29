@@ -13,12 +13,8 @@
     <!-- Inline critical CSS for faster FCP -->
     <style>
       :root { color-scheme: light dark; }
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
-      body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9fafb; color: #1f2937; line-height: 1.5; }
-      html.dark { background-color: #111827; color: #f3f4f6; }
-      #root { display: flex; min-height: 100vh; }
-      .min-h-screen { min-height: 100vh; }
+      body { background-color: #f9fafb; }
+      html.dark body { background-color: #111827; }
     </style>
     <title>Cross Pointe Church - Prayer Requests</title>
     <script>
@@ -27,6 +23,22 @@
         const theme = localStorage.getItem('theme') || 'system';
         if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark');
+        }
+      })();
+      
+      // Load cached logo URLs immediately to prevent flash
+      (function() {
+        const lightLogo = localStorage.getItem('branding_light_logo');
+        const darkLogo = localStorage.getItem('branding_dark_logo');
+        const useLogo = localStorage.getItem('branding_use_logo');
+        
+        if (lightLogo || darkLogo || useLogo) {
+          // Store in window object for React to access instantly
+          window.__cachedLogos = {
+            light: lightLogo,
+            dark: darkLogo,
+            useLogo: useLogo === 'true'
+          };
         }
       })();
     </script>
