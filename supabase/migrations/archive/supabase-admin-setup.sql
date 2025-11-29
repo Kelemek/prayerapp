@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION is_admin(user_email text)
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   -- Check if the user email is in the admin list

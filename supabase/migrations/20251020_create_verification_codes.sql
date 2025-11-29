@@ -51,18 +51,21 @@ CREATE INDEX IF NOT EXISTS idx_verification_codes_action_type ON verification_co
 ALTER TABLE verification_codes ENABLE ROW LEVEL SECURITY;
 
 -- Allow anyone to insert verification codes (when requesting)
+DROP POLICY IF EXISTS "Anyone can insert verification codes" ON verification_codes;
 CREATE POLICY "Anyone can insert verification codes"
   ON verification_codes
   FOR INSERT
   WITH CHECK (true);
 
 -- Allow anyone to select verification codes (when verifying)
+DROP POLICY IF EXISTS "Anyone can read verification codes" ON verification_codes;
 CREATE POLICY "Anyone can read verification codes"
   ON verification_codes
   FOR SELECT
   USING (true);
 
 -- Allow updates for marking codes as used
+DROP POLICY IF EXISTS "Anyone can update verification codes" ON verification_codes;
 CREATE POLICY "Anyone can update verification codes"
   ON verification_codes
   FOR UPDATE
@@ -77,7 +80,7 @@ BEGIN
   WHERE expires_at < NOW() - INTERVAL '24 hours'  -- Keep for 24 hours after expiration for audit
   OR (used_at IS NOT NULL AND used_at < NOW() - INTERVAL '24 hours');  -- Delete used codes after 24 hours
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 -- Add comment to table
 COMMENT ON TABLE verification_codes IS 'Stores temporary email verification codes for user actions';

@@ -52,7 +52,7 @@ BEGIN
   NEW.updated_at = TIMEZONE('utc', NOW());
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 -- Create trigger for updated_at
 CREATE TRIGGER email_subscribers_updated_at

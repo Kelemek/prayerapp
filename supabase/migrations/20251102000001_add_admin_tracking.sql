@@ -11,6 +11,7 @@ CREATE OR REPLACE FUNCTION update_admin_last_sign_in(admin_email TEXT)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   UPDATE email_subscribers

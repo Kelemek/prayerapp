@@ -50,7 +50,7 @@ BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql' SET search_path = public;
 
 CREATE TRIGGER pending_preference_changes_updated_at
   BEFORE UPDATE ON pending_preference_changes

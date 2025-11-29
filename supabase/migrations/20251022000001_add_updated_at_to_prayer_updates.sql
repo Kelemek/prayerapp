@@ -25,7 +25,7 @@ BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql' SET search_path = public;
 
 -- Create the trigger on prayer_updates table
 DROP TRIGGER IF EXISTS update_prayer_updates_updated_at ON prayer_updates;

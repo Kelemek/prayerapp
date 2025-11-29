@@ -1,7 +1,6 @@
--- Create admin_settings table to store email notification settings
+-- Create admin_settings table to store app configuration
 CREATE TABLE IF NOT EXISTS admin_settings (
   id INTEGER PRIMARY KEY DEFAULT 1,
-  notification_emails TEXT[] DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   CONSTRAINT single_row CHECK (id = 1)
@@ -38,7 +37,7 @@ BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 -- Create trigger for updated_at
 CREATE TRIGGER admin_settings_updated_at
@@ -47,6 +46,6 @@ CREATE TRIGGER admin_settings_updated_at
   EXECUTE FUNCTION update_admin_settings_updated_at();
 
 -- Insert default row
-INSERT INTO admin_settings (id, notification_emails)
-VALUES (1, '{}')
+INSERT INTO admin_settings (id)
+VALUES (1)
 ON CONFLICT (id) DO NOTHING;

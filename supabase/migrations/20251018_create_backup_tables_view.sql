@@ -1,7 +1,8 @@
 -- Create a view that lists all user tables (excludes system tables)
 -- This can be used by backup scripts to automatically discover tables
+-- Uses SECURITY INVOKER to respect the permissions of the querying user
 
-CREATE OR REPLACE VIEW backup_tables AS
+CREATE OR REPLACE VIEW backup_tables WITH (security_invoker = true) AS
 SELECT 
   tablename as table_name,
   schemaname as schema_name

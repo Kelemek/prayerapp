@@ -44,7 +44,7 @@ BEGIN
   NEW.updated_at = timezone('utc'::text, now());
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 CREATE TRIGGER update_prayer_types_timestamp
   BEFORE UPDATE ON prayer_types
