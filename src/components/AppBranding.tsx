@@ -266,32 +266,34 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Light Mode Logo
               </label>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        handleLogoUpload(e.target.files[0], 'light');
-                      }
-                    }}
-                    disabled={uploading}
-                    className="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 disabled:opacity-50"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Recommended size: 200-300px width, transparent background
-                  </p>
+              <div>
+                <div className="flex gap-2 items-start">
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          handleLogoUpload(e.target.files[0], 'light');
+                        }
+                      }}
+                      disabled={uploading}
+                      className="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 disabled:opacity-50"
+                    />
+                  </div>
+                  {lightModeLogoUrl && (
+                    <button
+                      onClick={() => handleDeleteLogo('light')}
+                      className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap flex-shrink-0"
+                    >
+                      <Trash2 size={16} />
+                      Remove
+                    </button>
+                  )}
                 </div>
-                {lightModeLogoUrl && (
-                  <button
-                    onClick={() => handleDeleteLogo('light')}
-                    className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    <Trash2 size={16} />
-                    Remove
-                  </button>
-                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Recommended size: 200-300px width, transparent background
+                </p>
               </div>
               {lightModeLogoUrl && (
                 <div className="mt-3 p-3 bg-white dark:bg-white rounded-lg border border-gray-200">
@@ -310,32 +312,34 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Dark Mode Logo
               </label>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        handleLogoUpload(e.target.files[0], 'dark');
-                      }
-                    }}
-                    disabled={uploading}
-                    className="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 disabled:opacity-50"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Recommended size: 200-300px width, transparent background
-                  </p>
+              <div>
+                <div className="flex gap-2 items-start">
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          handleLogoUpload(e.target.files[0], 'dark');
+                        }
+                      }}
+                      disabled={uploading}
+                      className="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 disabled:opacity-50"
+                    />
+                  </div>
+                  {darkModeLogoUrl && (
+                    <button
+                      onClick={() => handleDeleteLogo('dark')}
+                      className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap flex-shrink-0"
+                    >
+                      <Trash2 size={16} />
+                      Remove
+                    </button>
+                  )}
                 </div>
-                {darkModeLogoUrl && (
-                  <button
-                    onClick={() => handleDeleteLogo('dark')}
-                    className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                  >
-                    <Trash2 size={16} />
-                    Remove
-                  </button>
-                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Recommended size: 200-300px width, transparent background
+                </p>
               </div>
               {darkModeLogoUrl && (
                 <div className="mt-3 p-3 rounded-lg border border-gray-700" style={{ backgroundColor: '#1f2937' }}>
