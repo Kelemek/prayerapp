@@ -361,7 +361,6 @@ function AppContent() {
                         : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50'
                       }`}
                     >
-                      <Shield size={16} />
                       <span>Admin</span>
                     </button>
                     <button
@@ -372,14 +371,14 @@ function AppContent() {
                       className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
                       title="Logout"
                     >
-                      <LogOut size={14} />
+                      
                       <span className="text-sm">Logout</span>
                     </button>
                   </>
                 )}
                 <button
                   onClick={() => setShowSettings(true)}
-                  className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                  className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2.5 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
                   title="Settings"
                 >
                   <Settings size={16} />
@@ -387,7 +386,7 @@ function AppContent() {
                 {/* Mobile: Prayer Mode button */}
                 <button
                   onClick={() => window.location.hash = '#presentation'}
-                  className="flex items-center gap-1 bg-[#2F5F54] text-white px-2 py-2 rounded-lg hover:bg-[#1a3a2e] focus:outline-none focus:ring-2 focus:ring-[#2F5F54] transition-colors text-sm"
+                  className="flex items-center gap-1 bg-[#2F5F54] text-white px-3 py-2 rounded-lg hover:bg-[#1a3a2e] focus:outline-none focus:ring-2 focus:ring-[#2F5F54] transition-colors text-sm"
                   title="Prayer Mode"
                 >
                   <span>Pray</span>
@@ -396,20 +395,20 @@ function AppContent() {
                   onClick={() => setShowForm(true)}
                   className="flex items-center gap-1 bg-blue-600 dark:bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors text-sm"
                 >
-                  <span>Add Request</span>
+                  <span>Request</span>
                 </button>
               </div>
 
               {/* Tablet/Desktop: two rows */}
               <div className="hidden sm:flex flex-col gap-2">
                 {/* First row: settings, print, presentation, new prayer */}
-                <div className="flex items-center gap-3 justify-end">
+                <div className="flex items-center gap-2 justify-end">
                   <button
                     onClick={() => setShowSettings(true)}
-                    className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                    className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-3 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
                     title="Settings"
                   >
-                    <Settings size={18} />
+                    <Settings size={16} />
                   </button>
                   {/* Desktop: Prayer Mode button */}
                   <button
@@ -480,7 +479,7 @@ function AppContent() {
             onClick={() => { setShowPrompts(false); setFilters({...filters, status: 'current'}); }}
             className={`rounded-lg shadow-md p-3 sm:p-4 text-center border-[2px] transition-all duration-200 min-w-0 ${
               !showPrompts && filters.status === 'current' 
-                ? '!border-[#0047AB] dark:!border-[#0047AB] bg-blue-100 dark:bg-blue-950 ring-2 ring-[#0047AB] dark:ring-[#0047AB] ring-offset-0' 
+                ? '!border-[#0047AB] dark:!border-[#0047AB] bg-blue-100 dark:bg-blue-950 ring-3 ring-[#0047AB] dark:ring-[#0047AB] ring-offset-0' 
                 : 'bg-white dark:bg-gray-800 !border-gray-200 dark:!border-gray-700 hover:!border-[#0047AB] dark:hover:!border-[#0047AB] hover:shadow-lg'
             }`}
           >
@@ -493,7 +492,7 @@ function AppContent() {
             onClick={() => { setShowPrompts(false); setFilters({...filters, status: 'answered'}); }}
             className={`rounded-lg shadow-md p-3 sm:p-4 text-center border-[2px] transition-all duration-200 min-w-0 ${
               !showPrompts && filters.status === 'answered' 
-                ? '!border-[#39704D] dark:!border-[#39704D] bg-green-100 dark:bg-green-950 ring-2 ring-[#39704D] dark:ring-[#39704D] ring-offset-0' 
+                ? '!border-[#39704D] dark:!border-[#39704D] bg-green-100 dark:bg-green-950 ring-3 ring-[#39704D] dark:ring-[#39704D] ring-offset-0' 
                 : 'bg-white dark:bg-gray-800 !border-gray-200 dark:!border-gray-700 hover:!border-[#39704D] dark:hover:!border-[#39704D] hover:shadow-lg'
             }`}
           >
@@ -506,7 +505,7 @@ function AppContent() {
             onClick={() => { setShowPrompts(false); setFilters({}); }}
             className={`rounded-lg shadow-md p-3 sm:p-4 text-center border-[2px] transition-all duration-200 min-w-0 ${
               !showPrompts && !filters.status 
-                ? '!border-[#C9A961] dark:!border-[#C9A961] bg-amber-100 dark:bg-amber-900/40 ring-2 ring-[#C9A961] dark:ring-[#C9A961] ring-offset-0' 
+                ? '!border-[#C9A961] dark:!border-[#C9A961] bg-amber-100 dark:bg-amber-900/40 ring-3 ring-[#C9A961] dark:ring-[#C9A961] ring-offset-0' 
                 : 'bg-white dark:bg-gray-800 !border-gray-200 dark:!border-gray-700 hover:!border-[#C9A961] dark:hover:!border-[#C9A961] hover:shadow-lg'
             }`}
           >
@@ -521,7 +520,7 @@ function AppContent() {
             }}
             className={`rounded-lg shadow-md p-3 sm:p-4 text-center border-[2px] transition-all duration-200 min-w-0 ${
               showPrompts 
-                ? '!border-[#988F83] dark:!border-[#988F83] bg-stone-100 dark:bg-stone-900/40 ring-2 ring-[#988F83] dark:ring-[#988F83] ring-offset-0' 
+                ? '!border-[#988F83] dark:!border-[#988F83] bg-stone-100 dark:bg-stone-900/40 ring-3 ring-[#988F83] dark:ring-[#988F83] ring-offset-0' 
                 : 'bg-white dark:bg-gray-800 !border-gray-200 dark:!border-gray-700 hover:!border-[#988F83] dark:hover:!border-[#988F83] hover:shadow-lg'
             }`}
           >

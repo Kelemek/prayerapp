@@ -19,7 +19,7 @@ export const PrayerFiltersComponent: React.FC<PrayerFiltersProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-4 mb-6 transition-colors">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 mb-6 transition-colors">
       
       <div className="grid grid-cols-1 gap-4">
         {/* Search */}
@@ -31,7 +31,7 @@ export const PrayerFiltersComponent: React.FC<PrayerFiltersProps> = ({
               placeholder="Search prayers..."
               value={filters.searchTerm || ''}
               onChange={(e) => updateFilter('searchTerm', e.target.value || undefined)}
-              className="pl-10 pr-3 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-10 pr-3 py-3 w-full border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -41,7 +41,7 @@ export const PrayerFiltersComponent: React.FC<PrayerFiltersProps> = ({
 
       {/* Clear Filters */}
       {filters.searchTerm && (
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+        <div className="pt-2 pb-2 pl-3 border-t border-gray-200 dark:border-gray-600">
           <button
             onClick={() => onFiltersChange({})}
             className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
