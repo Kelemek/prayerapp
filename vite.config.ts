@@ -16,11 +16,14 @@ export default defineConfig({
           if (id.includes('node_modules/@vercel')) return 'vercel-vendor';
           // Component chunks for code splitting
           if (id.includes('PrayerPresentation') || id.includes('MobilePresentation')) return 'presentation';
-          if (id.includes('AdminPortal') || id.includes('AdminLogin')) return 'admin';
+          if (id.includes('AdminPortal')) return 'admin-portal';
+          if (id.includes('AdminLogin')) return 'admin-login';
+          if (id.includes('AdminUserManagement') || id.includes('EmailSettings') || id.includes('EmailSubscribers') || id.includes('EmailTemplatesManager')) return 'admin-email';
+          if (id.includes('PrayerTypesManager') || id.includes('PromptManager') || id.includes('BackupStatus')) return 'admin-management';
         }
       }
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 500,
     // Enable minification and compression
     minify: 'terser',
     terserOptions: {

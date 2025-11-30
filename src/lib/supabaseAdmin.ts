@@ -4,18 +4,7 @@ import type { Database } from './database.types';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Service role environment variables missing:', {
-    hasUrl: !!supabaseUrl,
-    hasKey: !!supabaseServiceKey,
-    envMode: import.meta.env.MODE
-  });
-  throw new Error('Missing service role environment variables. Please add VITE_SUPABASE_SERVICE_KEY to .env');
-}
-
-if (supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE') {
-  throw new Error('Service role key not configured. Add actual VITE_SUPABASE_SERVICE_KEY to .env');
-}
+let supabaseAdminInstance: ReturnType<typeof createClient<Database>> | null = null;
 
 /**
  * Service role client - bypasses RLS for admin operations
@@ -26,4 +15,27 @@ if (supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE') {
  * In a production environment, these operations should go through backend Edge Functions.
  * This is only safe here because this is a church app with no untrusted external users.
  */
-export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey);
+export const supabaseAdmin = new Proxy(
+  {},
+  {
+    get: (target, prop) => {
+      if (!supabaseAdminInstance) {
+        if (!supabaseUrl || !supabaseServiceKey) {
+          console.error('Service role environment variables missing:', {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!supabaseServiceKey,
+            envMode: import.meta.env.MODE
+          });
+          throw new Error('Missing service role environment variables. Please add VITE_SUPABASE_SERVICE_KEY to .env');
+        }
+
+        if (supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE') {
+          throw new Error('Service role key not configured. Add actual VITE_SUPABASE_SERVICE_KEY to .env');
+        }
+
+        supabaseAdminInstance = createClient<Database>(supabaseUrl, supabaseServiceKey);
+      }
+      return (supabaseAdminInstance as any)[prop];
+    }
+  }
+) as ReturnType<typeof createClient<Database>>;

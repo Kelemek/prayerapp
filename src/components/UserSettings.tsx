@@ -472,11 +472,11 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
               <Mail className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" size={18} />
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1 text-sm sm:text-base">
-                  Email Notification Preferences
+                  Prayer Notification Settings
                 </h4>
                 <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                  Manage your email subscription to receive notifications when new prayer requests are added. 
-                  Enter your email below to opt-in or opt-out of notifications.
+                  Sign up for prayer notifications or change your existing preference. 
+                  Enter your email below to manage your subscription.
                 </p>
               </div>
             </div>
@@ -555,7 +555,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
                       Receive new prayer notifications
                     </div>
                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      Get email notifications when new prayers are submitted to the prayer list
+                      Sign up for prayer notifications or change your preference when new prayers are submitted to the prayer list
                     </p>
                   </div>
                 </label>

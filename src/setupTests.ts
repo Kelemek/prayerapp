@@ -22,6 +22,12 @@ afterEach(() => {
 // Mock environment variables
 vi.stubEnv('VITE_SUPABASE_URL', 'https://test.supabase.co')
 vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'test-anon-key')
+vi.stubEnv('VITE_SUPABASE_SERVICE_KEY', 'test-service-role-key')
+
+// Mock supabaseAdmin with the same mock as supabase
+vi.mock('./lib/supabaseAdmin', () => ({
+  supabaseAdmin: defaultSupabase
+}))
 
 // Mock window.matchMedia for dark mode tests
 Object.defineProperty(window, 'matchMedia', {

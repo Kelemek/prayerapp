@@ -2,6 +2,23 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { act } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { afterEach } from 'vitest';
+
+// Mock supabaseAdmin before importing AdminPortal
+vi.mock('../../lib/supabaseAdmin', () => ({
+  supabaseAdmin: {
+    auth: {
+      admin: {
+        deleteUser: vi.fn().mockResolvedValue({ data: {}, error: null }),
+      }
+    },
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      update: vi.fn().mockResolvedValue({ data: null, error: null }),
+    }),
+  }
+}));
+
 import { AdminPortal } from '../AdminPortal';
 
 // Mock Planning Center to keep tests quiet when child components look up people
