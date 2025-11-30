@@ -12,7 +12,6 @@ export default defineConfig({
           // Vendor chunks
           if (id.includes('node_modules/react')) return 'react-vendor';
           if (id.includes('node_modules/@supabase')) return 'supabase-vendor';
-          if (id.includes('node_modules/lucide-react')) return 'ui-vendor';
           if (id.includes('node_modules/@vercel')) return 'vercel-vendor';
           // Component chunks for code splitting
           if (id.includes('PrayerPresentation') || id.includes('MobilePresentation')) return 'presentation';
