@@ -13,12 +13,9 @@ export default defineConfig({
           if (id.includes('node_modules/react')) return 'react-vendor';
           if (id.includes('node_modules/@supabase')) return 'supabase-vendor';
           if (id.includes('node_modules/@vercel')) return 'vercel-vendor';
-          // Component chunks for code splitting
+          // Component chunks for code splitting - keep admin features together
           if (id.includes('PrayerPresentation') || id.includes('MobilePresentation')) return 'presentation';
-          if (id.includes('AdminPortal')) return 'admin-portal';
-          if (id.includes('AdminLogin')) return 'admin-login';
-          if (id.includes('AdminUserManagement') || id.includes('EmailSettings') || id.includes('EmailSubscribers') || id.includes('EmailTemplatesManager')) return 'admin-email';
-          if (id.includes('PrayerTypesManager') || id.includes('PromptManager') || id.includes('BackupStatus')) return 'admin-management';
+          if (id.includes('Admin')) return 'admin';
         }
       }
     },
