@@ -79,7 +79,7 @@ describe('UserSettings', () => {
       render(<UserSettings isOpen={true} onClose={mockOnClose} />);
       
       expect(screen.getByText('Settings')).toBeDefined();
-      expect(screen.getByText('Email Notification Preferences')).toBeDefined();
+      expect(screen.getByText('Prayer Notification Settings')).toBeDefined();
       expect(screen.getByPlaceholderText('your.email@example.com')).toBeDefined();
     });
 
