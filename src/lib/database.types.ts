@@ -331,24 +331,30 @@ export interface Database {
           name: string
           email: string
           is_active: boolean
+          is_admin: boolean
           created_at: string
           updated_at: string
+          last_sign_in_at?: string | null
         }
         Insert: {
           id?: string
           name: string
           email: string
           is_active?: boolean
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
+          last_sign_in_at?: string | null
         }
         Update: {
           id?: string
           name?: string
           email?: string
           is_active?: boolean
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
+          last_sign_in_at?: string | null
         }
       }
       admin_settings: {

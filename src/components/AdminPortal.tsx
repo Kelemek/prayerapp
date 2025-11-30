@@ -18,6 +18,7 @@ import { useAdminAuth } from '../hooks/useAdminAuthHook';
 import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
 import { supabase } from '../lib/supabase';
 import { sendApprovedPreferenceChangeNotification, sendDeniedPreferenceChangeNotification } from '../lib/emailNotifications';
+import { supabaseAdmin } from '../lib/supabaseAdmin';
 import type { AllowanceLevel } from '../types/prayer';
 
 type AdminTab = 'prayers' | 'updates' | 'deletions' | 'preferences' | 'settings';
@@ -325,8 +326,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         throw fetchError;
       }
 
+      // Use service role client to bypass RLS for admin operations
       // Check if email_subscribers record already exists
-      const { data: existing, error: existingError } = await supabase
+      const { data: existing, error: existingError } = await supabaseAdmin
         .from('email_subscribers')
         .select('*')
         .eq('email', change.email)
@@ -340,7 +342,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
       if (existing) {
         // Update existing subscriber - only update notification preference and name
         // Do NOT change admin status or active status - only opt out of mass emails
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabaseAdmin as any)
           .from('email_subscribers')
           .update({
             name: change.name,
@@ -355,7 +357,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         }
       } else {
         // Insert new subscriber - only if they don't already exist
-        const { error: insertError } = await supabase
+        const { error: insertError } = await (supabaseAdmin as any)
           .from('email_subscribers')
           .insert({
             email: change.email,
@@ -370,8 +372,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         }
       }
 
-      // Mark as approved
-      const { error: approveError } = await supabase
+      // Mark as approved using service role client
+      const { error: approveError } = await (supabaseAdmin as any)
         .from('pending_preference_changes')
         .update({
           approval_status: 'approved',
@@ -381,15 +383,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
       if (approveError) throw approveError;
 
-      // Send approval email to user
-      await sendApprovedPreferenceChangeNotification({
-        name: change.name,
-        email: change.email,
-        receiveNotifications: change.receive_new_prayer_notifications
-      });
-      
-      // Remove from pending list
+      // Remove from pending list immediately after marking as approved
       setPendingPreferenceChanges(prev => prev.filter(p => p.id !== id));
+
+      // Send approval email to user (but don't block on it)
+      try {
+        await sendApprovedPreferenceChangeNotification({
+          name: change.name,
+          email: change.email,
+          receiveNotifications: change.receive_new_prayer_notifications
+        });
+      } catch (emailError) {
+        // Log email error but don't fail the approval
+        console.warn('⚠️ Preference change approved but email notification failed:', emailError);
+      }
     } catch (error) {
       console.error('❌ Error approving preference change:', error);
       alert('Failed to approve preference change: ' + (error as Error).message);
