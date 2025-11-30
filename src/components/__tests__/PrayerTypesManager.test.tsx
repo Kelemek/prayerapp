@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { PrayerTypesManager } from '../PrayerTypesManager';
 import { supabase } from '../../lib/supabase';
 
 // Mock Supabase
@@ -25,13 +24,22 @@ vi.mock('../../lib/supabase', () => ({
 describe('PrayerTypesManager Component', () => {
   const mockOnSuccess = vi.fn();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     global.confirm = vi.fn(() => true);
+    // Reset module cache to clear cachedPrayerTypes between tests
+    vi.resetModules();
   });
+
+  // Helper to get fresh component import after module reset
+  const getComponent = async () => {
+    const { PrayerTypesManager } = await import('../PrayerTypesManager');
+    return PrayerTypesManager;
+  };
 
   describe('Rendering', () => {
     it('renders the component with header', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
@@ -51,6 +59,7 @@ describe('PrayerTypesManager Component', () => {
     });
 
     it('displays the description text', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
@@ -70,6 +79,7 @@ describe('PrayerTypesManager Component', () => {
     });
 
     it('renders Add Type button', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
@@ -89,6 +99,7 @@ describe('PrayerTypesManager Component', () => {
     });
 
     it('loads and displays prayer types on mount', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockTypes = [
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
         { id: '2', name: 'Family', display_order: 1, is_active: true, created_at: '2025-01-02T00:00:00Z' },
@@ -114,6 +125,7 @@ describe('PrayerTypesManager Component', () => {
     });
 
     it('shows empty state when no types exist', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockOrder = vi.fn().mockResolvedValue({
         data: [],
         error: null,
@@ -135,6 +147,7 @@ describe('PrayerTypesManager Component', () => {
 
   describe('Add Type Functionality', () => {
     it('shows add form when Add Type button is clicked', async () => {
+      const PrayerTypesManager = await getComponent();
       const user = userEvent.setup();
       const mockOrder = vi.fn().mockResolvedValue({
         data: [],
@@ -161,6 +174,7 @@ describe('PrayerTypesManager Component', () => {
     });
 
     it('successfully creates a new prayer type', async () => {
+      const PrayerTypesManager = await getComponent();
       const user = userEvent.setup();
       const mockOrder = vi.fn().mockResolvedValue({
         data: [],
@@ -210,6 +224,7 @@ describe('PrayerTypesManager Component', () => {
 
   describe('Edit Type Functionality', () => {
     it('shows edit button for each type', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockTypes = [
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
@@ -238,6 +253,7 @@ describe('PrayerTypesManager Component', () => {
     });
 
     it('populates form with existing data when editing', async () => {
+      const PrayerTypesManager = await getComponent();
       const user = userEvent.setup();
       const mockTypes = [
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
@@ -278,6 +294,7 @@ describe('PrayerTypesManager Component', () => {
 
   describe('Delete Type Functionality', () => {
     it('shows delete button for each type', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockTypes = [
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
@@ -306,6 +323,7 @@ describe('PrayerTypesManager Component', () => {
     });
 
     it('requires confirmation before deleting', async () => {
+      const PrayerTypesManager = await getComponent();
       const user = userEvent.setup();
       const mockTypes = [
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
@@ -350,6 +368,7 @@ describe('PrayerTypesManager Component', () => {
 
   describe('Active/Inactive Toggle', () => {
     it('displays active status for active types', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockTypes = [
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
@@ -376,6 +395,7 @@ describe('PrayerTypesManager Component', () => {
     });
 
     it('displays inactive status for inactive types', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockTypes = [
         { id: '1', name: 'Personal', display_order: 0, is_active: false, created_at: '2025-01-01T00:00:00Z' },
       ];
@@ -401,6 +421,7 @@ describe('PrayerTypesManager Component', () => {
 
   describe('Display Order', () => {
     it('displays types in order based on display_order field', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockTypes = [
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
         { id: '2', name: 'Family', display_order: 1, is_active: true, created_at: '2025-01-02T00:00:00Z' },
@@ -433,6 +454,7 @@ describe('PrayerTypesManager Component', () => {
 
   describe('Error Handling', () => {
     it('displays error when loading types fails', async () => {
+      const PrayerTypesManager = await getComponent();
       const mockOrder = vi.fn().mockResolvedValue({
         data: null,
         error: { message: 'Database error' },
@@ -452,6 +474,7 @@ describe('PrayerTypesManager Component', () => {
     });
 
     it('displays error when creating type fails', async () => {
+      const PrayerTypesManager = await getComponent();
       const user = userEvent.setup();
       const mockOrder = vi.fn().mockResolvedValue({
         data: [],
@@ -496,6 +519,7 @@ describe('PrayerTypesManager Component', () => {
 
   describe('Success Callback', () => {
     it('calls onSuccess callback after successful operation', async () => {
+      const PrayerTypesManager = await getComponent();
       const user = userEvent.setup();
       const mockOrder = vi.fn().mockResolvedValue({
         data: [],

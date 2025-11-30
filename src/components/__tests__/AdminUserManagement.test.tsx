@@ -2,7 +2,6 @@ import React from 'react';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AdminUserManagement } from '../AdminUserManagement';
 
 // Create a mock chain for supabase queries used in the component
 const createMockChain = (resolveData: any = [], resolveError: any = null) => {
@@ -34,11 +33,20 @@ vi.mock('../../lib/supabase', () => ({
 import { supabase } from '../../lib/supabase';
 
 describe('AdminUserManagement', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    // Reset module cache to clear cachedAdmins between tests
+    vi.resetModules();
   });
 
+  // Helper to get fresh component import after module reset
+  const getComponent = async () => {
+    const { AdminUserManagement } = await import('../AdminUserManagement');
+    return AdminUserManagement;
+  };
+
   it('loads and displays admin users', async () => {
+    const AdminUserManagement = await getComponent();
     const admins = [
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null }
     ];
@@ -57,6 +65,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('shows add admin form and validates input', async () => {
+    const AdminUserManagement = await getComponent();
     const mockChain = createMockChain([]);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -84,6 +93,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('handles loading errors gracefully', async () => {
+    const AdminUserManagement = await getComponent();
     const mockChain = createMockChain(null, { message: 'Database error' });
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -95,6 +105,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('shows empty state when no admins exist', async () => {
+    const AdminUserManagement = await getComponent();
     const mockChain = createMockChain([]);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -106,6 +117,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('successfully adds a new admin', async () => {
+    const AdminUserManagement = await getComponent();
     const mockChain = createMockChain([]);
     const upsertChain = {
       select: vi.fn().mockReturnThis(),
@@ -137,6 +149,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('prevents adding admin with existing email', async () => {
+    const AdminUserManagement = await getComponent();
     const existingAdmin = { email: 'existing@example.com', name: 'Existing', created_at: new Date().toISOString() };
     const mockChain = createMockChain([]);
     const upsertChain = {
@@ -169,6 +182,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('handles add admin database error', async () => {
+    const AdminUserManagement = await getComponent();
     const mockChain = createMockChain([]);
     const upsertChain = {
       select: vi.fn().mockReturnThis(),
@@ -200,6 +214,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('validates required fields in add admin form', async () => {
+    const AdminUserManagement = await getComponent();
     const mockChain = createMockChain([]);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -219,6 +234,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('cancels add admin form', async () => {
+    const AdminUserManagement = await getComponent();
     const mockChain = createMockChain([]);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -240,6 +256,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('shows delete confirmation and cancels', async () => {
+    const AdminUserManagement = await getComponent();
     const admins = [
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: true },
       { email: 'bob@example.com', name: 'Bob', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
@@ -267,6 +284,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('successfully deletes an admin', async () => {
+    const AdminUserManagement = await getComponent();
     const admins = [
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: true },
       { email: 'bob@example.com', name: 'Bob', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
@@ -305,6 +323,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('prevents deleting the last admin', async () => {
+    const AdminUserManagement = await getComponent();
     const admins = [
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: true }
     ];
@@ -322,6 +341,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('handles delete admin error', async () => {
+    const AdminUserManagement = await getComponent();
     const admins = [
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: true },
       { email: 'bob@example.com', name: 'Bob', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
@@ -360,6 +380,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('toggles receive admin emails setting', async () => {
+    const AdminUserManagement = await getComponent();
     const admins = [
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
     ];
@@ -390,6 +411,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('handles toggle email preference error', async () => {
+    const AdminUserManagement = await getComponent();
     const admins = [
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
     ];
@@ -424,6 +446,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('displays admin summary correctly', async () => {
+    const AdminUserManagement = await getComponent();
     const admins = [
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: true },
       { email: 'bob@example.com', name: 'Bob', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
@@ -445,6 +468,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('dismisses success message', async () => {
+    const AdminUserManagement = await getComponent();
     const mockChain = createMockChain([]);
     const upsertChain = {
       select: vi.fn().mockReturnThis(),
@@ -480,6 +504,7 @@ describe('AdminUserManagement', () => {
   });
 
   it('dismisses error message', async () => {
+    const AdminUserManagement = await getComponent();
     const mockChain = createMockChain(null, { message: 'Database error' });
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 

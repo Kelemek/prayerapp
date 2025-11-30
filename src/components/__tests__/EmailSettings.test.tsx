@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { EmailSettings } from '../EmailSettings';
 import { supabase } from '../../lib/supabase';
 
 // Mock Supabase
@@ -24,11 +23,20 @@ vi.mock('../../lib/supabase', () => ({
 }));
 
 describe('EmailSettings Component', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    // Reset module cache to clear cachedEmailSettings between tests
+    vi.resetModules();
   });
 
-  it('renders loading state initially', () => {
+  // Helper to get fresh component import after module reset
+  const getComponent = async () => {
+    const { EmailSettings } = await import('../EmailSettings');
+    return EmailSettings;
+  };
+
+  it('renders loading state initially', async () => {
+    const EmailSettings = await getComponent();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
         maybeSingle: vi.fn().mockResolvedValue({
@@ -48,6 +56,7 @@ describe('EmailSettings Component', () => {
   });
 
   it('loads and displays settings correctly', async () => {
+    const EmailSettings = await getComponent();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
         maybeSingle: vi.fn().mockResolvedValue({
@@ -87,6 +96,7 @@ describe('EmailSettings Component', () => {
   });
 
   it('saves verification settings successfully', async () => {
+    const EmailSettings = await getComponent();
     const user = userEvent.setup();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
@@ -144,6 +154,7 @@ describe('EmailSettings Component', () => {
   });
 
   it('saves reminder settings successfully', async () => {
+    const EmailSettings = await getComponent();
     const user = userEvent.setup();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
@@ -201,6 +212,7 @@ describe('EmailSettings Component', () => {
   });
 
   it('shows verification code settings when verification is enabled', async () => {
+    const EmailSettings = await getComponent();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
         maybeSingle: vi.fn().mockResolvedValue({
@@ -227,6 +239,7 @@ describe('EmailSettings Component', () => {
   });
 
   it('hides verification code settings when verification is disabled', async () => {
+    const EmailSettings = await getComponent();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
         maybeSingle: vi.fn().mockResolvedValue({
@@ -251,6 +264,7 @@ describe('EmailSettings Component', () => {
   });
 
   it('shows auto-archive settings when auto-archive is enabled', async () => {
+    const EmailSettings = await getComponent();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
         maybeSingle: vi.fn().mockResolvedValue({
@@ -276,6 +290,7 @@ describe('EmailSettings Component', () => {
   });
 
   it('hides auto-archive settings when auto-archive is disabled', async () => {
+    const EmailSettings = await getComponent();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
         maybeSingle: vi.fn().mockResolvedValue({
@@ -300,6 +315,7 @@ describe('EmailSettings Component', () => {
   });
 
   it('shows reminder settings when reminders are enabled', async () => {
+    const EmailSettings = await getComponent();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
         maybeSingle: vi.fn().mockResolvedValue({
@@ -324,6 +340,7 @@ describe('EmailSettings Component', () => {
   });
 
   it('hides reminder settings when reminders are disabled', async () => {
+    const EmailSettings = await getComponent();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
         maybeSingle: vi.fn().mockResolvedValue({
@@ -347,6 +364,7 @@ describe('EmailSettings Component', () => {
   });
 
   it('handles loading error gracefully', async () => {
+    const EmailSettings = await getComponent();
     const mockSelect = vi.fn(() => ({
       eq: vi.fn(() => ({
         maybeSingle: vi.fn().mockResolvedValue({

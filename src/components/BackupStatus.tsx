@@ -16,6 +16,11 @@ interface BackupLog {
 // Cache backup logs outside component to persist across re-mounts
 let cachedBackupLogs: { latest: BackupLog | null; all: BackupLog[] } | null = null;
 
+// Reset cache - exported for testing
+export function resetBackupCache() {
+  cachedBackupLogs = null;
+}
+
 export default function BackupStatus() {
   const [latestBackup, setLatestBackup] = useState<BackupLog | null>(cachedBackupLogs?.latest ?? null);
   const [allBackups, setAllBackups] = useState<BackupLog[]>(cachedBackupLogs?.all ?? []);

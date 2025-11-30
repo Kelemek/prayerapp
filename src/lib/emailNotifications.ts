@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { sendEmail, getTemplate, applyTemplateVariables } from './emailService';
+import { sendEmail, sendEmailToAllSubscribers, getTemplate, applyTemplateVariables } from './emailService';
 import { generateApprovalLink } from './approvalLinks';
 
 /**
@@ -113,7 +113,6 @@ async function sendAdminNotificationToEmail(payload: EmailNotificationPayload, a
 
     // Load appropriate template based on payload type
     try {
-      const { getTemplate, applyTemplateVariables } = await import('./emailService');
       let templateKey: string;
       let variables: Record<string, string>;
       
@@ -398,8 +397,6 @@ export async function sendApprovedPrayerNotification(payload: ApprovedPrayerPayl
  */
 async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void> {
   try {
-    const { sendEmailToAllSubscribers, getTemplate, applyTemplateVariables } = await import('./emailService');
-    
     // Try to fetch the approved_prayer template
     let subject: string;
     let htmlContent: string;
@@ -449,7 +446,6 @@ async function sendBulkPrayerEmail(payload: ApprovedPrayerPayload): Promise<void
 export async function sendApprovedUpdateNotification(payload: ApprovedUpdatePayload): Promise<void> {
   try {
     const isAnswered = payload.markedAsAnswered || false;
-    const { sendEmailToAllSubscribers, getTemplate, applyTemplateVariables } = await import('./emailService');
     
     // Fetch the appropriate template
     const templateKey = isAnswered ? 'prayer_answered' : 'approved_update';
@@ -973,7 +969,6 @@ async function sendPreferenceChangeNotificationToAdmin(payload: PreferenceChange
 
     // Load template based on preference change
     try {
-      const { getTemplate, applyTemplateVariables } = await import('./emailService');
       const templateKey = 'admin_notification_preference_change';
       const variables: Record<string, string> = {
         name: payload.name,

@@ -2,8 +2,16 @@ import '@testing-library/jest-dom'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import BackupStatus from '../BackupStatus'
+import type BackupStatusType from '../BackupStatus'
 import { supabase } from '../../lib/supabase'
+
+// Helper to get fresh component after module reset
+const getComponent = async (): Promise<typeof BackupStatusType> => {
+  const mod = await import('../BackupStatus')
+  // Reset the cache when getting the component
+  mod.resetBackupCache()
+  return mod.default
+}
 
 // Mock Supabase using the shared supabase mock so chainable methods are available
 vi.mock('../../lib/supabase', async () => {
@@ -94,8 +102,9 @@ let shouldDelayInsert = false
 let shouldDelayRestore = false
 
 describe('BackupStatus Component', () => {
-  beforeEach(() => {
-    // Don't clear mocks to preserve the supabase mock setup
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    vi.resetModules()
   })
 
   afterEach(async () => {
@@ -104,7 +113,8 @@ describe('BackupStatus Component', () => {
   })
 
   it('renders backup status section', async () => {
-    render(<BackupStatus />)
+    const BackupStatus = await getComponent();
+      render(<BackupStatus />)
 
     await waitFor(() => {
       expect(screen.getByText(/Database Backup Status/i)).toBeDefined()
@@ -112,7 +122,8 @@ describe('BackupStatus Component', () => {
   })
 
   it('displays recent backups list', async () => {
-    render(<BackupStatus />)
+    const BackupStatus = await getComponent();
+      render(<BackupStatus />)
 
     await waitFor(() => {
       expect(screen.getByText(/Recent Backups/i)).toBeDefined()
@@ -122,7 +133,8 @@ describe('BackupStatus Component', () => {
   })
 
   it('shows manual backup button', async () => {
-    render(<BackupStatus />)
+    const BackupStatus = await getComponent();
+      render(<BackupStatus />)
 
     await waitFor(() => {
       expect(screen.getByText(/Manual Backup/i)).toBeDefined()
@@ -130,7 +142,8 @@ describe('BackupStatus Component', () => {
   })
 
   it('shows restore button', async () => {
-    render(<BackupStatus />)
+    const BackupStatus = await getComponent();
+      render(<BackupStatus />)
 
     await waitFor(() => {
       expect(screen.getByText(/Restore/i)).toBeDefined()
@@ -138,7 +151,8 @@ describe('BackupStatus Component', () => {
   })
 
   it('displays backup status with success indicator', async () => {
-    render(<BackupStatus />)
+    const BackupStatus = await getComponent();
+      render(<BackupStatus />)
 
     await waitFor(() => {
       // Should show success icon (CheckCircle) for successful backups
@@ -149,7 +163,8 @@ describe('BackupStatus Component', () => {
   })
 
   it('shows backup duration', async () => {
-    render(<BackupStatus />)
+    const BackupStatus = await getComponent();
+      render(<BackupStatus />)
 
     await waitFor(() => {
       expect(screen.getByText(/45s/)).toBeDefined()
@@ -158,7 +173,8 @@ describe('BackupStatus Component', () => {
 
   it('displays table backup counts', async () => {
     const user = userEvent.setup()
-    render(<BackupStatus />)
+    const BackupStatus = await getComponent();
+      render(<BackupStatus />)
 
     await waitFor(() => {
       // Click on the first backup to expand details
@@ -193,6 +209,7 @@ describe('BackupStatus Component', () => {
 
     it('requires confirmation before starting backup', async () => {
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -213,6 +230,7 @@ describe('BackupStatus Component', () => {
 
     it('opens restore dialog when restore button is clicked', async () => {
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -229,6 +247,7 @@ describe('BackupStatus Component', () => {
 
     it('shows warning message in restore dialog', async () => {
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -247,6 +266,7 @@ describe('BackupStatus Component', () => {
   describe('UI Interactions', () => {
     it('expands and collapses backup details', async () => {
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -275,6 +295,7 @@ describe('BackupStatus Component', () => {
 
     it('cancels restore dialog', async () => {
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -299,6 +320,7 @@ describe('BackupStatus Component', () => {
 
   describe('Loading and Error States', () => {
     it('shows loading spinner initially', async () => {
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       // Should show loading spinner while fetching data
@@ -320,6 +342,7 @@ describe('BackupStatus Component', () => {
         return {} as any
       })
 
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -346,6 +369,7 @@ describe('BackupStatus Component', () => {
       // Spy on console.error to avoid test output pollution
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -381,6 +405,7 @@ describe('BackupStatus Component', () => {
       })
 
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -428,6 +453,7 @@ describe('BackupStatus Component', () => {
         return {} as any
       })
 
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -461,6 +487,7 @@ describe('BackupStatus Component', () => {
       })
 
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -539,6 +566,7 @@ describe('BackupStatus Component', () => {
       })
 
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -587,6 +615,7 @@ describe('BackupStatus Component', () => {
       })
 
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -604,47 +633,14 @@ describe('BackupStatus Component', () => {
   })
 
   describe('Backup Status Display', () => {
-    beforeEach(() => {
-      // Ensure backup data is available for tests that need buttons to be visible
-      const mockSupabase = vi.mocked(supabase)
-      const originalFrom = mockSupabase.from
-      mockSupabase.from.mockImplementation((table: string) => {
-        if (table === 'backup_logs') {
-          return {
-            select: () => ({
-              order: () => ({
-                limit: () => Promise.resolve({
-                  data: [
-                    {
-                      id: '1',
-                      backup_date: '2025-10-18T08:00:00Z',
-                      status: 'success',
-                      tables_backed_up: { prayers: 50, prayer_updates: 25, prayer_types: 5 },
-                      total_records: 80,
-                      duration_seconds: 45,
-                      created_at: '2025-10-18T08:00:00Z'
-                    }
-                  ],
-                  error: null
-                })
-              })
-            }),
-            insert: vi.fn().mockImplementation(async (data: any) => {
-              if (shouldDelayInsert) {
-                await new Promise(resolve => setTimeout(resolve, 200))
-              }
-              return { data: null, error: null }
-            })
-          } as any
-        }
-        return originalFrom(table)
-      })
-    })
+    // Tests in this block set up their own mocks before rendering
 
     it('displays failed backup with error indicator', async () => {
-      // Mock backup logs with a failed backup
-      const mockSupabase = vi.mocked(supabase)
-      const originalFrom = mockSupabase.from
+      // Import fresh supabase FIRST to set up our mock
+      const { supabase: freshSupabase } = await import('../../lib/supabase')
+      
+      // Mock backup logs with a failed backup BEFORE importing component
+      const mockSupabase = vi.mocked(freshSupabase)
       mockSupabase.from.mockImplementation((table: string) => {
         if (table === 'backup_logs') {
           return {
@@ -667,10 +663,11 @@ describe('BackupStatus Component', () => {
             })
           } as any
         }
-        // For all other tables, use the original mock
-        return originalFrom(table)
+        return {} as any
       })
 
+      // NOW import and render the component
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -679,15 +676,14 @@ describe('BackupStatus Component', () => {
         expect(errorIcon).toBeDefined()
         expect(screen.getByText('Connection timeout')).toBeDefined()
       })
-
-      // Restore original mock
-      mockSupabase.from.mockImplementation(originalFrom)
     })
 
     it('displays in-progress backup status', async () => {
+      // Re-import supabase after module reset
+      const { supabase } = await import('../../lib/supabase')
+      
       // Mock backup logs with an in-progress backup
       const mockSupabase = vi.mocked(supabase)
-      const originalFrom = mockSupabase.from
       mockSupabase.from.mockImplementation((table: string) => {
         if (table === 'backup_logs') {
           return {
@@ -709,10 +705,10 @@ describe('BackupStatus Component', () => {
             })
           } as any
         }
-        // For all other tables, use the original mock
-        return originalFrom(table)
+        return {} as any
       })
 
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -732,9 +728,6 @@ describe('BackupStatus Component', () => {
         // Should show in-progress status with yellow styling
         expect(screen.getByText('IN_PROGRESS')).toBeDefined()
       })
-
-      // Restore original mock
-      mockSupabase.from.mockImplementation(originalFrom)
     })
 
     it('handles backup failure and shows error message', async () => {
@@ -779,6 +772,7 @@ describe('BackupStatus Component', () => {
       })
 
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -795,10 +789,63 @@ describe('BackupStatus Component', () => {
     })
 
     it('shows loading state during backup', async () => {
-      shouldDelayInsert = true
+      // Re-import supabase after module reset
+      const { supabase } = await import('../../lib/supabase')
+      
+      // Setup mock to return backup logs (so component renders properly) and delay insert
+      const mockSupabase = vi.mocked(supabase)
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'backup_logs') {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: '1',
+                      backup_date: '2025-10-18T08:00:00Z',
+                      status: 'success',
+                      tables_backed_up: { prayers: 50 },
+                      total_records: 50,
+                      duration_seconds: 30,
+                      created_at: '2025-10-18T08:00:00Z'
+                    }
+                  ],
+                  error: null
+                })
+              })
+            }),
+            insert: vi.fn().mockImplementation(async () => {
+              await new Promise(resolve => setTimeout(resolve, 200))
+              return { data: null, error: null }
+            })
+          } as any
+        }
+        if (table === 'backup_tables') {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [{ table_name: 'prayers' }],
+                error: null
+              })
+            })
+          } as any
+        }
+        if (table === 'prayers') {
+          return {
+            select: vi.fn().mockResolvedValue({
+              data: [{ id: '1', content: 'Test prayer' }],
+              error: null
+            })
+          } as any
+        }
+        return {} as any
+      })
+      
       mockConfirm.mockReturnValue(true)
 
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
@@ -821,9 +868,6 @@ describe('BackupStatus Component', () => {
       await waitFor(() => {
         expect(screen.getByText(/Manual Backup/i)).toBeDefined()
       })
-
-      // Reset for other tests
-      shouldDelayInsert = false
     })
   })
 
@@ -873,6 +917,7 @@ describe('BackupStatus Component', () => {
       })
 
       const user = userEvent.setup()
+      const BackupStatus = await getComponent();
       render(<BackupStatus />)
 
       await waitFor(() => {
