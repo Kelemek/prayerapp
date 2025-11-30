@@ -10,8 +10,10 @@ export interface PrayerPrompt {
 
 /**
  * Generate and download a printable prayer prompts list
+ * @param selectedTypes - Array of type names to filter by. Empty array means all types.
+ * @param newWindow - Pre-opened window for Safari compatibility
  */
-export const downloadPrintablePromptList = async (newWindow: Window | null = null) => {
+export const downloadPrintablePromptList = async (selectedTypes: string[] = [], newWindow: Window | null = null) => {
   try {
     // Fetch all prayer prompts
     const { data: promptsData, error: promptsError } = await supabase
@@ -47,8 +49,19 @@ export const downloadPrintablePromptList = async (newWindow: Window | null = nul
     // Create a map of type name to display_order
     const typeOrderMap = new Map(typesData?.map(t => [t.name, t.display_order]) || []);
 
+    // Filter prompts by selected types (if any are selected)
+    const filteredPrompts = selectedTypes.length > 0
+      ? promptsData.filter(p => selectedTypes.includes(p.type))
+      : promptsData;
+
+    if (filteredPrompts.length === 0) {
+      alert('No prayer prompts found for the selected types.');
+      if (newWindow) newWindow.close();
+      return;
+    }
+
     // Sort prompts by type's display_order
-    const sortedPrompts = promptsData.sort((a, b) => {
+    const sortedPrompts = filteredPrompts.sort((a, b) => {
       const orderA = typeOrderMap.get(a.type) ?? 999;
       const orderB = typeOrderMap.get(b.type) ?? 999;
       return orderA - orderB;

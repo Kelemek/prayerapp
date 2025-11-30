@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Mail, X, CheckCircle, AlertTriangle, Sun, Moon, Monitor, Printer } from 'lucide-react';
+import { Settings, Mail, X, CheckCircle, AlertTriangle, Sun, Moon, Monitor, Printer, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { sendPreferenceChangeNotification } from '../lib/emailNotifications';
 import { downloadPrintablePrayerList } from '../utils/printablePrayerList';
@@ -24,6 +24,11 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
   const [isPrinting, setIsPrinting] = useState(false);
   const [isPrintingPrompts, setIsPrintingPrompts] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(false);
+  const [printRange, setPrintRange] = useState<'week' | 'twoweeks' | 'month' | 'year' | 'all'>('week');
+  const [showPrintDropdown, setShowPrintDropdown] = useState(false);
+  const [promptTypes, setPromptTypes] = useState<string[]>([]);
+  const [selectedPromptTypes, setSelectedPromptTypes] = useState<string[]>([]);
+  const [showPromptTypesDropdown, setShowPromptTypesDropdown] = useState(false);
 
   // Email verification
   const { isEnabled, requestCode } = useVerification();
@@ -41,7 +46,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
     actionData: null
   });
 
-  const handlePrint = async (range: 'week' | 'month' | 'year') => {
+  const handlePrint = async (range: 'week' | 'twoweeks' | 'month' | 'year' | 'all') => {
     setIsPrinting(true);
     
     // Open window immediately (Safari requires this to be synchronous with user click)
@@ -64,7 +69,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
     const newWindow = window.open('', '_blank');
     
     try {
-      await downloadPrintablePromptList(newWindow);
+      await downloadPrintablePromptList(selectedPromptTypes, newWindow);
     } catch (error) {
       console.error('Error printing prompts:', error);
       if (newWindow) newWindow.close();
@@ -75,6 +80,25 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
 
   useEffect(() => {
     if (isOpen) {
+      // Fetch prayer types for the prompt filter dropdown
+      const fetchPrayerTypes = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('prayer_types')
+            .select('name, display_order')
+            .eq('is_active', true)
+            .order('display_order', { ascending: true });
+          
+          if (!error && data) {
+            setPromptTypes(data.map(t => t.name));
+          }
+        } catch (err) {
+          // Silently fail - prompt types are optional for filtering
+          console.error('Error fetching prayer types:', err);
+        }
+      };
+      fetchPrayerTypes();
+
       // Load saved user info from localStorage
       const userInfo = getUserInfo();
       const fullName = userInfo.firstName && userInfo.lastName 
@@ -394,23 +418,126 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
         <div className="p-4 sm:p-6 space-y-4">
           {/* Print Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <button
-              onClick={() => handlePrint('week')}
-              disabled={isPrinting}
-              className="flex items-center justify-center gap-2 px-4 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
-            >
-              <Printer size={18} className={isPrinting ? 'animate-spin' : ''} />
-              <span className="font-medium">{isPrinting ? 'Generating...' : 'Print Prayer List'}</span>
-            </button>
+            <div className="relative">
+              <div className="flex">
+                <button
+                  onClick={() => handlePrint(printRange)}
+                  disabled={isPrinting}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 sm:py-3 bg-green-600 text-white rounded-l-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Printer size={18} className={isPrinting ? 'animate-spin' : ''} />
+                  <span className="font-medium">{isPrinting ? 'Generating...' : 'Print Prayer List'}</span>
+                </button>
+                <button
+                  onClick={() => setShowPrintDropdown(!showPrintDropdown)}
+                  disabled={isPrinting}
+                  className="flex items-center justify-center px-2 bg-green-600 text-white rounded-r-lg border-l border-green-500 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronDown size={18} className={showPrintDropdown ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                </button>
+              </div>
+              {showPrintDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowPrintDropdown(false)}
+                  />
+                  <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
+                    <button
+                      onClick={() => { setPrintRange('week'); setShowPrintDropdown(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
+                    >
+                      <span>Last Week</span>
+                      {printRange === 'week' && <span className="text-green-600 dark:text-green-400">✓</span>}
+                    </button>
+                    <button
+                      onClick={() => { setPrintRange('twoweeks'); setShowPrintDropdown(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
+                    >
+                      <span>Last 2 Weeks</span>
+                      {printRange === 'twoweeks' && <span className="text-green-600 dark:text-green-400">✓</span>}
+                    </button>
+                    <button
+                      onClick={() => { setPrintRange('month'); setShowPrintDropdown(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
+                    >
+                      <span>Last Month</span>
+                      {printRange === 'month' && <span className="text-green-600 dark:text-green-400">✓</span>}
+                    </button>
+                    <button
+                      onClick={() => { setPrintRange('year'); setShowPrintDropdown(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
+                    >
+                      <span>Last Year</span>
+                      {printRange === 'year' && <span className="text-green-600 dark:text-green-400">✓</span>}
+                    </button>
+                    <button
+                      onClick={() => { setPrintRange('all'); setShowPrintDropdown(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
+                    >
+                      <span>All Prayers</span>
+                      {printRange === 'all' && <span className="text-green-600 dark:text-green-400">✓</span>}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
             
-            <button
-              onClick={handlePrintPrompts}
-              disabled={isPrintingPrompts}
-              className="flex items-center justify-center gap-2 px-4 py-2 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
-            >
-              <Printer size={18} className={isPrintingPrompts ? 'animate-spin' : ''} />
-              <span className="font-medium">{isPrintingPrompts ? 'Generating...' : 'Print Prompts'}</span>
-            </button>
+            <div className="relative">
+              <div className="flex">
+                <button
+                  onClick={handlePrintPrompts}
+                  disabled={isPrintingPrompts}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 sm:py-3 bg-green-600 text-white rounded-l-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Printer size={18} className={isPrintingPrompts ? 'animate-spin' : ''} />
+                  <span className="font-medium">{isPrintingPrompts ? 'Generating...' : 'Print Prompts'}</span>
+                </button>
+                <button
+                  onClick={() => setShowPromptTypesDropdown(!showPromptTypesDropdown)}
+                  disabled={isPrintingPrompts}
+                  className="flex items-center justify-center px-2 bg-green-600 text-white rounded-r-lg border-l border-green-500 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronDown size={18} className={showPromptTypesDropdown ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                </button>
+              </div>
+              {showPromptTypesDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowPromptTypesDropdown(false)}
+                  />
+                  <div className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20 max-h-60 overflow-y-auto">
+                    <button
+                      onClick={() => { setSelectedPromptTypes([]); }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
+                    >
+                      <span>All Types</span>
+                      {selectedPromptTypes.length === 0 && <span className="text-green-600 dark:text-green-400">✓</span>}
+                    </button>
+                    {promptTypes.map(type => {
+                      const isSelected = selectedPromptTypes.includes(type);
+                      return (
+                        <button
+                          key={type}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedPromptTypes(selectedPromptTypes.filter(t => t !== type));
+                            } else {
+                              setSelectedPromptTypes([...selectedPromptTypes, type]);
+                            }
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between"
+                        >
+                          <span>{type}</span>
+                          {isSelected && <span className="text-green-600 dark:text-green-400">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Theme Selection */}

@@ -244,6 +244,10 @@ describe('UserSettings', () => {
       const mockMaybeSingle3 = vi.fn().mockResolvedValue({ data: { value: false }, error: null });
       const mockEq5 = vi.fn(() => ({ maybeSingle: mockMaybeSingle3 }));
 
+      // Mock for prayer_types call
+      const mockPrayerTypesOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+      const mockPrayerTypesEq = vi.fn(() => ({ order: mockPrayerTypesOrder }));
+
       let callCount = 0;
       const mockSelect = vi.fn(() => {
         callCount++;
@@ -251,6 +255,9 @@ describe('UserSettings', () => {
           return { eq: mockEq5 }; // admin_settings check
         }
         if (callCount === 2) {
+          return { eq: mockPrayerTypesEq }; // prayer_types
+        }
+        if (callCount === 3) {
           return { eq: mockEq1 }; // pending_preference_changes
         }
         return { eq: mockEq3 }; // email_subscribers

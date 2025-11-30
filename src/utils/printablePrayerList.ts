@@ -17,7 +17,7 @@ export interface Prayer {
   }>;
 }
 
-export type TimeRange = 'week' | 'month' | 'year';
+export type TimeRange = 'week' | 'twoweeks' | 'month' | 'year' | 'all';
 
 /**
  * Generate and download a printable prayer list for the specified time range
@@ -32,11 +32,17 @@ export const downloadPrintablePrayerList = async (timeRange: TimeRange = 'month'
       case 'week':
         startDate.setDate(endDate.getDate() - 7);
         break;
+      case 'twoweeks':
+        startDate.setDate(endDate.getDate() - 14);
+        break;
       case 'month':
         startDate.setMonth(endDate.getMonth() - 1);
         break;
       case 'year':
         startDate.setFullYear(endDate.getFullYear() - 1);
+        break;
+      case 'all':
+        startDate.setFullYear(2000, 0, 1);
         break;
     }
 
@@ -60,7 +66,7 @@ export const downloadPrintablePrayerList = async (timeRange: TimeRange = 'month'
     }
 
     if (!prayers || prayers.length === 0) {
-      const rangeText = timeRange === 'week' ? 'week' : timeRange === 'month' ? 'month' : 'year';
+      const rangeText = timeRange === 'week' ? 'week' : timeRange === 'twoweeks' ? '2 weeks' : timeRange === 'month' ? 'month' : timeRange === 'year' ? 'year' : 'database';
       alert(`No prayers found in the last ${rangeText}.`);
       if (newWindow) newWindow.close();
       return;
@@ -79,7 +85,7 @@ export const downloadPrintablePrayerList = async (timeRange: TimeRange = 'month'
       link.href = blobUrl;
       
       const today = new Date().toISOString().split('T')[0];
-      const rangeLabel = timeRange === 'week' ? 'week' : timeRange === 'month' ? 'month' : 'year';
+      const rangeLabel = timeRange === 'week' ? 'week' : timeRange === 'twoweeks' ? '2weeks' : timeRange === 'month' ? 'month' : timeRange === 'year' ? 'year' : 'all';
       link.download = `prayer-list-${rangeLabel}-${today}.html`;
       
       document.body.appendChild(link);
@@ -126,19 +132,27 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
     case 'week':
       startDate.setDate(startDate.getDate() - 7);
       break;
+    case 'twoweeks':
+      startDate.setDate(startDate.getDate() - 14);
+      break;
     case 'month':
       startDate.setMonth(startDate.getMonth() - 1);
       break;
     case 'year':
       startDate.setFullYear(startDate.getFullYear() - 1);
       break;
+    case 'all':
+      startDate.setFullYear(2000, 0, 1);
+      break;
   }
   
-  const dateRange = `${startDate.toLocaleDateString('en-US', { 
-    month: 'long', 
-    day: 'numeric', 
-    year: 'numeric' 
-  })} - ${today}`;
+  const dateRange = timeRange === 'all' 
+    ? `All Prayers (as of ${today})`
+    : `${startDate.toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      })} - ${today}`;
 
   // Group prayers by status (exclude archived prayers)
   const prayersByStatus = {

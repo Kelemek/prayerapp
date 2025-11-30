@@ -45,7 +45,7 @@ describe('downloadPrintablePromptList', () => {
     const fakeWin = { close: closeSpy } as any;
 
     const mod = await import('../printablePromptList');
-    await mod.downloadPrintablePromptList(fakeWin as any);
+    await mod.downloadPrintablePromptList([], fakeWin as any);
 
     expect(alertSpy).toHaveBeenCalledWith('Failed to fetch prayer prompts. Please try again.');
     expect(closeSpy).toHaveBeenCalled();
@@ -70,7 +70,7 @@ describe('downloadPrintablePromptList', () => {
     const fakeWin = { close: closeSpy } as any;
 
     const mod = await import('../printablePromptList');
-    await mod.downloadPrintablePromptList(fakeWin as any);
+    await mod.downloadPrintablePromptList([], fakeWin as any);
 
     expect(alertSpy).toHaveBeenCalledWith('No prayer prompts found.');
     expect(closeSpy).toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('downloadPrintablePromptList', () => {
     const fakeWin: any = { document: fakeDoc, focus: focusSpy };
 
     const mod = await import('../printablePromptList');
-    await mod.downloadPrintablePromptList(fakeWin as any);
+    await mod.downloadPrintablePromptList([], fakeWin as any);
 
     expect(fakeDoc.open).toHaveBeenCalled();
     expect(fakeDoc.write).toHaveBeenCalled();
@@ -153,7 +153,7 @@ describe('downloadPrintablePromptList', () => {
     const alertSpy = vi.spyOn(globalThis, 'alert').mockImplementation(() => {});
 
     const mod = await import('../printablePromptList');
-    await mod.downloadPrintablePromptList(null);
+    await mod.downloadPrintablePromptList([], null);
 
     expect(createUrlSpy).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();
@@ -192,7 +192,7 @@ describe('downloadPrintablePromptList', () => {
     const fakeWin: any = { document: fakeDoc, focus: vi.fn() };
 
     const mod = await import('../printablePromptList');
-    await mod.downloadPrintablePromptList(fakeWin as any);
+    await mod.downloadPrintablePromptList([], fakeWin as any);
 
     const written = (fakeDoc.write as any).mock.calls[0][0] as string;
     // Should still generate HTML even with types error
@@ -236,7 +236,7 @@ describe('downloadPrintablePromptList', () => {
     const fakeWin: any = { document: fakeDoc, focus: vi.fn() };
 
     const mod = await import('../printablePromptList');
-    await mod.downloadPrintablePromptList(fakeWin as any);
+    await mod.downloadPrintablePromptList([], fakeWin as any);
 
     const written = (fakeDoc.write as any).mock.calls[0][0] as string;
     // Should appear in order: Praise (1), Confession (2), Supplication (3)
@@ -285,7 +285,7 @@ describe('downloadPrintablePromptList', () => {
     const fakeWin: any = { document: fakeDoc, focus: vi.fn() };
 
     const mod = await import('../printablePromptList');
-    await mod.downloadPrintablePromptList(fakeWin as any);
+    await mod.downloadPrintablePromptList([], fakeWin as any);
 
     const written = (fakeDoc.write as any).mock.calls[0][0] as string;
     expect(written).toContain('Morning Praise');
