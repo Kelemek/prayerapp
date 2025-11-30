@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import type { EmailTemplate } from '../lib/emailService'
-import { getAllTemplates, updateTemplate } from '../lib/emailService'
 import { Eye, EyeOff, Save, RefreshCw, Mail } from 'lucide-react'
 
 export const EmailTemplatesManager: React.FC = () => {
@@ -21,6 +20,7 @@ export const EmailTemplatesManager: React.FC = () => {
     setLoading(true)
     setError(null)
     try {
+      const { getAllTemplates } = await import('../lib/emailService')
       const data = await getAllTemplates()
       console.log('Loaded templates:', data)
       setTemplates(data)
@@ -63,6 +63,7 @@ export const EmailTemplatesManager: React.FC = () => {
     setSuccess(null)
 
     try {
+      const { updateTemplate } = await import('../lib/emailService')
       const updated = await updateTemplate(editedTemplate.id, {
         name: editedTemplate.name,
         subject: editedTemplate.subject,

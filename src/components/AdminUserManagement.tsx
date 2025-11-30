@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shield, UserPlus, Trash2, Mail, AlertCircle, CheckCircle, X, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { sendEmail } from '../lib/emailService';
 
 interface AdminUser {
   email: string;
@@ -113,6 +112,7 @@ export const AdminUserManagement: React.FC = () => {
 
       // Send invitation email
       try {
+        const { sendEmail } = await import('../lib/emailService');
         await sendEmail({
           to: email,
           subject: 'Admin Access Granted - Prayer App',
