@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Save, RefreshCw, ChevronDown, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { EmailTemplatesManager } from './EmailTemplatesManager';
@@ -7,25 +7,40 @@ interface EmailSettingsProps {
   onSave?: () => void;
 }
 
+// Cache email settings outside component to persist across re-mounts
+interface CachedEmailSettings {
+  requireEmailVerification: boolean;
+  verificationCodeLength: number;
+  verificationCodeExpiryMinutes: number;
+  enableReminders: boolean;
+  reminderIntervalDays: number;
+  enableAutoArchive: boolean;
+  daysBeforeArchive: number;
+}
+let cachedEmailSettings: CachedEmailSettings | null = null;
+
 export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
-  const [requireEmailVerification, setRequireEmailVerification] = useState<boolean>(false);
-  const [verificationCodeLength, setVerificationCodeLength] = useState<number>(6);
-  const [verificationCodeExpiryMinutes, setVerificationCodeExpiryMinutes] = useState<number>(15);
-  const [enableReminders, setEnableReminders] = useState<boolean>(false);
-  const [reminderIntervalDays, setReminderIntervalDays] = useState<number>(7);
-  const [enableAutoArchive, setEnableAutoArchive] = useState<boolean>(false);
-  const [daysBeforeArchive, setDaysBeforeArchive] = useState<number>(7);
-  const [loading, setLoading] = useState(true);
+  const [requireEmailVerification, setRequireEmailVerification] = useState<boolean>(cachedEmailSettings?.requireEmailVerification ?? false);
+  const [verificationCodeLength, setVerificationCodeLength] = useState<number>(cachedEmailSettings?.verificationCodeLength ?? 6);
+  const [verificationCodeExpiryMinutes, setVerificationCodeExpiryMinutes] = useState<number>(cachedEmailSettings?.verificationCodeExpiryMinutes ?? 15);
+  const [enableReminders, setEnableReminders] = useState<boolean>(cachedEmailSettings?.enableReminders ?? false);
+  const [reminderIntervalDays, setReminderIntervalDays] = useState<number>(cachedEmailSettings?.reminderIntervalDays ?? 7);
+  const [enableAutoArchive, setEnableAutoArchive] = useState<boolean>(cachedEmailSettings?.enableAutoArchive ?? false);
+  const [daysBeforeArchive, setDaysBeforeArchive] = useState<number>(cachedEmailSettings?.daysBeforeArchive ?? 7);
+  const [loading, setLoading] = useState(cachedEmailSettings === null);
   const [savingVerification, setSavingVerification] = useState(false);
   const [savingReminders, setSavingReminders] = useState(false);
   const [sendingReminders, setSendingReminders] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successVerification, setSuccessVerification] = useState(false);
   const [successReminders, setSuccessReminders] = useState(false);
+  const hasLoadedRef = useRef(cachedEmailSettings !== null);
 
   // Load email list from Supabase
   useEffect(() => {
-    loadEmails();
+    if (!hasLoadedRef.current) {
+      loadEmails();
+    }
   }, []);
 
   const loadEmails = async () => {
@@ -42,33 +57,60 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         throw error;
       }
 
+      let reqVerification = false;
+      let codeLength = 6;
+      let codeExpiry = 15;
+      let reminders = false;
+      let reminderDays = 7;
+      let autoArchive = false;
+      let archiveDays = 7;
+
       if (data?.require_email_verification !== null && data?.require_email_verification !== undefined) {
-        setRequireEmailVerification(data.require_email_verification);
+        reqVerification = data.require_email_verification;
+        setRequireEmailVerification(reqVerification);
       }
 
       if (data?.verification_code_length !== null && data?.verification_code_length !== undefined) {
-        setVerificationCodeLength(data.verification_code_length);
+        codeLength = data.verification_code_length;
+        setVerificationCodeLength(codeLength);
       }
 
       if (data?.verification_code_expiry_minutes !== null && data?.verification_code_expiry_minutes !== undefined) {
-        setVerificationCodeExpiryMinutes(data.verification_code_expiry_minutes);
+        codeExpiry = data.verification_code_expiry_minutes;
+        setVerificationCodeExpiryMinutes(codeExpiry);
       }
 
       if (data?.enable_reminders !== null && data?.enable_reminders !== undefined) {
-        setEnableReminders(data.enable_reminders);
+        reminders = data.enable_reminders;
+        setEnableReminders(reminders);
       }
 
       if (data?.reminder_interval_days !== null && data?.reminder_interval_days !== undefined) {
-        setReminderIntervalDays(data.reminder_interval_days);
+        reminderDays = data.reminder_interval_days;
+        setReminderIntervalDays(reminderDays);
       }
 
       if (data?.enable_auto_archive !== null && data?.enable_auto_archive !== undefined) {
-        setEnableAutoArchive(data.enable_auto_archive);
+        autoArchive = data.enable_auto_archive;
+        setEnableAutoArchive(autoArchive);
       }
 
       if (data?.days_before_archive !== null && data?.days_before_archive !== undefined) {
-        setDaysBeforeArchive(data.days_before_archive);
+        archiveDays = data.days_before_archive;
+        setDaysBeforeArchive(archiveDays);
       }
+
+      // Cache for next mount
+      cachedEmailSettings = {
+        requireEmailVerification: reqVerification,
+        verificationCodeLength: codeLength,
+        verificationCodeExpiryMinutes: codeExpiry,
+        enableReminders: reminders,
+        reminderIntervalDays: reminderDays,
+        enableAutoArchive: autoArchive,
+        daysBeforeArchive: archiveDays,
+      };
+      hasLoadedRef.current = true;
     } catch (err: unknown) {
       console.error('Error loading emails:', err);
       setError('Failed to load email settings. Please make sure the database table is set up correctly.');

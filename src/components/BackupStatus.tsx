@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Calendar, CheckCircle, XCircle, Database, AlertCircle, Download, Upload, Loader } from 'lucide-react';
 
@@ -13,18 +13,24 @@ interface BackupLog {
   created_at: string;
 }
 
+// Cache backup logs outside component to persist across re-mounts
+let cachedBackupLogs: { latest: BackupLog | null; all: BackupLog[] } | null = null;
+
 export default function BackupStatus() {
-  const [latestBackup, setLatestBackup] = useState<BackupLog | null>(null);
-  const [allBackups, setAllBackups] = useState<BackupLog[]>([]);
+  const [latestBackup, setLatestBackup] = useState<BackupLog | null>(cachedBackupLogs?.latest ?? null);
+  const [allBackups, setAllBackups] = useState<BackupLog[]>(cachedBackupLogs?.all ?? []);
   const [showFullLog, setShowFullLog] = useState(false);
   const [expandedBackupId, setExpandedBackupId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(cachedBackupLogs === null);
   const [backingUp, setBackingUp] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const hasLoadedRef = useRef(cachedBackupLogs !== null);
 
   useEffect(() => {
-    fetchBackupLogs();
+    if (!hasLoadedRef.current) {
+      fetchBackupLogs();
+    }
   }, []);
 
   async function fetchBackupLogs() {
@@ -41,7 +47,10 @@ export default function BackupStatus() {
       if (data && data.length > 0) {
         setLatestBackup(data[0]);
         setAllBackups(data);
+        // Cache for next mount
+        cachedBackupLogs = { latest: data[0], all: data };
       }
+      hasLoadedRef.current = true;
     } catch (error) {
       console.error('Error fetching backup logs:', error);
     } finally {

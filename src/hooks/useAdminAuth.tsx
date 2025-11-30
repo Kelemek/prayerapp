@@ -7,20 +7,82 @@ interface AdminAuthProviderProps {
   children: React.ReactNode;
 }
 
+interface TimeoutSettings {
+  inactivityTimeoutMinutes: number;
+  maxSessionDurationMinutes: number;
+  dbHeartbeatIntervalMinutes: number;
+}
+
+// Default timeout values (in minutes)
+const DEFAULT_TIMEOUTS: TimeoutSettings = {
+  inactivityTimeoutMinutes: 30,
+  maxSessionDurationMinutes: 480, // 8 hours
+  dbHeartbeatIntervalMinutes: 1,
+};
+
 export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [sessionStart, setSessionStart] = useState<number | null>(null);
+  const [timeoutSettings, setTimeoutSettings] = useState<TimeoutSettings>(DEFAULT_TIMEOUTS);
   
   // Track abort controller for admin status checks to prevent hanging
   const adminCheckAbortRef = useRef<AbortController | null>(null);
   
-  // Inactivity timeout: 30 minutes
-  const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
-  // Maximum session duration: 8 hours (even if active)
-  const MAX_SESSION_DURATION = 8 * 60 * 60 * 1000;
+  // Track heartbeat retry state
+  const heartbeatRetryCountRef = useRef(0);
+  const maxHeartbeatRetries = 3;
+
+  // Load timeout settings from localStorage first, then database
+  const loadTimeoutSettings = async () => {
+    try {
+      // Try localStorage first (instant load)
+      const cached = localStorage.getItem('adminTimeoutSettings');
+      if (cached) {
+        const settings = JSON.parse(cached) as TimeoutSettings;
+        setTimeoutSettings(settings);
+        console.log('[AdminAuth] Loaded timeout settings from localStorage');
+        return;
+      }
+    } catch (error) {
+      console.error('Error reading timeout settings from localStorage:', error);
+    }
+
+    // Fall back to database if not in cache
+    try {
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('inactivity_timeout_minutes, max_session_duration_minutes, db_heartbeat_interval_minutes')
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading timeout settings from database:', error);
+        return;
+      }
+
+      if (data) {
+        const settings: TimeoutSettings = {
+          inactivityTimeoutMinutes: data.inactivity_timeout_minutes || DEFAULT_TIMEOUTS.inactivityTimeoutMinutes,
+          maxSessionDurationMinutes: data.max_session_duration_minutes || DEFAULT_TIMEOUTS.maxSessionDurationMinutes,
+          dbHeartbeatIntervalMinutes: data.db_heartbeat_interval_minutes || DEFAULT_TIMEOUTS.dbHeartbeatIntervalMinutes,
+        };
+        setTimeoutSettings(settings);
+        // Cache in localStorage for next time
+        try {
+          localStorage.setItem('adminTimeoutSettings', JSON.stringify(settings));
+          console.log('[AdminAuth] Loaded timeout settings from database and cached in localStorage');
+        } catch (storageError) {
+          console.error('Error caching timeout settings in localStorage:', storageError);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading timeout settings from database:', error);
+      // Use defaults on error
+    }
+  };
 
   // Check if the current user is an admin with timeout
   const checkAdminStatus = async (currentUser: User | null) => {
@@ -115,6 +177,8 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     // Get initial session
     const initializeAuth = async () => {
       try {
+        // Load timeout settings from database
+        await loadTimeoutSettings();
         // Check if there's an approval session first
         const approvalEmail = localStorage.getItem('approvalAdminEmail');
         const approvalValidated = localStorage.getItem('approvalSessionValidated');
@@ -224,6 +288,11 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   useEffect(() => {
     if (!isAdmin || !sessionStart) return;
 
+    // Convert timeout settings from minutes to milliseconds
+    const INACTIVITY_TIMEOUT = timeoutSettings.inactivityTimeoutMinutes * 60 * 1000;
+    const MAX_SESSION_DURATION = timeoutSettings.maxSessionDurationMinutes * 60 * 1000;
+    const DB_HEARTBEAT_INTERVAL = timeoutSettings.dbHeartbeatIntervalMinutes * 60 * 1000;
+
     // Track user activity
     const updateActivity = () => setLastActivity(Date.now());
     
@@ -240,17 +309,38 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Database heartbeat - ping every 4 minutes to prevent database from sleeping
-    // Supabase free tier pauses after ~5 minutes of inactivity
+    // Database heartbeat with auto-retry and exponential backoff
+    // Pings database to prevent Supabase free tier from pausing after ~5 minutes of inactivity
     const heartbeatInterval = setInterval(async () => {
-      try {
-        // Simple lightweight query to keep database awake
-        await supabase.from('prayers').select('id').limit(1).maybeSingle();
-      } catch (error) {
-        // Silently fail - don't disrupt user experience
-        console.debug('Database heartbeat failed:', error);
-      }
-    }, 4 * 60 * 1000); // Every 4 minutes
+      const attemptHeartbeat = async (retryCount = 0): Promise<boolean> => {
+        try {
+          // Simple lightweight query to keep database awake
+          await supabase.from('prayers').select('id').limit(1).maybeSingle();
+          
+          // Success - reset retry count
+          heartbeatRetryCountRef.current = 0;
+          console.debug('Database heartbeat successful');
+          return true;
+        } catch (error) {
+          const isLastRetry = retryCount >= maxHeartbeatRetries;
+          
+          if (isLastRetry) {
+            console.warn('Database heartbeat failed after 3 retries:', error);
+            heartbeatRetryCountRef.current = 0;
+            return false;
+          }
+
+          // Exponential backoff: 500ms, 1s, 2s
+          const delay = Math.pow(2, retryCount) * 500;
+          console.debug(`Retrying heartbeat in ${delay}ms (attempt ${retryCount + 1}/${maxHeartbeatRetries})`);
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return attemptHeartbeat(retryCount + 1);
+        }
+      };
+
+      await attemptHeartbeat();
+    }, DB_HEARTBEAT_INTERVAL);
 
     // Check for inactivity AND max session duration every minute
     const interval = setInterval(() => {
@@ -259,10 +349,10 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       const sessionTooOld = now - sessionStart > MAX_SESSION_DURATION;
       
       if (inactive) {
-        console.log('Auto-logout due to inactivity (30 minutes)');
+        console.log(`Auto-logout due to inactivity (${timeoutSettings.inactivityTimeoutMinutes} minutes)`);
         logout();
       } else if (sessionTooOld) {
-        console.log('Auto-logout due to maximum session duration (8 hours)');
+        console.log(`Auto-logout due to maximum session duration (${Math.round(timeoutSettings.maxSessionDurationMinutes / 60)} hours)`);
         logout();
       }
     }, 60000); // Check every minute
@@ -275,10 +365,10 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       const sessionTooOld = now - sessionStart > MAX_SESSION_DURATION;
 
       if (inactive) {
-        console.log('Auto-logout due to inactivity (immediate check)');
+        console.log(`Auto-logout due to inactivity (immediate check)`);
         logout();
       } else if (sessionTooOld) {
-        console.log('Auto-logout due to maximum session duration (immediate check)');
+        console.log(`Auto-logout due to maximum session duration (immediate check)`);
         logout();
       }
     })();
@@ -289,7 +379,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       clearInterval(interval);
       clearInterval(heartbeatInterval);
     };
-  }, [isAdmin, lastActivity, sessionStart]);
+  }, [isAdmin, lastActivity, sessionStart, timeoutSettings]);
 
   const sendMagicLink = async (email: string): Promise<{ success: boolean; error?: string }> => {
     setLoading(true);

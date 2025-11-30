@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Shield, UserPlus, Trash2, Mail, AlertCircle, CheckCircle, X, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { sendEmail } from '../lib/emailService';
@@ -11,11 +11,15 @@ interface AdminUser {
   receive_admin_emails: boolean;
 }
 
+// Cache admin data outside component to persist across re-mounts
+let cachedAdmins: AdminUser[] | null = null;
+
 export const AdminUserManagement: React.FC = () => {
-  const [admins, setAdmins] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [admins, setAdmins] = useState<AdminUser[]>(cachedAdmins || []);
+  const [loading, setLoading] = useState(cachedAdmins === null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const hasLoadedRef = useRef(cachedAdmins !== null);
   
   // Add admin form state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -28,7 +32,9 @@ export const AdminUserManagement: React.FC = () => {
 
   // Load admin users
   useEffect(() => {
-    loadAdmins();
+    if (!hasLoadedRef.current) {
+      loadAdmins();
+    }
   }, []);
 
   const loadAdmins = async () => {
@@ -45,7 +51,10 @@ export const AdminUserManagement: React.FC = () => {
 
       if (fetchError) throw fetchError;
 
-      setAdmins(data || []);
+      const adminData = data || [];
+      setAdmins(adminData);
+      cachedAdmins = adminData; // Cache for next mount
+      hasLoadedRef.current = true;
     } catch (err) {
       console.error('Error loading admins:', err);
       setError('Failed to load admin users');

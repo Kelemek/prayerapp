@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Save, Settings, Upload, Trash2, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { AllowanceLevel } from '../types/prayer';
@@ -7,22 +7,37 @@ interface AppBrandingProps {
   onSave?: () => void;
 }
 
+// Cache branding data outside component to persist across re-mounts
+interface CachedBranding {
+  appTitle: string;
+  appSubtitle: string;
+  useLogo: boolean;
+  lightModeLogoUrl: string;
+  darkModeLogoUrl: string;
+  deletionsAllowed: AllowanceLevel;
+  updatesAllowed: AllowanceLevel;
+}
+let cachedBranding: CachedBranding | null = null;
+
 export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
-  const [appTitle, setAppTitle] = useState<string>('Church Prayer Manager');
-  const [appSubtitle, setAppSubtitle] = useState<string>('Keeping our community connected in prayer');
-  const [useLogo, setUseLogo] = useState<boolean>(false);
-  const [lightModeLogoUrl, setLightModeLogoUrl] = useState<string>('');
-  const [darkModeLogoUrl, setDarkModeLogoUrl] = useState<string>('');
-  const [deletionsAllowed, setDeletionsAllowed] = useState<AllowanceLevel>('everyone');
-  const [updatesAllowed, setUpdatesAllowed] = useState<AllowanceLevel>('everyone');
-  const [loading, setLoading] = useState(true);
+  const [appTitle, setAppTitle] = useState<string>(cachedBranding?.appTitle ?? 'Church Prayer Manager');
+  const [appSubtitle, setAppSubtitle] = useState<string>(cachedBranding?.appSubtitle ?? 'Keeping our community connected in prayer');
+  const [useLogo, setUseLogo] = useState<boolean>(cachedBranding?.useLogo ?? false);
+  const [lightModeLogoUrl, setLightModeLogoUrl] = useState<string>(cachedBranding?.lightModeLogoUrl ?? '');
+  const [darkModeLogoUrl, setDarkModeLogoUrl] = useState<string>(cachedBranding?.darkModeLogoUrl ?? '');
+  const [deletionsAllowed, setDeletionsAllowed] = useState<AllowanceLevel>(cachedBranding?.deletionsAllowed ?? 'everyone');
+  const [updatesAllowed, setUpdatesAllowed] = useState<AllowanceLevel>(cachedBranding?.updatesAllowed ?? 'everyone');
+  const [loading, setLoading] = useState(cachedBranding === null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const hasLoadedRef = useRef(cachedBranding !== null);
 
   useEffect(() => {
-    loadBrandingSettings();
+    if (!hasLoadedRef.current) {
+      loadBrandingSettings();
+    }
   }, []);
 
   const loadBrandingSettings = async () => {
@@ -39,25 +54,39 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
         throw error;
       }
 
+      let title = 'Church Prayer Manager';
+      let subtitle = 'Keeping our community connected in prayer';
+      let logo = false;
+      let lightLogo = '';
+      let darkLogo = '';
+
       if (data?.app_title) {
-        setAppTitle(data.app_title);
+        title = data.app_title;
+        setAppTitle(title);
       }
 
       if (data?.app_subtitle) {
-        setAppSubtitle(data.app_subtitle);
+        subtitle = data.app_subtitle;
+        setAppSubtitle(subtitle);
       }
 
       if (data?.use_logo !== null && data?.use_logo !== undefined) {
-        setUseLogo(data.use_logo);
+        logo = data.use_logo;
+        setUseLogo(logo);
       }
 
       if (data?.light_mode_logo_blob) {
-        setLightModeLogoUrl(data.light_mode_logo_blob);
+        lightLogo = data.light_mode_logo_blob;
+        setLightModeLogoUrl(lightLogo);
       }
 
       if (data?.dark_mode_logo_blob) {
-        setDarkModeLogoUrl(data.dark_mode_logo_blob);
+        darkLogo = data.dark_mode_logo_blob;
+        setDarkModeLogoUrl(darkLogo);
       }
+
+      let delAllowed: AllowanceLevel = 'everyone';
+      let updAllowed: AllowanceLevel = 'everyone';
 
       // Try to load permission columns separately in case migration hasn't been run
       try {
@@ -68,16 +97,30 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
           .maybeSingle();
 
         if (permissionData?.deletions_allowed) {
-          setDeletionsAllowed(permissionData.deletions_allowed);
+          delAllowed = permissionData.deletions_allowed;
+          setDeletionsAllowed(delAllowed);
         }
 
         if (permissionData?.updates_allowed) {
-          setUpdatesAllowed(permissionData.updates_allowed);
+          updAllowed = permissionData.updates_allowed;
+          setUpdatesAllowed(updAllowed);
         }
       } catch {
         // Permission columns don't exist yet, use defaults
         console.log('Permission columns not available yet, using defaults');
       }
+
+      // Cache for next mount
+      cachedBranding = {
+        appTitle: title,
+        appSubtitle: subtitle,
+        useLogo: logo,
+        lightModeLogoUrl: lightLogo,
+        darkModeLogoUrl: darkLogo,
+        deletionsAllowed: delAllowed,
+        updatesAllowed: updAllowed,
+      };
+      hasLoadedRef.current = true;
     } catch (err: unknown) {
       console.error('Error loading branding settings:', err);
       setError('Failed to load branding settings');

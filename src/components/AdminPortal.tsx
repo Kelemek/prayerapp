@@ -13,6 +13,7 @@ import BackupStatus from './BackupStatus';
 import { PromptManager } from './PromptManager'; // Prayer prompts management
 import { PrayerTypesManager } from './PrayerTypesManager';
 import { AdminUserManagement } from './AdminUserManagement';
+import { SessionTimeoutSettings } from './SessionTimeoutSettings';
 import { useAdminData, type PendingPreferenceChange } from '../hooks/useAdminData';
 import { useAdminAuth } from '../hooks/useAdminAuthHook';
 import { seedDummyPrayers, cleanupDummyPrayers } from '../lib/devSeed';
@@ -22,7 +23,7 @@ import { supabaseAdmin } from '../lib/supabaseAdmin';
 import type { AllowanceLevel } from '../types/prayer';
 
 type AdminTab = 'prayers' | 'updates' | 'deletions' | 'preferences' | 'settings';
-type SettingsTab = 'analytics' | 'email' | 'users' | 'content' | 'tools';
+type SettingsTab = 'analytics' | 'email' | 'users' | 'content' | 'tools' | 'timeouts';
 
 interface AdminPortalProps {
   deletionsAllowed?: AllowanceLevel;
@@ -113,7 +114,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     approveUpdateDeletionRequest,
     denyUpdateDeletionRequest,
     editPrayer,
-    refresh
+    refresh,
+    silentRefresh
   } = useAdminData();
   
   // Scroll to the approval item when data loads and we have a target
@@ -130,14 +132,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     }
   }, [approvalToScroll, loading]);
 
-  // Re-fetch admin data when page becomes visible (handles network recovery after idle)
+  // Re-fetch admin data in background when page becomes visible (handles network recovery after idle)
+  const lastRefreshRef = useRef<number>(0);
+  
   useEffect(() => {
     const handleVisibilityChange = () => {
       console.log('[AdminPortal Visibility] Visibility state changed:', document.visibilityState);
       if (document.visibilityState === 'visible') {
-        console.log('[AdminPortal Visibility] Page became visible, re-fetching admin data...');
-        // Fetch fresh data when page becomes visible
-        refresh();
+        // Debounce refresh to avoid multiple calls within 5 seconds
+        const now = Date.now();
+        if (now - lastRefreshRef.current > 5000) {
+          console.log('[AdminPortal Visibility] Page became visible, silently refreshing admin data in background...');
+          lastRefreshRef.current = now;
+          // Use silent refresh - updates data without showing loading spinner
+          silentRefresh();
+        }
       }
     };
 
@@ -145,7 +154,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [refresh]);
+  }, [silentRefresh]);
 
   // Dev seed loading states
   const [seedLoading, setSeedLoading] = useState(false);
@@ -1279,6 +1288,19 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   Tools
                 </div>
               </button>
+              <button
+                onClick={() => setActiveSettingsTab('timeouts')}
+                className={`px-4 py-2 font-medium rounded-t-lg transition-colors ${
+                  activeSettingsTab === 'timeouts'
+                    ? 'bg-blue-600 text-white border-b-2 border-blue-600'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Clock size={18} />
+                  Timeouts
+                </div>
+              </button>
             </div>
 
             {/* Analytics Tab */}
@@ -1471,6 +1493,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
                 <BackupStatus />
               </div>
+            )}
+
+            {activeSettingsTab === 'timeouts' && (
+              <SessionTimeoutSettings />
             )}
           </div>
         )}

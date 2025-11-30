@@ -79,14 +79,17 @@ export const useAdminData = () => {
 
   const isFetchingRef = useRef(false);
 
-  const fetchAdminData = useCallback(async () => {
+  const fetchAdminData = useCallback(async (silent = false) => {
     if (isFetchingRef.current) {
       return;
     }
     
     try {
       isFetchingRef.current = true;
-      setData(prev => ({ ...prev, loading: true, error: null }));
+      // Only show loading spinner if not a silent refresh
+      if (!silent) {
+        setData(prev => ({ ...prev, loading: true, error: null }));
+      }
 
       // Increase timeout to 2 minutes to allow Supabase free tier database to wake up
       const timeoutPromise = new Promise((_, reject) => {
@@ -839,10 +842,16 @@ export const useAdminData = () => {
     }
   }, []);
 
-  // Initial data fetch
+  // Silent refresh - calls fetchAdminData without showing loading spinner
+  const silentRefresh = useCallback(() => {
+    console.log('[useAdminData] Starting silent refresh...');
+    return fetchAdminData(true);
+  }, [fetchAdminData]);
+
+  // Initial data fetch - only on mount
   useEffect(() => {
     fetchAdminData();
-  }, [fetchAdminData]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     ...data,
@@ -856,8 +865,9 @@ export const useAdminData = () => {
     denyStatusChangeRequest,
     editPrayer,
     refresh: fetchAdminData,
+    silentRefresh,
     approveUpdateDeletionRequest,
-    denyUpdateDeletionRequest
-    ,editUpdate
+    denyUpdateDeletionRequest,
+    editUpdate
   };
 };

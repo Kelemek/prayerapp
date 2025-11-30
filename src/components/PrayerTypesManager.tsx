@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, Tag, Trash2, Edit2, GripVertical, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { PrayerTypeRecord } from '../types/prayer';
@@ -7,12 +7,16 @@ interface PrayerTypesManagerProps {
   onSuccess: () => void;
 }
 
+// Cache prayer types outside component to persist across re-mounts
+let cachedPrayerTypes: PrayerTypeRecord[] | null = null;
+
 export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSuccess }) => {
-  const [types, setTypes] = useState<PrayerTypeRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [types, setTypes] = useState<PrayerTypeRecord[]>(cachedPrayerTypes || []);
+  const [loading, setLoading] = useState(cachedPrayerTypes === null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const hasLoadedRef = useRef(cachedPrayerTypes !== null);
   
   // Form state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -23,7 +27,9 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
 
   // Fetch types on mount
   useEffect(() => {
-    fetchTypes();
+    if (!hasLoadedRef.current) {
+      fetchTypes();
+    }
   }, []);
 
   const fetchTypes = async () => {
@@ -37,7 +43,10 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      setTypes(data || []);
+      const typesData = data || [];
+      setTypes(typesData);
+      cachedPrayerTypes = typesData; // Cache for next mount
+      hasLoadedRef.current = true;
     } catch (err: unknown) {
       console.error('Error fetching prayer types:', err);
       const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
