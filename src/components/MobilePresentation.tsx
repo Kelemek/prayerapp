@@ -39,8 +39,10 @@ export const MobilePresentation: React.FC = () => {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [contentType, setContentType] = useState<string>('prayers');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [timeFilter, setTimeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string[]>(['current', 'answered']);
+  const [pendingStatusFilter, setPendingStatusFilter] = useState<string[]>(['current', 'answered']);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<string>('week');
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
     if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system')) {
@@ -111,10 +113,10 @@ export const MobilePresentation: React.FC = () => {
       `)
       .eq('approval_status', 'approved');
 
-    // Only exclude archived prayers when a specific status filter is applied
-    // When statusFilter is 'all', show all prayers including archived
-    if (contentType === 'prayers' && statusFilter !== 'all') {
-      query = query.eq('status', statusFilter);
+    // Only filter by status when specific statuses are selected
+    // When statusFilter is empty, show all prayers including archived
+    if (contentType === 'prayers' && statusFilter.length > 0) {
+      query = query.in('status', statusFilter);
     }
 
     // Apply time filter only when viewing prayers alone
@@ -125,6 +127,9 @@ export const MobilePresentation: React.FC = () => {
       switch (timeFilter) {
         case 'week':
           dateThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'twoweeks':
+          dateThreshold = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
           break;
         case 'month':
           dateThreshold = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -606,9 +611,9 @@ export const MobilePresentation: React.FC = () => {
                 : `Auto-advancing every ${displayDuration}s`
               : 'Paused'
             } • {currentIndex + 1} of {currentItems.length} • Swipe to navigate • Double-tap to hide
-            {(statusFilter !== 'all' || timeFilter !== 'all') && contentType === 'prayers' && (
+            {(statusFilter.length > 0 || timeFilter !== 'all') && contentType === 'prayers' && (
               <div className="text-xs mt-1 text-gray-600 dark:text-gray-300">
-                Filtered: {statusFilter !== 'all' ? statusFilter : ''}{statusFilter !== 'all' && timeFilter !== 'all' ? ', ' : ''}{timeFilter !== 'all' ? timeFilter : ''}
+                Filtered: {statusFilter.length > 0 ? statusFilter.join(', ') : ''}{statusFilter.length > 0 && timeFilter !== 'all' ? ', ' : ''}{timeFilter !== 'all' ? timeFilter : ''}
               </div>
             )}
           </div>
@@ -631,7 +636,7 @@ export const MobilePresentation: React.FC = () => {
 
             <div className="space-y-4 px-6 pb-6 overflow-y-auto">
               {/* Theme Selection */}
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 mt-3">
                 <div className="flex items-start gap-2">
                   <Sun className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" size={18} />
                   <div className="flex-1">
@@ -811,12 +816,86 @@ export const MobilePresentation: React.FC = () => {
                     onChange={(e) => setTimeFilter(e.target.value)}
                     className="w-full appearance-none px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#0047AB] focus:border-transparent pr-10"
                   >
-                    <option value="all">All Time</option>
                     <option value="week">Last Week</option>
+                    <option value="twoweeks">Last 2 Weeks</option>
                     <option value="month">Last Month</option>
                     <option value="year">Last Year</option>
+                    <option value="all">All Time</option>
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400" size={20} />
+                </div>
+              </div>
+              )}
+
+              {/* Prayer Status Filter - Only show for prayers */}
+              {contentType === 'prayers' && (
+              <div>
+                <label className="block text-base mb-2 text-gray-900 dark:text-gray-100">Prayer Status</label>
+                <div className="relative">
+                  <div className="flex">
+                    <div className="flex-1 flex items-center px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-l-lg text-base border border-r-0 border-gray-300 dark:border-gray-600">
+                      <span>{statusFilter.length === 0 ? 'All Statuses' : statusFilter.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(', ')}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (showStatusDropdown) {
+                          // Closing - apply the pending filter
+                          setStatusFilter(pendingStatusFilter);
+                          setCurrentIndex(0);
+                        } else {
+                          // Opening - sync pending with current
+                          setPendingStatusFilter(statusFilter);
+                        }
+                        setShowStatusDropdown(!showStatusDropdown);
+                      }}
+                      className="flex items-center justify-center px-2 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-r-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <ChevronDown className={`transition-transform ${showStatusDropdown ? 'rotate-180' : ''}`} size={20} />
+                    </button>
+                  </div>
+                  {showStatusDropdown && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-[60]"
+                        onClick={() => {
+                          setStatusFilter(pendingStatusFilter);
+                          setCurrentIndex(0);
+                          setShowStatusDropdown(false);
+                        }}
+                      />
+                      <div 
+                        className="absolute left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-[70]"
+                      >
+                        {['current', 'answered', 'archived'].map(status => {
+                          const isSelected = pendingStatusFilter.includes(status);
+                          return (
+                            <div
+                              key={status}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                if (isSelected) {
+                                  setPendingStatusFilter(pendingStatusFilter.filter(s => s !== status));
+                                } else {
+                                  setPendingStatusFilter([...pendingStatusFilter, status]);
+                                }
+                              }}
+                              className="w-full text-left px-4 py-2 text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between capitalize cursor-pointer"
+                            >
+                              <span>{status}</span>
+                              {isSelected && <span className="text-green-600 dark:text-green-400">✓</span>}
+                            </div>
+                          );
+                        })}
+                        <div
+                          onMouseDown={(e) => { e.preventDefault(); setPendingStatusFilter([]); }}
+                          className="w-full text-left px-4 py-2 text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between cursor-pointer border-t border-gray-200 dark:border-gray-700"
+                        >
+                          <span>All Statuses</span>
+                          {pendingStatusFilter.length === 0 && <span className="text-green-600 dark:text-green-400">✓</span>}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               )}

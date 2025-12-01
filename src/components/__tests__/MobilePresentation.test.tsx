@@ -6,6 +6,13 @@ import { vi, expect } from 'vitest'
 // Use shared supabase mock with seeded prayers to provide chainable methods
 vi.mock('../../lib/supabase', async () => {
   const mod = await import('../../testUtils/supabaseMock');
+  
+  // Use dates within the current week for test data so it passes the 'last week' filter
+  const now = new Date()
+  // Set time to noon to avoid edge cases with time filtering
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0).toISOString()
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12, 0, 0).toISOString()
+  
   const prayers = [
     {
       id: 'm1',
@@ -15,7 +22,7 @@ vi.mock('../../lib/supabase', async () => {
       requester: 'Carol',
       status: 'current',
       approval_status: 'approved',
-      created_at: '2025-02-01T12:00:00Z',
+      created_at: today,
       prayer_updates: []
     },
     {
@@ -26,7 +33,7 @@ vi.mock('../../lib/supabase', async () => {
       requester: 'Dan',
       status: 'current',
       approval_status: 'approved',
-      created_at: '2025-02-02T12:00:00Z',
+      created_at: yesterday,
       prayer_updates: []
     }
   ]
@@ -37,14 +44,14 @@ vi.mock('../../lib/supabase', async () => {
       title: 'Daily Prayer',
       type: 'Guidance',
       description: 'A daily prayer for guidance',
-      created_at: '2025-02-01T12:00:00Z'
+      created_at: today
     },
     {
       id: 'p2',
       title: 'Weekly Prayer',
       type: 'Healing',
       description: 'A weekly prayer for strength',
-      created_at: '2025-02-02T12:00:00Z'
+      created_at: yesterday
     }
   ]
 
@@ -79,8 +86,9 @@ describe('MobilePresentation', () => {
 
     render(<MobilePresentation />)
 
-    // Wait for first prayer (newer prayers appear first)
-    await waitFor(() => expect(screen.getByText('School Staff')).toBeInTheDocument())
+    // Wait for first prayer to load (most recent is shown first)
+    // m1 created today should be first, m2 created yesterday should be second
+    await waitFor(() => expect(screen.getByText('Neighborhood Safety')).toBeInTheDocument())
 
     // Open settings and close it
     const settingsButton = screen.getByTitle('Settings')
@@ -100,8 +108,8 @@ describe('MobilePresentation', () => {
     const user = userEvent.setup()
     render(<MobilePresentation />)
 
-    // Wait for initial prayers to load
-    await waitFor(() => expect(screen.getByText('School Staff')).toBeInTheDocument())
+    // Wait for initial prayers to load (should show most recent prayer first)
+    await waitFor(() => expect(screen.getByText('Neighborhood Safety')).toBeInTheDocument())
 
     // Open settings
     const settingsButton = screen.getByTitle('Settings')
@@ -125,7 +133,7 @@ describe('MobilePresentation', () => {
     render(<MobilePresentation />)
 
     // Wait for initial prayers to load
-    await waitFor(() => expect(screen.getByText('School Staff')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Neighborhood Safety')).toBeInTheDocument())
 
     // Open settings
     const settingsButton = screen.getByTitle('Settings')
@@ -142,8 +150,8 @@ describe('MobilePresentation', () => {
 
     // Should still show content
     await waitFor(() => {
-      const hasPrayer1 = screen.queryByText('School Staff')
-      const hasPrayer2 = screen.queryByText('Neighborhood Safety')
+      const hasPrayer1 = screen.queryByText('Neighborhood Safety')
+      const hasPrayer2 = screen.queryByText('School Staff')
       expect(hasPrayer1 || hasPrayer2).toBeTruthy()
     })
   })
@@ -153,7 +161,7 @@ describe('MobilePresentation', () => {
     render(<MobilePresentation />)
 
     // Wait for initial prayers to load
-    await waitFor(() => expect(screen.getByText('School Staff')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Neighborhood Safety')).toBeInTheDocument())
 
     // Open settings
     const settingsButton = screen.getByTitle('Settings')
@@ -169,7 +177,7 @@ describe('MobilePresentation', () => {
     if (closeButton) await user.click(closeButton)
 
     // Should still show content
-    expect(screen.getByText('School Staff')).toBeInTheDocument()
+    expect(screen.getByText('Neighborhood Safety')).toBeInTheDocument()
   })
 
   it('handles loading state', () => {

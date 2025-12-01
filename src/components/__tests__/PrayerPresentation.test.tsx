@@ -5,6 +5,11 @@ import { vi } from 'vitest'
 
 // Inline mock for supabase to keep test self-contained and satisfy vi.mock hoisting
 vi.mock('../../lib/supabase', () => {
+  // Use current date for test data so it passes the 'last week' filter
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString()
+
   const prayers = [
     {
       id: 'p1',
@@ -14,7 +19,7 @@ vi.mock('../../lib/supabase', () => {
       requester: 'Alice',
       status: 'current',
       approval_status: 'approved',
-      created_at: '2025-01-01T12:00:00Z',
+      created_at: today,
       prayer_updates: []
     },
     {
@@ -25,7 +30,7 @@ vi.mock('../../lib/supabase', () => {
       requester: 'Bob',
       status: 'current',
       approval_status: 'approved',
-      created_at: '2025-01-02T12:00:00Z',
+      created_at: yesterday,
       prayer_updates: []
     }
   ]
@@ -60,16 +65,29 @@ vi.mock('../../lib/supabase', () => {
   ]
 
   // Minimal chainable builder that is thenable (awaitable)
+  let gteFilter: string | null = null
   const builder = {
     eq: vi.fn(() => builder),
-    gte: vi.fn(() => builder),
+    gte: vi.fn((column: string, value: string) => {
+      if (column === 'created_at') {
+        gteFilter = value
+      }
+      return builder
+    }),
+    in: vi.fn(() => builder),
     order: vi.fn(() => builder),
     select: vi.fn(() => builder),
     then(cb: any) {
       // Return different data based on the table being queried
       const tableName = this.tableName || 'prayers'
       if (tableName === 'prayers') {
-        return cb({ data: prayers, error: null })
+        // Filter prayers by created_at if gte filter is set
+        let filteredPrayers = prayers
+        if (gteFilter) {
+          const filterDate = new Date(gteFilter)
+          filteredPrayers = prayers.filter(p => new Date(p.created_at) >= filterDate)
+        }
+        return cb({ data: filteredPrayers, error: null })
       } else if (tableName === 'prayer_prompts') {
         return cb({ data: prompts, error: null })
       } else if (tableName === 'prayer_types') {
@@ -80,14 +98,27 @@ vi.mock('../../lib/supabase', () => {
   }
 
   // Track which table is being queried
-  const createBuilder = (tableName: string) => ({
-    ...builder,
-    tableName,
-    eq: vi.fn(() => createBuilder(tableName)),
-    gte: vi.fn(() => createBuilder(tableName)),
-    order: vi.fn(() => createBuilder(tableName)),
-    select: vi.fn(() => createBuilder(tableName))
-  })
+  const createBuilder = (tableName: string) => {
+    const builderInstance = {
+      ...builder,
+      tableName,
+      eq: vi.fn((column: string, value: string) => {
+        builder.eq(column, value)
+        return createBuilder(tableName)
+      }),
+      gte: vi.fn((column: string, value: string) => {
+        builder.gte(column, value)
+        return createBuilder(tableName)
+      }),
+      in: vi.fn((column: string, value: string[]) => {
+        builder.in(column, value)
+        return createBuilder(tableName)
+      }),
+      order: vi.fn(() => createBuilder(tableName)),
+      select: vi.fn(() => createBuilder(tableName))
+    }
+    return builderInstance
+  }
 
   return {
     supabase: {
@@ -153,7 +184,10 @@ describe('PrayerPresentation', () => {
       render(<PrayerPresentation />)
 
       await waitFor(() => {
-        expect(screen.getByText(/January 1, 2025/)).toBeInTheDocument()
+        // The date should be displayed in the format like "Wednesday, December 11, 2024"
+        // Just check that a date is displayed (not specific date since we use today's date now)
+        const prayerCards = screen.getAllByText(/^\w+, \w+ \d{1,2}, \d{4}/)
+        expect(prayerCards.length).toBeGreaterThan(0)
       })
     })
 
@@ -270,9 +304,12 @@ describe('PrayerPresentation', () => {
 
       expect(screen.getByRole('heading', { name: /Settings/i })).toBeInTheDocument()
 
-      // Close settings
-      const closeButton = screen.getByRole('button', { name: '' }) // Close button has no accessible name
-      await user.click(closeButton)
+      // Close settings - find the close button within the settings panel
+      const settingsPanel = screen.getByRole('heading', { name: /Settings/i }).closest('div')?.parentElement
+      const closeButton = settingsPanel?.querySelector('button:nth-child(2)') as HTMLElement
+      if (closeButton) {
+        await user.click(closeButton)
+      }
 
       // Settings should be closed
       expect(screen.queryByRole('heading', { name: /Settings/i })).not.toBeInTheDocument()
@@ -542,9 +579,9 @@ describe('PrayerPresentation', () => {
       const settingsButton = screen.getByTitle('Settings')
       await user.click(settingsButton)
 
-      // Find time filter select and change it
-      const timeFilterSelect = screen.getByDisplayValue('All Time')
-      await user.selectOptions(timeFilterSelect, 'week')
+      // Find time filter select and change it (default is 'Last Week' now)
+      const timeFilterSelect = screen.getByDisplayValue('Last Week')
+      await user.selectOptions(timeFilterSelect, 'all')
 
       // Should show filtered status
       expect(screen.getByText(/Filtered/)).toBeInTheDocument()
