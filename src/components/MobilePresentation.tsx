@@ -42,7 +42,7 @@ export const MobilePresentation: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string[]>(['current', 'answered']);
   const [pendingStatusFilter, setPendingStatusFilter] = useState<string[]>(['current', 'answered']);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [timeFilter, setTimeFilter] = useState<string>('week');
+  const [timeFilter, setTimeFilter] = useState<string>('twoweeks');
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
     if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system')) {
@@ -605,17 +605,7 @@ export const MobilePresentation: React.FC = () => {
 
           {/* Bottom Row: Status */}
           <div className="text-center text-sm text-gray-900 dark:text-gray-100">
-            {isPlaying 
-              ? smartMode 
-                ? 'Auto-advancing (Smart Mode)' 
-                : `Auto-advancing every ${displayDuration}s`
-              : 'Paused'
-            } • {currentIndex + 1} of {currentItems.length} • Swipe to navigate • Double-tap to hide
-            {(statusFilter.length > 0 || timeFilter !== 'all') && contentType === 'prayers' && (
-              <div className="text-xs mt-1 text-gray-600 dark:text-gray-300">
-                Filtered: {statusFilter.length > 0 ? statusFilter.join(', ') : ''}{statusFilter.length > 0 && timeFilter !== 'all' ? ', ' : ''}{timeFilter !== 'all' ? timeFilter : ''}
-              </div>
-            )}
+            Swipe to navigate • Double-tap to hide
           </div>
         </div>
       </div>

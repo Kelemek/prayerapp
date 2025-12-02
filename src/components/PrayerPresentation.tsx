@@ -667,7 +667,7 @@ export const PrayerPresentation: React.FC = () => {
             {isPlaying && (
               <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg ml-2">
                 <Timer size={20} className="text-blue-600 dark:text-blue-400" />
-                <span className="text-lg font-mono font-semibold text-blue-900 dark:text-blue-100">
+                <span className="text-sm font-mono font-semibold text-blue-900 dark:text-blue-100">
                   {countdownRemaining}s
                 </span>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -678,19 +678,14 @@ export const PrayerPresentation: React.FC = () => {
           </div>
 
           {/* Status */}
-          <div className="text-xl text-gray-900 dark:text-white">
+          {/* <div className="text-l text-gray-900 dark:text-white">
             {isPlaying 
               ? smartMode 
                 ? 'Auto-advancing (Smart Mode)' 
                 : `Auto-advancing every ${displayDuration}s`
               : 'Paused'
             }
-            {(statusFilter.length > 0 || timeFilter !== 'all') && (
-              <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                • Filtered ({statusFilter.length > 0 ? statusFilter.join(', ') : ''}{statusFilter.length > 0 && timeFilter !== 'all' ? ', ' : ''}{timeFilter !== 'all' ? timeFilter : ''})
-              </span>
-            )}
-          </div>
+          </div> */}
 
           {/* Settings and Close */}
           <div className="flex items-center gap-4">
