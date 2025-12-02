@@ -137,12 +137,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   
   useEffect(() => {
     const handleVisibilityChange = () => {
-      console.log('[AdminPortal Visibility] Visibility state changed:', document.visibilityState);
       if (document.visibilityState === 'visible') {
         // Debounce refresh to avoid multiple calls within 5 seconds
         const now = Date.now();
         if (now - lastRefreshRef.current > 5000) {
-          console.log('[AdminPortal Visibility] Page became visible, silently refreshing admin data in background...');
           lastRefreshRef.current = now;
           // Use silent refresh - updates data without showing loading spinner
           silentRefresh();

@@ -35,8 +35,6 @@ export const EmailSubscribers: React.FC = () => {
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-
-    console.log('🔍 Starting search...', { searchQuery });
     
     try {
       setSearching(true);
@@ -44,7 +42,6 @@ export const EmailSubscribers: React.FC = () => {
       setHasSearched(true);
 
       const query = searchQuery.trim().toLowerCase();
-      console.log('📝 Cleaned query:', query);
       
       // Use native fetch to avoid Supabase client hang after browser minimize
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -61,8 +58,6 @@ export const EmailSubscribers: React.FC = () => {
       }
       
       const url = `${supabaseUrl}/rest/v1/email_subscribers?${params.toString()}`;
-      
-      console.log('🔄 Executing query...');
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -85,17 +80,13 @@ export const EmailSubscribers: React.FC = () => {
       }
       
       const data = await response.json();
-
-      console.log('✅ Query complete:', { data });
       
       setSubscribers(data || []);
-      console.log('✅ Search complete, found:', data?.length || 0, 'subscribers');
     } catch (err: unknown) {
       console.error('❌ Error searching subscribers:', err);
       const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; 
       setError(errorMessage);
     } finally {
-      console.log('🏁 Search done, setting searching to false');
       setSearching(false);
     }
   };
