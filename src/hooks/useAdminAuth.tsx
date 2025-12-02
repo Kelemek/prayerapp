@@ -240,8 +240,6 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     // Get initial session
     const initializeAuth = async () => {
       try {
-        // Load timeout settings from database
-        await loadTimeoutSettings();
         // Check if there's an approval session first
         const approvalEmail = localStorage.getItem('approvalAdminEmail');
         const approvalValidated = localStorage.getItem('approvalSessionValidated');
@@ -373,6 +371,13 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [user]);
+
+  // Load timeout settings only when admin logs in (not for public users)
+  useEffect(() => {
+    if (isAdmin) {
+      loadTimeoutSettings();
+    }
+  }, [isAdmin]);
 
   // Auto-logout on inactivity or max session duration
   useEffect(() => {
@@ -514,6 +519,8 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       // Clear local state first
       setUser(null);
       setIsAdmin(false);
+      // Clear session start timestamp (for both Supabase and approval code sessions)
+      setSessionStart(null);
       
       // Try to sign out from Supabase
       const { error } = await supabase.auth.signOut();
