@@ -598,7 +598,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   // Navigate to home without the approval code in URL
                   window.location.href = window.location.origin;
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white dark:text-white rounded-lg hover:bg-blue-900 dark:hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
               >
                 <ArrowLeft size={16} />
                 Back to Main Page
