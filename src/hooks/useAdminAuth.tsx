@@ -20,13 +20,47 @@ const DEFAULT_TIMEOUTS: TimeoutSettings = {
   dbHeartbeatIntervalMinutes: 1,
 };
 
+// Helper to get persisted session start from localStorage
+const getPersistedSessionStart = (): number | null => {
+  try {
+    const stored = localStorage.getItem('adminSessionStart');
+    if (stored) {
+      const timestamp = parseInt(stored, 10);
+      if (!isNaN(timestamp)) return timestamp;
+    }
+  } catch (e) {
+    console.error('Error reading session start from localStorage:', e);
+  }
+  return null;
+};
+
+// Helper to persist session start to localStorage
+const persistSessionStart = (timestamp: number | null) => {
+  try {
+    if (timestamp === null) {
+      localStorage.removeItem('adminSessionStart');
+    } else {
+      localStorage.setItem('adminSessionStart', timestamp.toString());
+    }
+  } catch (e) {
+    console.error('Error persisting session start to localStorage:', e);
+  }
+};
+
 export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastActivity, setLastActivity] = useState(Date.now());
-  const [sessionStart, setSessionStart] = useState<number | null>(null);
+  // Load sessionStart from localStorage so it persists across page reloads
+  const [sessionStart, setSessionStartState] = useState<number | null>(getPersistedSessionStart);
   const [timeoutSettings, setTimeoutSettings] = useState<TimeoutSettings>(DEFAULT_TIMEOUTS);
+  
+  // Wrapper to persist sessionStart when it changes
+  const setSessionStart = (value: number | null) => {
+    setSessionStartState(value);
+    persistSessionStart(value);
+  };
   
   // Track abort controller for admin status checks to prevent hanging
   const adminCheckAbortRef = useRef<AbortController | null>(null);
@@ -34,23 +68,33 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
   // Track heartbeat retry state
   const heartbeatRetryCountRef = useRef(0);
   const maxHeartbeatRetries = 3;
+  
+  // Cache expiry time for timeout settings (1 hour in milliseconds)
+  const SETTINGS_CACHE_DURATION = 60 * 60 * 1000;
 
-  // Load timeout settings from localStorage first, then database
+  // Load timeout settings from localStorage first (if fresh), then database
   const loadTimeoutSettings = async () => {
     try {
-      // Try localStorage first (instant load)
+      // Try localStorage first (instant load) - but only if cache is fresh
       const cached = localStorage.getItem('adminTimeoutSettings');
-      if (cached) {
-        const settings = JSON.parse(cached) as TimeoutSettings;
-        setTimeoutSettings(settings);
-        console.log('[AdminAuth] Loaded timeout settings from localStorage');
-        return;
+      const cacheTimestamp = localStorage.getItem('adminTimeoutSettingsTimestamp');
+      
+      if (cached && cacheTimestamp) {
+        const cacheAge = Date.now() - parseInt(cacheTimestamp, 10);
+        if (cacheAge < SETTINGS_CACHE_DURATION) {
+          const settings = JSON.parse(cached) as TimeoutSettings;
+          setTimeoutSettings(settings);
+          console.log('[AdminAuth] Loaded timeout settings from localStorage (cache age:', Math.round(cacheAge / 60000), 'min)');
+          return;
+        } else {
+          console.log('[AdminAuth] Timeout settings cache expired, fetching from database');
+        }
       }
     } catch (error) {
       console.error('Error reading timeout settings from localStorage:', error);
     }
 
-    // Fall back to database if not in cache - use directQuery to avoid Supabase client hang
+    // Fetch from database if not cached or cache expired - use directQuery to avoid Supabase client hang
     try {
       const { data: dataArray, error } = await directQuery<Array<{
         inactivity_timeout_minutes: number;
@@ -76,9 +120,10 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
           dbHeartbeatIntervalMinutes: data.db_heartbeat_interval_minutes || DEFAULT_TIMEOUTS.dbHeartbeatIntervalMinutes,
         };
         setTimeoutSettings(settings);
-        // Cache in localStorage for next time
+        // Cache in localStorage with timestamp for next time
         try {
           localStorage.setItem('adminTimeoutSettings', JSON.stringify(settings));
+          localStorage.setItem('adminTimeoutSettingsTimestamp', Date.now().toString());
           console.log('[AdminAuth] Loaded timeout settings from database and cached in localStorage');
         } catch (storageError) {
           console.error('Error caching timeout settings in localStorage:', storageError);
@@ -338,15 +383,9 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
     events.forEach(event => window.addEventListener(event, updateActivity));
 
-    // Don't count time in background towards inactivity
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Reset activity timer when user returns - don't penalize them for being away
-        setLastActivity(Date.now());
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Note: We intentionally do NOT reset lastActivity on visibility change.
+    // The inactivity timeout should count real wall-clock time, not just "time looking at the app".
+    // If user is away for 30 min and comes back, they should be logged out.
 
     // Database heartbeat with auto-retry and exponential backoff
     // Pings database to prevent Supabase free tier from pausing after ~5 minutes of inactivity
@@ -418,7 +457,6 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
 
     return () => {
       events.forEach(event => window.removeEventListener(event, updateActivity));
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(interval);
       clearInterval(heartbeatInterval);
     };
