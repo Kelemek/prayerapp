@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useAdminData } from '../useAdminData';
-import { supabase } from '../../lib/supabase';
+import { supabase, directQuery } from '../../lib/supabase';
 
 // Mock Supabase with a complete chain
 const createMockChain = (resolveData: any = [], resolveError: any = null) => ({
@@ -14,11 +14,20 @@ const createMockChain = (resolveData: any = [], resolveError: any = null) => ({
   then: vi.fn((callback: any) => callback({ data: resolveData, error: resolveError }))
 });
 
+// Mock directQuery
+const mockDirectQuery = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
+
 vi.mock('../../lib/supabase', async () => {
   const mod = await import('../../testUtils/supabaseMock')
   const sup = mod.createSupabaseMock({ fromData: {} }) as any
   sup.removeChannel = vi.fn()
-  return { supabase: sup, handleSupabaseError: vi.fn((err: any) => err?.message || 'Unknown error') }
+  return { 
+    supabase: sup, 
+    handleSupabaseError: vi.fn((err: any) => err?.message || 'Unknown error'),
+    directQuery: vi.fn().mockResolvedValue({ data: [], error: null, count: 0 }),
+    directMutation: vi.fn().mockResolvedValue({ data: null, error: null }),
+    getSupabaseConfig: vi.fn().mockReturnValue({ url: 'https://test.supabase.co', anonKey: 'test-key' })
+  }
 });
 
 // Mock email notifications
@@ -81,28 +90,28 @@ describe('useAdminData', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    // Verify supabase.from was called multiple times for different tables
-    expect(supabase.from).toHaveBeenCalled();
+    // Verify directQuery was called for fetching data
+    expect(directQuery).toHaveBeenCalled();
   });
 
-  it('calls supabase.from with prayers table', async () => {
+  it('calls directQuery with prayers table', async () => {
     const { result } = renderHook(() => useAdminData());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(supabase.from).toHaveBeenCalledWith('prayers');
+    expect(directQuery).toHaveBeenCalledWith('prayers', expect.any(Object));
   });
 
-  it('calls supabase.from with prayer_updates table', async () => {
+  it('calls directQuery with prayer_updates table', async () => {
     const { result } = renderHook(() => useAdminData());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(supabase.from).toHaveBeenCalledWith('prayer_updates');
+    expect(directQuery).toHaveBeenCalledWith('prayer_updates', expect.any(Object));
   });
 
   it('provides counts for approved and denied items', async () => {

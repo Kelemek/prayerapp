@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, directQuery, directMutation } from '../lib/supabase';
 import { Calendar, CheckCircle, XCircle, Database, AlertCircle, Download, Upload, Loader } from 'lucide-react';
 
 interface BackupLog {
@@ -41,11 +41,13 @@ export default function BackupStatus() {
   async function fetchBackupLogs() {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('backup_logs')
-        .select('*')
-        .order('backup_date', { ascending: false })
-        .limit(100);
+      // Use directQuery to avoid Supabase client hang after browser minimize
+      const { data, error } = await directQuery<BackupLog[]>('backup_logs', {
+        select: '*',
+        order: { column: 'backup_date', ascending: false },
+        limit: 100,
+        timeout: 15000
+      });
 
       if (error) throw error;
 
@@ -90,11 +92,12 @@ export default function BackupStatus() {
 
     setBackingUp(true);
     try {
-      // Auto-discover tables from the database
-      const { data: tableList, error: tableError } = await supabase
-        .from('backup_tables')
-        .select('table_name')
-        .order('table_name');
+      // Auto-discover tables from the database using directQuery
+      const { data: tableList, error: tableError } = await directQuery<{ table_name: string }[]>('backup_tables', {
+        select: 'table_name',
+        order: { column: 'table_name', ascending: true },
+        timeout: 15000
+      });
 
       let tables: string[];
       
@@ -131,16 +134,20 @@ export default function BackupStatus() {
         tables: {}
       };
 
-      // Fetch all tables
+      // Fetch all tables using directQuery to avoid hang after minimize
       for (const table of tables) {
         try {
-          const { data, error } = await supabase.from(table).select('*');
+          const { data, error } = await directQuery(table, {
+            select: '*',
+            timeout: 30000
+          });
           
-          if (error && error.code !== 'PGRST116') {
+          if (error && (error as Error & { code?: string }).code !== 'PGRST116') {
             console.error(`Error backing up ${table}:`, error);
-            backup.tables[table] = { error: error.message, data: [] };
+            backup.tables[table] = { error: (error as Error).message, data: [] };
           } else {
-            backup.tables[table] = { count: data?.length || 0, data: data || [] };
+            const tableData = Array.isArray(data) ? data : [];
+            backup.tables[table] = { count: tableData.length, data: tableData };
           }
         } catch (err: unknown) {
           console.error(`Exception backing up ${table}:`, err);
@@ -175,13 +182,17 @@ export default function BackupStatus() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      // Log to database
-      await supabase.from('backup_logs').insert({
-        backup_date: new Date().toISOString(),
-        status: 'success',
-        tables_backed_up: summary,
-        total_records: totalRecords,
-        duration_seconds: durationSeconds
+      // Log to database using directMutation to avoid Safari minimize hang
+      await directMutation('backup_logs', {
+        method: 'POST',
+        body: {
+          backup_date: new Date().toISOString(),
+          status: 'success',
+          tables_backed_up: summary,
+          total_records: totalRecords,
+          duration_seconds: durationSeconds
+        },
+        timeout: 10000
       });
 
       alert(`✅ Backup complete! Downloaded ${totalRecords.toLocaleString()} records in ${durationSeconds}s`);
@@ -193,12 +204,16 @@ export default function BackupStatus() {
         ? String(error.message)
         : String(error);
       
-      // Log failure
-      await supabase.from('backup_logs').insert({
-        backup_date: new Date().toISOString(),
-        status: 'failed',
-        error_message: errorMessage,
-        total_records: 0
+      // Log failure using directMutation
+      await directMutation('backup_logs', {
+        method: 'POST',
+        body: {
+          backup_date: new Date().toISOString(),
+          status: 'failed',
+          error_message: errorMessage,
+          total_records: 0
+        },
+        timeout: 10000
       });
 
       alert('❌ Backup failed: ' + errorMessage);

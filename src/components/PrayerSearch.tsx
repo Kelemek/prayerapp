@@ -77,43 +77,56 @@ export const PrayerSearch: React.FC = () => {
       setError(null);
       setSelectedPrayers(new Set());
 
-      let query = supabase
-        .from('prayers')
-        .select('id, title, requester, email, status, created_at, denial_reason, description, approval_status, prayer_for, prayer_updates(id, content, author, created_at, denial_reason, approval_status)');
-
+      // Use native fetch instead of Supabase client to avoid Safari hang after browser minimize
+      // The Supabase client's internal auth/lock mechanism can hang after Safari minimize
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.set('select', 'id,title,requester,email,status,created_at,denial_reason,description,approval_status,prayer_for,prayer_updates(id,content,author,created_at,denial_reason,approval_status)');
+      params.set('order', 'created_at.desc');
+      params.set('limit', '100');
+      
       // Add search filters if there's a search term
       if (searchTerm.trim()) {
-        query = query.or(`requester.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,denial_reason.ilike.%${searchTerm}%`);
+        params.set('or', `(requester.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,denial_reason.ilike.%${searchTerm}%)`);
       }
-      // If no search term, we're doing a wildcard search (show all)
-
+      
       // Add status filter
       if (statusFilter && statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        params.set('status', `eq.${statusFilter}`);
       }
-
-      // Add approval status filter
-      if (approvalFilter && approvalFilter !== 'all') {
-        if (approvalFilter === 'denied') {
-          // For denied, we need to find:
-          // 1. Prayers with denial_reason OR
-          // 2. Prayers that have updates with denial_reason
-          // We'll filter the updates client-side since Supabase nested queries are complex
-          // Just get all prayers and we'll filter based on prayer_updates after
-        } else if (approvalFilter === 'pending') {
-          // Pending prayers are those with approval_status = 'pending' OR approval_status IS NULL
-          // We'll filter client-side to handle both cases
-        } else {
-          query = query.eq('approval_status', approvalFilter);
-        }
+      
+      // Add approval status filter (skip 'denied' and 'pending' - handled client-side)
+      if (approvalFilter && approvalFilter !== 'all' && approvalFilter !== 'denied' && approvalFilter !== 'pending') {
+        params.set('approval_status', `eq.${approvalFilter}`);
       }
-
-      query = query.order('created_at', { ascending: false }).limit(100);
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
+      
+      const url = `${supabaseUrl}/rest/v1/prayers?${params.toString()}`;
+      
+      // Use native fetch with AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Query failed: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
       let results = data || [];
       
       // If filtering by denied, include prayers with denied updates

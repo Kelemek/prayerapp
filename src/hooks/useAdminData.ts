@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, handleSupabaseError } from '../lib/supabase';
+import { supabase, handleSupabaseError, directQuery } from '../lib/supabase';
 import { logError } from '../lib/errorLogger';
 import type { PrayerRequest, PrayerUpdate, DeletionRequest, StatusChangeRequest, UpdateDeletionRequest } from '../types/prayer';
 import { sendApprovedPrayerNotification, sendApprovedUpdateNotification, sendDeniedPrayerNotification, sendDeniedUpdateNotification, sendRequesterApprovalNotification } from '../lib/emailNotifications';
@@ -91,128 +91,157 @@ export const useAdminData = () => {
         setData(prev => ({ ...prev, loading: true, error: null }));
       }
 
-      // Increase timeout to 2 minutes to allow Supabase free tier database to wake up
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 120000);
-      });
+      // Query timeout - 15 seconds per query to fail fast
+      const queryTimeout = 15000;
 
-      // Parallelize all independent queries for much faster loading
+      // Use directQuery for ALL queries to avoid Supabase client hang after browser minimize
+      // The Supabase client's GoTrueClient auth lock can hang indefinitely in Safari
       const dataPromise = Promise.all([
-        // Pending update deletion requests
-        supabase
-          .from('update_deletion_requests')
-          .select(`*, prayer_updates (*, prayers (prayer_for, title))`)
-          .eq('approval_status', 'pending')
-          .order('created_at', { ascending: false }),
+        // Pending update deletion requests (complex join)
+        directQuery<(UpdateDeletionRequest & { prayer_updates?: { content?: string; author?: string; author_email?: string; prayers?: { prayer_for?: string; title?: string } } })[]>('update_deletion_requests', {
+          select: '*, prayer_updates(*, prayers(prayer_for, title))',
+          eq: { approval_status: 'pending' },
+          order: { column: 'created_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
-        // Pending prayers
-        supabase
-          .from('prayers')
-          .select('*')
-          .eq('approval_status', 'pending')
-          .order('created_at', { ascending: false }),
+        // Pending prayers (simple)
+        directQuery<PrayerRequest[]>('prayers', {
+          select: '*',
+          eq: { approval_status: 'pending' },
+          order: { column: 'created_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
-        // Pending updates
-        supabase
-          .from('prayer_updates')
-          .select(`*, prayers!inner(title)`)
-          .eq('approval_status', 'pending')
-          .order('created_at', { ascending: false }),
+        // Pending updates (join)
+        directQuery<(PrayerUpdate & { prayers?: { title?: string } })[]>('prayer_updates', {
+          select: '*, prayers!inner(title)',
+          eq: { approval_status: 'pending' },
+          order: { column: 'created_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
-        // Pending deletion requests
-        supabase
-          .from('deletion_requests')
-          .select(`*, prayers!inner(title)`)
-          .eq('approval_status', 'pending')
-          .order('created_at', { ascending: false }),
+        // Pending deletion requests (join)
+        directQuery<(DeletionRequest & { prayers?: { title?: string } })[]>('deletion_requests', {
+          select: '*, prayers!inner(title)',
+          eq: { approval_status: 'pending' },
+          order: { column: 'created_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
-        // Pending status change requests
-        supabase
-          .from('status_change_requests')
-          .select(`*, prayers!inner(title)`)
-          .eq('approval_status', 'pending')
-          .order('created_at', { ascending: false }),
+        // Pending status change requests (join)
+        directQuery<(StatusChangeRequest & { prayers?: { title?: string } })[]>('status_change_requests', {
+          select: '*, prayers!inner(title)',
+          eq: { approval_status: 'pending' },
+          order: { column: 'created_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
         // Approved prayers count
-        supabase
-          .from('prayers')
-          .select('*', { count: 'exact', head: true })
-          .eq('approval_status', 'approved'),
+        directQuery('prayers', {
+          select: '*',
+          eq: { approval_status: 'approved' },
+          count: 'exact',
+          head: true,
+          timeout: queryTimeout
+        }),
         
         // Approved updates count
-        supabase
-          .from('prayer_updates')
-          .select('*', { count: 'exact', head: true })
-          .eq('approval_status', 'approved'),
+        directQuery('prayer_updates', {
+          select: '*',
+          eq: { approval_status: 'approved' },
+          count: 'exact',
+          head: true,
+          timeout: queryTimeout
+        }),
         
         // Denied prayers count
-        supabase
-          .from('prayers')
-          .select('*', { count: 'exact', head: true })
-          .eq('approval_status', 'denied'),
+        directQuery('prayers', {
+          select: '*',
+          eq: { approval_status: 'denied' },
+          count: 'exact',
+          head: true,
+          timeout: queryTimeout
+        }),
         
         // Denied updates count
-        supabase
-          .from('prayer_updates')
-          .select('*', { count: 'exact', head: true })
-          .eq('approval_status', 'denied'),
+        directQuery('prayer_updates', {
+          select: '*',
+          eq: { approval_status: 'denied' },
+          count: 'exact',
+          head: true,
+          timeout: queryTimeout
+        }),
         
         // Approved prayers list
-        supabase
-          .from('prayers')
-          .select('*')
-          .eq('approval_status', 'approved')
-          .order('approved_at', { ascending: false }),
+        directQuery<PrayerRequest[]>('prayers', {
+          select: '*',
+          eq: { approval_status: 'approved' },
+          order: { column: 'approved_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
-        // Approved updates list
-        supabase
-          .from('prayer_updates')
-          .select(`*, prayers!inner(title)`)
-          .eq('approval_status', 'approved')
-          .order('approved_at', { ascending: false }),
+        // Approved updates list (join)
+        directQuery<(PrayerUpdate & { prayers?: { title?: string } })[]>('prayer_updates', {
+          select: '*, prayers!inner(title)',
+          eq: { approval_status: 'approved' },
+          order: { column: 'approved_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
         // Denied prayers list
-        supabase
-          .from('prayers')
-          .select('*')
-          .eq('approval_status', 'denied')
-          .order('denied_at', { ascending: false }),
+        directQuery<PrayerRequest[]>('prayers', {
+          select: '*',
+          eq: { approval_status: 'denied' },
+          order: { column: 'denied_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
-        // Denied updates list
-        supabase
-          .from('prayer_updates')
-          .select(`*, prayers!inner(title)`)
-          .eq('approval_status', 'denied')
-          .order('denied_at', { ascending: false }),
+        // Denied updates list (join)
+        directQuery<(PrayerUpdate & { prayers?: { title?: string } })[]>('prayer_updates', {
+          select: '*, prayers!inner(title)',
+          eq: { approval_status: 'denied' },
+          order: { column: 'denied_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
-        // Denied status change requests
-        supabase
-          .from('status_change_requests')
-          .select(`*, prayers!inner(title)`)
-          .eq('approval_status', 'denied')
-          .order('reviewed_at', { ascending: false }),
+        // Denied status change requests (join)
+        directQuery<(StatusChangeRequest & { prayers?: { title?: string } })[]>('status_change_requests', {
+          select: '*, prayers!inner(title)',
+          eq: { approval_status: 'denied' },
+          order: { column: 'reviewed_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
-        // Denied deletion requests
-        supabase
-          .from('deletion_requests')
-          .select(`*, prayers!inner(title)`)
-          .eq('approval_status', 'denied')
-          .order('reviewed_at', { ascending: false }),
+        // Denied deletion requests (join)
+        directQuery<(DeletionRequest & { prayers?: { title?: string } })[]>('deletion_requests', {
+          select: '*, prayers!inner(title)',
+          eq: { approval_status: 'denied' },
+          order: { column: 'reviewed_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
-        // Denied update deletion requests
-        supabase
-          .from('update_deletion_requests')
-          .select(`*, prayer_updates (*, prayers (prayer_for, title))`)
-          .eq('approval_status', 'denied')
-          .order('reviewed_at', { ascending: false }),
+        // Denied update deletion requests (complex join)
+        directQuery<(UpdateDeletionRequest & { prayer_updates?: { content?: string; author?: string; author_email?: string; prayers?: { prayer_for?: string; title?: string } } })[]>('update_deletion_requests', {
+          select: '*, prayer_updates(*, prayers(prayer_for, title))',
+          eq: { approval_status: 'denied' },
+          order: { column: 'reviewed_at', ascending: false },
+          timeout: queryTimeout
+        }),
         
         // Denied preference changes
-        supabase
-          .from('pending_preference_changes')
-          .select('*')
-          .eq('approval_status', 'denied')
-          .order('reviewed_at', { ascending: false })
+        directQuery<PendingPreferenceChange[]>('pending_preference_changes', {
+          select: '*',
+          eq: { approval_status: 'denied' },
+          order: { column: 'reviewed_at', ascending: false },
+          timeout: queryTimeout
+        })
       ]);
+
+      // Total timeout for all queries - 60 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 60000);
+      });
 
       // Race the data fetch against the timeout
       const [

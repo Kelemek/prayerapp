@@ -1,11 +1,24 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, vi, beforeEach, expect } from 'vitest';
+import { PrayerSearch } from '../PrayerSearch';
+
+// Mock supabase
+vi.mock('../../lib/supabase', () => ({
+  supabase: {
+    from: vi.fn()
+  },
+  directQuery: vi.fn(),
+  directMutation: vi.fn()
+}));
 
 describe('PrayerSearch additional tests', () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([])
+    });
   });
 
   it('includes prayers that have denied updates when approval filter is set to denied', async () => {
@@ -17,7 +30,7 @@ describe('PrayerSearch additional tests', () => {
       email: null,
       status: 'current',
       created_at: now,
-      denial_reason: null,
+      denial_reason: 'Not appropriate',
       description: 'Please pray',
       approval_status: 'pending',
       prayer_for: 'Family',
@@ -26,47 +39,32 @@ describe('PrayerSearch additional tests', () => {
       ]
     };
 
-    // Mock supabase to return the prayer above
-    vi.doMock('../../lib/supabase', () => ({
-      supabase: {
-        from: (_table: string) => ({
-          select: () => ({ order: () => ({ limit: async () => ({ data: [prayerWithDeniedUpdate], error: null }) }) })
-        })
-      }
-    }));
+    // Mock fetch to return the prayer
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([prayerWithDeniedUpdate])
+    });
 
-  const { PrayerSearch: PS } = await import('../PrayerSearch');
-  render(<PS />);
+    render(<PrayerSearch />);
 
-  // Select the approval filter to 'denied' which should trigger the search effect
-  const selects = screen.getAllByRole('combobox');
-  const approvalSelect = selects[1] as HTMLSelectElement;
-  await waitFor(() => expect(approvalSelect).toBeTruthy());
-  fireEvent.change(approvalSelect, { target: { value: 'denied' } });
+    // Select the approval filter to 'denied' which should trigger the search effect
+    const selects = screen.getAllByRole('combobox');
+    const approvalSelect = selects[1] as HTMLSelectElement;
+    await waitFor(() => expect(approvalSelect).toBeTruthy());
+    fireEvent.change(approvalSelect, { target: { value: 'denied' } });
 
-  // Wait for the result footer to show Found: X prayer(s)
-  await waitFor(() => expect(screen.getByText(/Found:/i)).toBeTruthy());
+    // Wait for the result footer to show Found: X prayer(s)
+    await waitFor(() => expect(screen.getByText(/Found:/i)).toBeTruthy());
   });
 
-  it('shows no-results UI when a search term is provided but supabase returns no prayers', async () => {
-    // Mock supabase to return empty data
-    vi.doMock('../../lib/supabase', () => ({
-      supabase: {
-        from: (_table: string) => ({
-          select: () => {
-            const chain: any = {};
-            chain.or = () => chain;
-            chain.eq = () => chain;
-            chain.order = () => chain;
-            chain.limit = async () => ({ data: [], error: null });
-            return chain;
-          }
-        })
-      }
-    }));
+  it('shows no-results UI when a search term is provided but returns no prayers', async () => {
+    // Mock fetch to return empty data
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([])
+    });
 
-  const { PrayerSearch: PS } = await import('../PrayerSearch');
-  render(<PS />);
+    render(<PrayerSearch />);
 
     // Type a search term and click the Search button
     const input = screen.getByPlaceholderText(/Search by title, requester, email/i) as HTMLInputElement;

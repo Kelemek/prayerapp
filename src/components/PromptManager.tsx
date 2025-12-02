@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Upload, X, Lightbulb, Search, Tag, Trash2, Edit2, AlertCircle, ChevronDown } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, directQuery } from '../lib/supabase';
 import { PrayerType } from '../types/prayer';
 import type { PrayerPrompt, PrayerTypeRecord } from '../types/prayer';
 
@@ -45,11 +45,13 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
 
   const fetchPrayerTypes = async () => {
     try {
-      const { data, error } = await supabase
-        .from('prayer_types')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+      // Use directQuery to avoid Supabase client hang after browser minimize
+      const { data, error } = await directQuery<PrayerTypeRecord[]>('prayer_types', {
+        select: '*',
+        eq: { is_active: true },
+        order: { column: 'display_order', ascending: true },
+        timeout: 15000
+      });
 
       if (error) throw error;
       setPrayerTypes(data || []);
@@ -74,21 +76,43 @@ export const PromptManager: React.FC<PromptManagerProps> = ({ onSuccess }) => {
 
       const query = searchQuery.trim().toLowerCase();
       
-      let dbQuery = supabase
-        .from('prayer_prompts')
-        .select('*');
+      // Use native fetch to avoid Supabase client hang after browser minimize
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
-      // If search query is provided, filter by it; otherwise return all
+      const params = new URLSearchParams();
+      params.set('select', '*');
+      params.set('order', 'type.asc,created_at.desc');
+      params.set('limit', '500');
+      
+      // If search query is provided, filter by it
       if (query) {
-        dbQuery = dbQuery.or(`title.ilike.%${query}%,type.ilike.%${query}%,description.ilike.%${query}%`);
+        params.set('or', `(title.ilike.%${query}%,type.ilike.%${query}%,description.ilike.%${query}%)`);
       }
       
-      const { data, error } = await dbQuery
-        .order('type', { ascending: true })
-        .order('created_at', { ascending: false })
-        .limit(500);
-
-      if (error) throw error;
+      const url = `${supabaseUrl}/rest/v1/prayer_prompts?${params.toString()}`;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Query failed: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
       setPrompts(data || []);
     } catch (err: unknown) {
       console.error('Error searching prompts:', err);

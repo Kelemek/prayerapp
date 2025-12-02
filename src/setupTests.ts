@@ -9,9 +9,21 @@ import { createSupabaseMock } from './testUtils/supabaseMock'
 
 const defaultSupabase = createSupabaseMock()
 
+// Default mock implementations for directQuery and directMutation
+const mockDirectQuery = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 })
+const mockDirectMutation = vi.fn().mockResolvedValue({ data: null, error: null })
+const mockGetSupabaseConfig = vi.fn().mockReturnValue({
+  url: 'https://test.supabase.co',
+  anonKey: 'test-anon-key'
+})
+
 vi.mock('./lib/supabase', () => ({
   supabase: defaultSupabase,
-  handleSupabaseError: (e: any) => e?.message || 'Unknown'
+  handleSupabaseError: (e: any) => e?.message || 'Unknown',
+  directQuery: mockDirectQuery,
+  directMutation: mockDirectMutation,
+  getSupabaseConfig: mockGetSupabaseConfig,
+  isNetworkError: (e: any) => false
 }))
 
 // Cleanup after each test

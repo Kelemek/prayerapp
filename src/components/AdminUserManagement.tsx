@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Shield, UserPlus, Trash2, Mail, AlertCircle, CheckCircle, X, XCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, directQuery } from '../lib/supabase';
 
 interface AdminUser {
   email: string;
@@ -41,12 +41,13 @@ export const AdminUserManagement: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Get admin emails from email_subscribers table
-      const { data, error: fetchError } = await supabase
-        .from('email_subscribers')
-        .select('email, name, created_at, last_sign_in_at, receive_admin_emails')
-        .eq('is_admin', true)
-        .order('created_at', { ascending: true });
+      // Use directQuery to avoid Supabase client hang after browser minimize
+      const { data, error: fetchError } = await directQuery<AdminUser[]>('email_subscribers', {
+        select: 'email,name,created_at,last_sign_in_at,receive_admin_emails',
+        eq: { is_admin: true },
+        order: { column: 'created_at', ascending: true },
+        timeout: 15000
+      });
 
       if (fetchError) throw fetchError;
 

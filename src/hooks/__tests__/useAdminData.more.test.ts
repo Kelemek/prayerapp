@@ -6,7 +6,13 @@ vi.mock('../../lib/supabase', async () => {
   const mod = await import('../../testUtils/supabaseMock')
   const sup = mod.createSupabaseMock({ fromData: {} }) as any
   sup.removeChannel = vi.fn()
-  return { supabase: sup, handleSupabaseError: vi.fn((e: any) => e?.message || 'Unknown') }
+  return { 
+    supabase: sup, 
+    handleSupabaseError: vi.fn((e: any) => e?.message || 'Unknown'),
+    directQuery: vi.fn().mockResolvedValue({ data: [], error: null, count: 0 }),
+    directMutation: vi.fn().mockResolvedValue({ data: null, error: null }),
+    getSupabaseConfig: vi.fn().mockReturnValue({ url: 'https://test.supabase.co', anonKey: 'test-key' })
+  }
 })
 
 vi.mock('../../lib/emailNotifications', () => ({

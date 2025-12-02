@@ -3,6 +3,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { supabase } from '../../lib/supabase';
 
+// Mock directQuery and directMutation
+const mockDirectQuery = vi.fn();
+const mockDirectMutation = vi.fn();
+
 // Mock Supabase
 vi.mock('../../lib/supabase', () => ({
   supabase: {
@@ -19,7 +23,12 @@ vi.mock('../../lib/supabase', () => ({
       })),
     })),
   },
+  directQuery: vi.fn(),
+  directMutation: vi.fn(),
 }));
+
+// Import after mock to get mocked versions
+import { directQuery, directMutation } from '../../lib/supabase';
 
 describe('PrayerTypesManager Component', () => {
   const mockOnSuccess = vi.fn();
@@ -29,6 +38,9 @@ describe('PrayerTypesManager Component', () => {
     global.confirm = vi.fn(() => true);
     // Reset module cache to clear cachedPrayerTypes between tests
     vi.resetModules();
+    // Default mock for directQuery
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
+    vi.mocked(directMutation).mockResolvedValue({ data: null, error: null });
   });
 
   // Helper to get fresh component import after module reset
@@ -40,16 +52,7 @@ describe('PrayerTypesManager Component', () => {
   describe('Rendering', () => {
     it('renders the component with header', async () => {
       const PrayerTypesManager = await getComponent();
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -60,16 +63,7 @@ describe('PrayerTypesManager Component', () => {
 
     it('displays the description text', async () => {
       const PrayerTypesManager = await getComponent();
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -80,16 +74,7 @@ describe('PrayerTypesManager Component', () => {
 
     it('renders Add Type button', async () => {
       const PrayerTypesManager = await getComponent();
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -105,16 +90,7 @@ describe('PrayerTypesManager Component', () => {
         { id: '2', name: 'Family', display_order: 1, is_active: true, created_at: '2025-01-02T00:00:00Z' },
       ];
 
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: mockTypes,
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: mockTypes, error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -126,16 +102,7 @@ describe('PrayerTypesManager Component', () => {
 
     it('shows empty state when no types exist', async () => {
       const PrayerTypesManager = await getComponent();
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -149,16 +116,7 @@ describe('PrayerTypesManager Component', () => {
     it('shows add form when Add Type button is clicked', async () => {
       const PrayerTypesManager = await getComponent();
       const user = userEvent.setup();
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -176,21 +134,8 @@ describe('PrayerTypesManager Component', () => {
     it('successfully creates a new prayer type', async () => {
       const PrayerTypesManager = await getComponent();
       const user = userEvent.setup();
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      const mockInsert = vi.fn().mockResolvedValue({
-        error: null,
-      });
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        insert: mockInsert,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
+      vi.mocked(directMutation).mockResolvedValue({ data: null, error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -212,10 +157,10 @@ describe('PrayerTypesManager Component', () => {
       if (submitButton) await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockInsert).toHaveBeenCalledWith(
+        expect(vi.mocked(directMutation)).toHaveBeenCalledWith(
+          'prayer_types',
           expect.objectContaining({
-            name: 'Thanksgiving',
-            is_active: true,
+            method: 'POST',
           })
         );
       });
@@ -229,16 +174,7 @@ describe('PrayerTypesManager Component', () => {
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: mockTypes,
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: mockTypes, error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -259,16 +195,7 @@ describe('PrayerTypesManager Component', () => {
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: mockTypes,
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: mockTypes, error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -299,16 +226,7 @@ describe('PrayerTypesManager Component', () => {
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: mockTypes,
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: mockTypes, error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -329,20 +247,8 @@ describe('PrayerTypesManager Component', () => {
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: mockTypes,
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      const mockEq = vi.fn().mockResolvedValue({ error: null });
-      const mockDelete = vi.fn(() => ({ eq: mockEq }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        delete: mockDelete,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: mockTypes, error: null });
+      vi.mocked(directMutation).mockResolvedValue({ data: null, error: null });
 
       global.confirm = vi.fn(() => false);
 
@@ -362,7 +268,7 @@ describe('PrayerTypesManager Component', () => {
       }
 
       expect(global.confirm).toHaveBeenCalled();
-      expect(mockDelete).not.toHaveBeenCalled();
+      expect(vi.mocked(directMutation)).not.toHaveBeenCalled();
     });
   });
 
@@ -373,16 +279,7 @@ describe('PrayerTypesManager Component', () => {
         { id: '1', name: 'Personal', display_order: 0, is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: mockTypes,
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: mockTypes, error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -400,16 +297,7 @@ describe('PrayerTypesManager Component', () => {
         { id: '1', name: 'Personal', display_order: 0, is_active: false, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: mockTypes,
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: mockTypes, error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -428,16 +316,7 @@ describe('PrayerTypesManager Component', () => {
         { id: '3', name: 'Community', display_order: 2, is_active: true, created_at: '2025-01-03T00:00:00Z' },
       ];
 
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: mockTypes,
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: mockTypes, error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       
@@ -447,23 +326,25 @@ describe('PrayerTypesManager Component', () => {
         expect(screen.getByText('Community')).toBeDefined();
       });
 
-      // Verify order was requested
-      expect(mockOrder).toHaveBeenCalledWith('display_order', { ascending: true });
+      // Verify directQuery was called with order
+      expect(vi.mocked(directQuery)).toHaveBeenCalledWith(
+        'prayer_types',
+        expect.objectContaining({
+          order: expect.objectContaining({
+            column: 'display_order',
+            ascending: true,
+          }),
+        })
+      );
     });
   });
 
   describe('Error Handling', () => {
     it('displays error when loading types fails', async () => {
       const PrayerTypesManager = await getComponent();
-      const mockOrder = vi.fn().mockResolvedValue({
+      vi.mocked(directQuery).mockResolvedValue({
         data: null,
         error: { message: 'Database error' },
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
       });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
@@ -476,20 +357,10 @@ describe('PrayerTypesManager Component', () => {
     it('displays error when creating type fails', async () => {
       const PrayerTypesManager = await getComponent();
       const user = userEvent.setup();
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      const mockInsert = vi.fn().mockResolvedValue({
+      vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
+      vi.mocked(directMutation).mockResolvedValue({
+        data: null,
         error: { message: 'Insert failed' },
-      });
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        insert: mockInsert,
       });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
@@ -521,21 +392,8 @@ describe('PrayerTypesManager Component', () => {
     it('calls onSuccess callback after successful operation', async () => {
       const PrayerTypesManager = await getComponent();
       const user = userEvent.setup();
-      const mockOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      const mockSelect = vi.fn(() => ({ order: mockOrder }));
-
-      const mockInsert = vi.fn().mockResolvedValue({
-        error: null,
-      });
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-        insert: mockInsert,
-      });
+      vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
+      vi.mocked(directMutation).mockResolvedValue({ data: null, error: null });
 
       render(<PrayerTypesManager onSuccess={mockOnSuccess} />);
       

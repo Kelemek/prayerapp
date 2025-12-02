@@ -14,11 +14,11 @@ describe('BackupStatus component - extra tests', () => {
   });
 
   it('shows loading spinner initially', async () => {
-    // Mock supabase to a resolved but quick value; initial render should show spinner
+    // Mock directQuery to resolve quickly; initial render should show spinner
     vi.doMock('../../lib/supabase', () => ({
-      supabase: {
-        from: () => ({ select: () => ({ order: () => ({ limit: async () => ({ data: [], error: null }) }) }) })
-      }
+      supabase: { from: vi.fn() },
+      directQuery: vi.fn().mockResolvedValue({ data: [], error: null }),
+      directMutation: vi.fn().mockResolvedValue({ data: null, error: null })
     }));
 
     const { default: BackupStatus } = await import('../BackupStatus');
@@ -30,12 +30,12 @@ describe('BackupStatus component - extra tests', () => {
 
   it('renders empty state when no backups found', async () => {
     vi.doMock('../../lib/supabase', () => ({
-      supabase: {
-        from: () => ({ select: () => ({ order: () => ({ limit: async () => ({ data: [], error: null }) }) }) })
-      }
+      supabase: { from: vi.fn() },
+      directQuery: vi.fn().mockResolvedValue({ data: [], error: null }),
+      directMutation: vi.fn().mockResolvedValue({ data: null, error: null })
     }));
 
-  const { default: BackupStatus } = await import('../BackupStatus');
+    const { default: BackupStatus } = await import('../BackupStatus');
     render(<BackupStatus />);
 
     await waitFor(() => expect(screen.getByText(/No backup logs found/i)).toBeTruthy());
@@ -55,14 +55,17 @@ describe('BackupStatus component - extra tests', () => {
     };
 
     vi.doMock('../../lib/supabase', () => ({
-      supabase: {
-        from: (_table: string) => ({
-          select: () => ({ order: () => ({ limit: async () => ({ data: [mockBackup], error: null }) }) })
-        })
-      }
+      supabase: { from: vi.fn() },
+      directQuery: vi.fn().mockImplementation(async (table: string) => {
+        if (table === 'backup_logs') {
+          return { data: [mockBackup], error: null };
+        }
+        return { data: [], error: null };
+      }),
+      directMutation: vi.fn().mockResolvedValue({ data: null, error: null })
     }));
 
-  const { default: BackupStatus } = await import('../BackupStatus');
+    const { default: BackupStatus } = await import('../BackupStatus');
     render(<BackupStatus />);
 
     // Wait for the backup entry to render (by looking for the records text)

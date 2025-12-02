@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Wifi, WifiOff } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { directQuery } from '../lib/supabase';
 
 export const RealtimeStatus: React.FC = () => {
   const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
-    // Periodically check connection status
+    // Periodically check connection status using directQuery to avoid Safari minimize hang
     const checkConnection = async () => {
       try {
-        const { error } = await supabase.from('prayers').select('count').limit(1).maybeSingle();
+        const { error } = await directQuery('prayers', {
+          select: 'id',
+          limit: 1,
+          timeout: 5000
+        });
         setIsConnected(!error);
       } catch {
         setIsConnected(false);

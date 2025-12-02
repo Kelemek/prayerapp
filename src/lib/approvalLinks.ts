@@ -4,7 +4,7 @@
  * Uses server-side approval codes for secure one-time authentication
  */
 
-import { supabase } from './supabase';
+import { directMutation } from './supabase';
 
 /**
  * Generates a one-time approval code and creates a direct admin approval link
@@ -30,12 +30,17 @@ export async function generateApprovalLink(
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
 
-    const { error } = await supabase.from('approval_codes').insert({
-      code,
-      admin_email: adminEmail.toLowerCase().trim(),
-      approval_type: requestType,
-      approval_id: requestId,
-      expires_at: expiresAt.toISOString(),
+    // Use directMutation to avoid Supabase client hang after Safari minimize
+    const { error } = await directMutation('approval_codes', {
+      method: 'POST',
+      body: {
+        code,
+        admin_email: adminEmail.toLowerCase().trim(),
+        approval_type: requestType,
+        approval_id: requestId,
+        expires_at: expiresAt.toISOString(),
+      },
+      timeout: 10000
     });
 
     if (error) {

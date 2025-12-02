@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PromptManager } from '../PromptManager';
-import { supabase } from '../../lib/supabase';
+import { supabase, directQuery, directMutation } from '../../lib/supabase';
 
 // Mock Supabase
 vi.mock('../../lib/supabase', () => ({
@@ -28,6 +28,9 @@ vi.mock('../../lib/supabase', () => ({
       })),
     })),
   },
+  directQuery: vi.fn().mockResolvedValue({ data: [], error: null }),
+  directMutation: vi.fn().mockResolvedValue({ data: null, error: null }),
+  getSupabaseConfig: vi.fn().mockReturnValue({ url: 'https://test.supabase.co', anonKey: 'test-key' }),
 }));
 
 describe('PromptManager Component', () => {
@@ -36,6 +39,13 @@ describe('PromptManager Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.confirm = vi.fn(() => true);
+    // Mock fetch for search functionality (uses native fetch)
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => []
+    } as Response);
+    // Set up directQuery mock for fetching prompts and prayer types
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
   });
 
   describe('Rendering', () => {
@@ -136,36 +146,25 @@ describe('PromptManager Component', () => {
     });
 
     it('loads prayer types on mount', async () => {
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-          { id: '2', name: 'Family', display_order: 1, is_active: true },
-        ],
+      const mockTypes = [
+        { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        { id: '2', name: 'Family', display_order: 1, is_active: true },
+      ];
+
+      vi.mocked(directQuery).mockResolvedValue({
+        data: mockTypes,
         error: null,
       });
-
-      const mockPromptsOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
-      });
-
-      const mockSelect = vi.fn((fields) => {
-        if (fields === '*') {
-          return { 
-            eq: vi.fn(() => ({ order: mockTypesOrder }))
-          };
-        }
-        return { order: mockPromptsOrder };
-      });
-
-      (supabase.from as any).mockImplementation((_table: string) => ({
-        select: mockSelect,
-      }));
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
       
       await waitFor(() => {
-        expect(mockSelect).toHaveBeenCalled();
+        expect(vi.mocked(directQuery)).toHaveBeenCalledWith(
+          'prayer_types',
+          expect.objectContaining({
+            eq: expect.objectContaining({ is_active: true })
+          })
+        );
       });
     });
   });
@@ -183,31 +182,17 @@ describe('PromptManager Component', () => {
         },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockPrompts,
-        error: null,
-      });
-
-      // Chain: .or() -> .order() -> .order() -> .limit()
-      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
-      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
-      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
-
-      const mockTypesOrder = vi.fn().mockResolvedValue({
+      // Mock directQuery for prayer types
+      vi.mocked(directQuery).mockResolvedValue({
         data: [],
         error: null,
       });
 
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => {
-          if (table === 'prayer_types') {
-            return { 
-              eq: vi.fn(() => ({ order: mockTypesOrder }))
-            };
-          }
-          return { or: mockOr };
-        }),
-      }));
+      // Mock fetch for search
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockPrompts),
+      });
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
       
@@ -238,31 +223,17 @@ describe('PromptManager Component', () => {
         },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockPrompts,
-        error: null,
-      });
-
-      // Chain: .or() -> .order() -> .order() -> .limit()
-      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
-      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
-      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
-
-      const mockTypesOrder = vi.fn().mockResolvedValue({
+      // Mock directQuery for prayer types
+      vi.mocked(directQuery).mockResolvedValue({
         data: [],
         error: null,
       });
 
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => {
-          if (table === 'prayer_types') {
-            return { 
-              eq: vi.fn(() => ({ order: mockTypesOrder }))
-            };
-          }
-          return { or: mockOr };
-        }),
-      }));
+      // Mock fetch for search
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockPrompts),
+      });
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
       
@@ -275,38 +246,25 @@ describe('PromptManager Component', () => {
       await user.type(searchInput, 'Gratitude{Enter}');
 
       await waitFor(() => {
-        expect(mockOr).toHaveBeenCalled();
+        expect(global.fetch).toHaveBeenCalled();
+        expect(screen.getByText('Gratitude Prayer')).toBeDefined();
       });
     });
 
     it('displays "no prompts found" message when search returns empty', async () => {
       const user = userEvent.setup();
 
-      const mockLimit = vi.fn().mockResolvedValue({
+      // Mock directQuery for prayer types
+      vi.mocked(directQuery).mockResolvedValue({
         data: [],
         error: null,
       });
 
-      // Chain: .or() -> .order() -> .order() -> .limit()
-      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
-      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
-      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
-
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [],
-        error: null,
+      // Mock fetch to return empty
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([]),
       });
-
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => {
-          if (table === 'prayer_types') {
-            return { 
-              eq: vi.fn(() => ({ order: mockTypesOrder }))
-            };
-          }
-          return { or: mockOr };
-        }),
-      }));
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
       
@@ -339,34 +297,22 @@ describe('PromptManager Component', () => {
         },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockPrompts,
+      const mockTypes = [
+        { id: '1', name: 'Personal', display_order: 0, is_active: true },
+        { id: '2', name: 'Family', display_order: 1, is_active: true },
+      ];
+
+      // Mock directQuery for prayer types
+      vi.mocked(directQuery).mockResolvedValue({
+        data: mockTypes,
         error: null,
       });
 
-      // Chain: .or() -> .order() -> .order() -> .limit()
-      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
-      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
-      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
-
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-          { id: '2', name: 'Family', display_order: 1, is_active: true },
-        ],
-        error: null,
+      // Mock fetch for search
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockPrompts),
       });
-
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => {
-          if (table === 'prayer_types') {
-            return { 
-              eq: vi.fn(() => ({ order: mockTypesOrder }))
-            };
-          }
-          return { or: mockOr };
-        }),
-      }));
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
       
@@ -379,7 +325,7 @@ describe('PromptManager Component', () => {
       await user.click(screen.getByRole('button', { name: /^search$/i }));
 
       await waitFor(() => {
-        expect(mockOr).toHaveBeenCalled();
+        expect(global.fetch).toHaveBeenCalled();
       });
     });
   });
@@ -387,20 +333,12 @@ describe('PromptManager Component', () => {
   describe('Add Prompt Functionality', () => {
     it('shows add form when Add Prompt button is clicked', async () => {
       const user = userEvent.setup();
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
+      
+      // Mock directQuery for prayer types
+      vi.mocked(directQuery).mockResolvedValue({
+        data: [{ id: '1', name: 'Personal', display_order: 0, is_active: true }],
         error: null,
       });
-
-      const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockTypesOrder }))
-      }));
-
-      (supabase.from as any).mockImplementation((_table: string) => ({
-        select: mockSelect,
-      }));
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
       
@@ -419,10 +357,10 @@ describe('PromptManager Component', () => {
 
     it('successfully creates a new prompt', async () => {
       const user = userEvent.setup();
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
+      
+      // Mock directQuery for prayer types
+      vi.mocked(directQuery).mockResolvedValue({
+        data: [{ id: '1', name: 'Personal', display_order: 0, is_active: true }],
         error: null,
       });
 
@@ -430,10 +368,7 @@ describe('PromptManager Component', () => {
         error: null,
       });
 
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => ({ 
-          eq: vi.fn(() => ({ order: mockTypesOrder }))
-        })),
+      (supabase.from as any).mockImplementation((_table: string) => ({
         insert: mockInsert,
       }));
 
@@ -483,33 +418,17 @@ describe('PromptManager Component', () => {
         },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockPrompts,
+      // Mock directQuery for prayer_types
+      vi.mocked(directQuery).mockResolvedValue({
+        data: [{ id: '1', name: 'Personal', display_order: 0, is_active: true }],
         error: null,
       });
 
-      // Chain: .or() -> .order() -> .order() -> .limit()
-      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
-      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
-      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
-
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
-        error: null,
+      // Mock fetch for search
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockPrompts),
       });
-
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => {
-          if (table === 'prayer_types') {
-            return { 
-              eq: vi.fn(() => ({ order: mockTypesOrder }))
-            };
-          }
-          return { or: mockOr };
-        }),
-      }));
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
       
@@ -542,33 +461,17 @@ describe('PromptManager Component', () => {
         },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockPrompts,
+      // Mock directQuery for prayer_types
+      vi.mocked(directQuery).mockResolvedValue({
+        data: [{ id: '1', name: 'Personal', display_order: 0, is_active: true }],
         error: null,
       });
 
-      // Chain: .or() -> .order() -> .order() -> .limit()
-      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
-      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
-      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
-
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
-        error: null,
+      // Mock fetch for search
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockPrompts),
       });
-
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => {
-          if (table === 'prayer_types') {
-            return { 
-              eq: vi.fn(() => ({ order: mockTypesOrder }))
-            };
-          }
-          return { or: mockOr };
-        }),
-      }));
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
       
@@ -612,33 +515,17 @@ describe('PromptManager Component', () => {
         },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockPrompts,
+      // Mock directQuery for prayer_types
+      vi.mocked(directQuery).mockResolvedValue({
+        data: [{ id: '1', name: 'Personal', display_order: 0, is_active: true }],
         error: null,
       });
 
-      // Chain: .or() -> .order() -> .order() -> .limit()
-      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
-      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
-      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
-
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
-        error: null,
-      });
-
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => {
-          if (table === 'prayer_types') {
-            return { 
-              eq: vi.fn(() => ({ order: mockTypesOrder }))
-            };
-          }
-          return { or: mockOr };
-        }),
-      }));
+      // Mock fetch for search (native fetch is used for search)
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => mockPrompts,
+      } as Response);
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
       
@@ -671,35 +558,22 @@ describe('PromptManager Component', () => {
         },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockPrompts,
+      // Mock directQuery for prayer_types
+      vi.mocked(directQuery).mockResolvedValue({
+        data: [{ id: '1', name: 'Personal', display_order: 0, is_active: true }],
         error: null,
       });
 
-      // Chain: .or() -> .order() -> .order() -> .limit()
-      const mockOrder2 = vi.fn(() => ({ limit: mockLimit }));
-      const mockOrder1 = vi.fn(() => ({ order: mockOrder2 }));
-      const mockOr = vi.fn(() => ({ order: mockOrder1 }));
-
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
-        error: null,
+      // Mock fetch for search
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockPrompts),
       });
 
       const mockEq = vi.fn().mockResolvedValue({ error: null });
       const mockDelete = vi.fn(() => ({ eq: mockEq }));
 
-      (supabase.from as any).mockImplementation((table: string) => ({
-        select: vi.fn(() => {
-          if (table === 'prayer_types') {
-            return { 
-              eq: vi.fn(() => ({ order: mockTypesOrder }))
-            };
-          }
-          return { or: mockOr };
-        }),
+      (supabase.from as any).mockImplementation((_table: string) => ({
         delete: mockDelete,
       }));
 
@@ -735,20 +609,12 @@ describe('PromptManager Component', () => {
   describe('CSV Upload Functionality', () => {
     it('shows CSV upload form when Upload CSV button is clicked', async () => {
       const user = userEvent.setup();
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
+      
+      // Mock directQuery for prayer types
+      vi.mocked(directQuery).mockResolvedValue({
+        data: [{ id: '1', name: 'Personal', display_order: 0, is_active: true }],
         error: null,
       });
-
-      const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockTypesOrder }))
-      }));
-
-      (supabase.from as any).mockImplementation((_table: string) => ({
-        select: mockSelect,
-      }));
 
       render(<PromptManager onSuccess={mockOnSuccess} />);
       
@@ -767,23 +633,18 @@ describe('PromptManager Component', () => {
   describe('Success Callback', () => {
     it('calls onSuccess callback after successful operation', async () => {
       const user = userEvent.setup();
-      const mockTypesOrder = vi.fn().mockResolvedValue({
-        data: [
-          { id: '1', name: 'Personal', display_order: 0, is_active: true },
-        ],
+      
+      // Mock directQuery for prayer types
+      vi.mocked(directQuery).mockResolvedValue({
+        data: [{ id: '1', name: 'Personal', display_order: 0, is_active: true }],
         error: null,
       });
-
-      const mockSelect = vi.fn(() => ({ 
-        eq: vi.fn(() => ({ order: mockTypesOrder }))
-      }));
 
       const mockInsert = vi.fn().mockResolvedValue({
         error: null,
       });
 
       (supabase.from as any).mockImplementation((_table: string) => ({
-        select: mockSelect,
         insert: mockInsert,
       }));
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, Tag, Trash2, Edit2, GripVertical, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, directQuery, directMutation } from '../lib/supabase';
 import type { PrayerTypeRecord } from '../types/prayer';
 
 interface PrayerTypesManagerProps {
@@ -37,10 +37,12 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       setLoading(true);
       setError(null);
       
-      const { data, error } = await supabase
-        .from('prayer_types')
-        .select('*')
-        .order('display_order', { ascending: true });
+      // Use directQuery to avoid Supabase client hang after browser minimize
+      const { data, error } = await directQuery<PrayerTypeRecord[]>('prayer_types', {
+        select: '*',
+        order: { column: 'display_order', ascending: true },
+        timeout: 15000
+      });
 
       if (error) throw error;
       const typesData = data || [];
@@ -69,27 +71,29 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       setSuccess(null);
 
       if (editingId) {
-        // Update existing type
-        const { error } = await supabase
-          .from('prayer_types')
-          .update({
+        // Update existing type using directMutation
+        const { error } = await directMutation('prayer_types', {
+          method: 'PATCH',
+          eq: { id: editingId },
+          body: {
             name: name.trim(),
             display_order: displayOrder,
             is_active: isActive
-          })
-          .eq('id', editingId);
+          }
+        });
 
         if (error) throw error;
         setSuccess('Prayer type updated successfully!');
       } else {
-        // Add new type
-        const { error } = await supabase
-          .from('prayer_types')
-          .insert({
+        // Add new type using directMutation
+        const { error } = await directMutation('prayer_types', {
+          method: 'POST',
+          body: {
             name: name.trim(),
             display_order: displayOrder,
             is_active: isActive
-          });
+          }
+        });
 
         if (error) throw error;
         setSuccess('Prayer type added successfully!');
@@ -134,10 +138,11 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       setError(null);
       setSuccess(null);
       
-      const { error } = await supabase
-        .from('prayer_types')
-        .delete()
-        .eq('id', id);
+      // Use directMutation to avoid Supabase client hang after browser minimize
+      const { error } = await directMutation('prayer_types', {
+        method: 'DELETE',
+        eq: { id }
+      });
 
       if (error) throw error;
       
@@ -154,10 +159,12 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
       setError(null);
       setSuccess(null);
       
-      const { error } = await supabase
-        .from('prayer_types')
-        .update({ is_active: !type.is_active })
-        .eq('id', type.id);
+      // Use directMutation to avoid Supabase client hang after browser minimize
+      const { error } = await directMutation('prayer_types', {
+        method: 'PATCH',
+        eq: { id: type.id },
+        body: { is_active: !type.is_active }
+      });
 
       if (error) throw error;
       
@@ -179,19 +186,21 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
     try {
       setError(null);
       
-      // Swap display orders
+      // Swap display orders using directMutation
       const current = types[currentIndex];
       const target = types[targetIndex];
       
-      await supabase
-        .from('prayer_types')
-        .update({ display_order: target.display_order })
-        .eq('id', current.id);
+      await directMutation('prayer_types', {
+        method: 'PATCH',
+        eq: { id: current.id },
+        body: { display_order: target.display_order }
+      });
       
-      await supabase
-        .from('prayer_types')
-        .update({ display_order: current.display_order })
-        .eq('id', target.id);
+      await directMutation('prayer_types', {
+        method: 'PATCH',
+        eq: { id: target.id },
+        body: { display_order: current.display_order }
+      });
       
       await fetchTypes();
     } catch (err: unknown) {

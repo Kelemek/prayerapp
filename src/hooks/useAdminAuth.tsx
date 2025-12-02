@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, directQuery, getSupabaseConfig } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import { AdminAuthContext } from '../contexts/AdminAuthContext';
 
@@ -50,19 +50,25 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       console.error('Error reading timeout settings from localStorage:', error);
     }
 
-    // Fall back to database if not in cache
+    // Fall back to database if not in cache - use directQuery to avoid Supabase client hang
     try {
-      const { data, error } = await supabase
-        .from('admin_settings')
-        .select('inactivity_timeout_minutes, max_session_duration_minutes, db_heartbeat_interval_minutes')
-        .eq('id', 1)
-        .maybeSingle();
+      const { data: dataArray, error } = await directQuery<Array<{
+        inactivity_timeout_minutes: number;
+        max_session_duration_minutes: number;
+        db_heartbeat_interval_minutes: number;
+      }>>('admin_settings', {
+        select: 'inactivity_timeout_minutes, max_session_duration_minutes, db_heartbeat_interval_minutes',
+        eq: { id: 1 },
+        limit: 1,
+        timeout: 10000
+      });
 
       if (error) {
         console.error('Error loading timeout settings from database:', error);
         return;
       }
 
+      const data = dataArray?.[0];
       if (data) {
         const settings: TimeoutSettings = {
           inactivityTimeoutMinutes: data.inactivity_timeout_minutes || DEFAULT_TIMEOUTS.inactivityTimeoutMinutes,
@@ -135,12 +141,23 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
       }
       
       // Check if user has admin privileges in the database (for authenticated users)
-      const { data, error } = await supabase
-        .from('email_subscribers')
-        .select('is_admin')
-        .eq('email', currentUser.email)
-        .eq('is_admin', true)
-        .maybeSingle();
+      // Use directQuery to avoid Supabase client hang after Safari minimize
+      const { url, anonKey } = getSupabaseConfig();
+      const params = new URLSearchParams();
+      params.set('select', 'is_admin');
+      params.set('email', `eq.${currentUser.email}`);
+      params.set('is_admin', 'eq.true');
+      params.set('limit', '1');
+      
+      const response = await fetch(`${url}/rest/v1/email_subscribers?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: abortController.signal
+      });
 
       // Clear timeout if request completed
       clearTimeout(timeoutId);
@@ -150,13 +167,14 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         return;
       }
 
-      if (error) {
-        console.error('Error checking admin status:', error);
+      if (!response.ok) {
+        console.error('Error checking admin status:', response.status);
         setIsAdmin(false);
         return;
       }
 
-      const isAdminUser = !!data;
+      const data = await response.json();
+      const isAdminUser = Array.isArray(data) && data.length > 0;
       setIsAdmin(isAdminUser);
     } catch (error) {
       clearTimeout(timeoutId);
@@ -206,8 +224,22 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
           return;
         }
         
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        // Wrap getSession with a timeout to prevent indefinite hang after Safari minimize
+        // The Supabase client's GoTrueClient can hang when the browser tab loses focus
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null }; error: Error }>((_, reject) => {
+          setTimeout(() => reject(new Error('Session check timed out')), 8000);
+        });
+        
+        let session = null;
+        try {
+          const result = await Promise.race([sessionPromise, timeoutPromise]);
+          if ('error' in result && result.error) throw result.error;
+          session = result.data?.session ?? null;
+        } catch (sessionError) {
+          console.warn('[AdminAuth] Session check failed or timed out, continuing without session:', sessionError);
+          // Continue without session - user can log in again if needed
+        }
         
         setUser(session?.user ?? null);
         // Wait for checkAdminStatus to complete before setting loading to false
@@ -252,11 +284,18 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
           window.location.hash = '#admin';
         }
         
-        // Update last sign in timestamp for admins
+        // Update last sign in timestamp for admins using direct fetch to avoid hang
         if (event === 'SIGNED_IN' && session?.user?.email) {
           try {
-            await supabase.rpc('update_admin_last_sign_in', {
-              admin_email: session.user.email
+            const { url, anonKey } = getSupabaseConfig();
+            await fetch(`${url}/rest/v1/rpc/update_admin_last_sign_in`, {
+              method: 'POST',
+              headers: {
+                'apikey': anonKey,
+                'Authorization': `Bearer ${anonKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ admin_email: session.user.email })
             });
           } catch (error) {
             console.error('Error updating last sign in:', error);
@@ -314,8 +353,12 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
     const heartbeatInterval = setInterval(async () => {
       const attemptHeartbeat = async (retryCount = 0): Promise<boolean> => {
         try {
-          // Simple lightweight query to keep database awake
-          await supabase.from('prayers').select('id').limit(1).maybeSingle();
+          // Simple lightweight query using directQuery to avoid Safari minimize hang
+          await directQuery('prayers', {
+            select: 'id',
+            limit: 1,
+            timeout: 5000
+          });
           
           // Success - reset retry count
           heartbeatRetryCountRef.current = 0;

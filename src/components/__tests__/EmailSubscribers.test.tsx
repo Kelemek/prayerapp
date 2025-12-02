@@ -14,6 +14,9 @@ vi.mock('../../lib/supabase', () => ({
             limit: vi.fn(),
           })),
         })),
+        eq: vi.fn(() => ({
+          single: vi.fn(),
+        })),
       })),
       insert: vi.fn(),
       update: vi.fn(() => ({
@@ -26,10 +29,27 @@ vi.mock('../../lib/supabase', () => ({
   },
 }));
 
+// Helper to set mock subscriber data
+let mockSubscriberData: any[] = [];
+const setMockSubscriberData = (data: any[]) => {
+  mockSubscriberData = data;
+  // Update fetch mock to return this data
+  global.fetch = vi.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve(data),
+  });
+};
+
 describe('EmailSubscribers Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.confirm = vi.fn(() => true);
+    // Default fetch mock returns empty array
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    });
+    mockSubscriberData = [];
   });
 
   describe('Rendering', () => {
@@ -97,18 +117,7 @@ describe('EmailSubscribers Component', () => {
         },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockSubscribers,
-        error: null,
-      });
-
-      const mockOrder = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrder }));
-      const mockSelect = vi.fn(() => ({ or: mockOr }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      setMockSubscriberData(mockSubscribers);
 
       render(<EmailSubscribers />);
       
@@ -119,7 +128,7 @@ describe('EmailSubscribers Component', () => {
       await user.click(searchButton);
 
       await waitFor(() => {
-        expect(mockSelect).toHaveBeenCalledWith('*');
+        expect(global.fetch).toHaveBeenCalled();
         expect(screen.getByText('John Doe')).toBeDefined();
         expect(screen.getByText('john@example.com')).toBeDefined();
       });
@@ -137,18 +146,7 @@ describe('EmailSubscribers Component', () => {
         },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockSubscribers,
-        error: null,
-      });
-
-      const mockOrder = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrder }));
-      const mockSelect = vi.fn(() => ({ or: mockOr }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      setMockSubscriberData(mockSubscribers);
 
       render(<EmailSubscribers />);
       
@@ -157,7 +155,7 @@ describe('EmailSubscribers Component', () => {
       await user.type(searchInput, 'John{Enter}');
 
       await waitFor(() => {
-        expect(mockSelect).toHaveBeenCalled();
+        expect(global.fetch).toHaveBeenCalled();
         expect(screen.getByText('John Doe')).toBeDefined();
       });
     });
@@ -306,18 +304,7 @@ describe('EmailSubscribers Component', () => {
         { id: '1', name: 'John Doe', email: 'john@example.com', is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockSubscribers,
-        error: null,
-      });
-
-      const mockOrder = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrder }));
-      const mockSelect = vi.fn(() => ({ or: mockOr }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      setMockSubscriberData(mockSubscribers);
 
       render(<EmailSubscribers />);
       
@@ -339,20 +326,12 @@ describe('EmailSubscribers Component', () => {
         { id: '1', name: 'John Doe', email: 'john@example.com', is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockSubscribers,
-        error: null,
-      });
-
-      const mockOrder = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrder }));
-      const mockSelect = vi.fn(() => ({ or: mockOr }));
+      setMockSubscriberData(mockSubscribers);
 
       const mockEq = vi.fn().mockResolvedValue({ error: null });
       const mockDelete = vi.fn(() => ({ eq: mockEq }));
 
       (supabase.from as any).mockReturnValue({
-        select: mockSelect,
         delete: mockDelete,
       });
 
@@ -386,13 +365,7 @@ describe('EmailSubscribers Component', () => {
         { id: '1', name: 'John Doe', email: 'john@example.com', is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockSubscribers,
-        error: null,
-      });
-
-      const mockOrder = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrder }));
+      setMockSubscriberData(mockSubscribers);
 
       // Mock for the delete flow: first checks is_admin, then deletes (for non-admin)
       const mockMaybeSingle = vi.fn().mockResolvedValue({ 
@@ -412,8 +385,8 @@ describe('EmailSubscribers Component', () => {
               if (query === 'is_admin') {
                 return { eq: mockEqCheck };
               }
-              // Otherwise it's the search query  
-              return { or: mockOr };
+              // Otherwise return mock chain
+              return { eq: mockEqCheck };
             },
             delete: mockDelete,
           };
@@ -499,18 +472,7 @@ describe('EmailSubscribers Component', () => {
         { id: '1', name: 'John Doe', email: 'john@example.com', is_active: true, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockSubscribers,
-        error: null,
-      });
-
-      const mockOrder = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrder }));
-      const mockSelect = vi.fn(() => ({ or: mockOr }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      setMockSubscriberData(mockSubscribers);
 
       render(<EmailSubscribers />);
       
@@ -529,18 +491,7 @@ describe('EmailSubscribers Component', () => {
         { id: '1', name: 'John Doe', email: 'john@example.com', is_active: false, created_at: '2025-01-01T00:00:00Z' },
       ];
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: mockSubscribers,
-        error: null,
-      });
-
-      const mockOrder = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrder }));
-      const mockSelect = vi.fn(() => ({ or: mockOr }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
-      });
+      setMockSubscriberData(mockSubscribers);
 
       render(<EmailSubscribers />);
       
@@ -557,17 +508,12 @@ describe('EmailSubscribers Component', () => {
     it('displays error message when search fails', async () => {
       const user = userEvent.setup();
 
-      const mockLimit = vi.fn().mockResolvedValue({
-        data: null,
-        error: { message: 'Database error' },
-      });
-
-      const mockOrder = vi.fn(() => ({ limit: mockLimit }));
-      const mockOr = vi.fn(() => ({ order: mockOrder }));
-      const mockSelect = vi.fn(() => ({ or: mockOr }));
-
-      (supabase.from as any).mockReturnValue({
-        select: mockSelect,
+      // Mock fetch to return error (need text() for error message parsing)
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('Database error'),
+        json: () => Promise.resolve({ message: 'Database error' }),
       });
 
       render(<EmailSubscribers />);

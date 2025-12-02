@@ -46,23 +46,48 @@ export const EmailSubscribers: React.FC = () => {
       const query = searchQuery.trim().toLowerCase();
       console.log('📝 Cleaned query:', query);
       
-      let dbQuery = supabase
-        .from('email_subscribers')
-        .select('*');
+      // Use native fetch to avoid Supabase client hang after browser minimize
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
-      // If search query is provided, filter by it; otherwise return all
+      const params = new URLSearchParams();
+      params.set('select', '*');
+      params.set('order', 'created_at.desc');
+      params.set('limit', '50');
+      
+      // If search query is provided, filter by it
       if (query) {
-        dbQuery = dbQuery.or(`name.ilike.%${query}%,email.ilike.%${query}%`);
+        params.set('or', `(name.ilike.%${query}%,email.ilike.%${query}%)`);
       }
       
-      console.log('🔄 Executing query...');
-      const { data, error } = await dbQuery
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      console.log('✅ Query complete:', { data, error });
+      const url = `${supabaseUrl}/rest/v1/email_subscribers?${params.toString()}`;
       
-      if (error) throw error;
+      console.log('🔄 Executing query...');
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Query failed: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+
+      console.log('✅ Query complete:', { data });
+      
       setSubscribers(data || []);
       console.log('✅ Search complete, found:', data?.length || 0, 'subscribers');
     } catch (err: unknown) {

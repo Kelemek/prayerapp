@@ -15,7 +15,7 @@ import { useAdminAuth } from './hooks/useAdminAuthHook';
 import type { PrayerStatus, PrayerPrompt, AllowanceLevel } from './types/prayer';
 import { usePrayerManager } from './hooks/usePrayerManager';
 import { useTheme } from './hooks/useTheme';
-import { supabase } from './lib/supabase';
+import { supabase, directQuery, directMutation, getSupabaseConfig } from './lib/supabase';
 import type { PrayerFilters } from './types/prayer';
 import { sendAdminNotification } from './lib/emailNotifications';
 import { setupGlobalErrorHandling, logPageView } from './lib/errorLogger';
@@ -165,13 +165,18 @@ function AppContent() {
   useEffect(() => {
     const trackPageView = async () => {
       try {
-        await supabase.from('analytics').insert({
-          event_type: 'page_view',
-          event_data: {
-            timestamp: new Date().toISOString(),
-            path: window.location.pathname,
-            hash: window.location.hash
-          }
+        // Use directMutation to avoid Supabase client hang after Safari minimize
+        await directMutation('analytics', {
+          method: 'POST',
+          body: {
+            event_type: 'page_view',
+            event_data: {
+              timestamp: new Date().toISOString(),
+              path: window.location.pathname,
+              hash: window.location.hash
+            }
+          },
+          timeout: 5000
         });
       } catch (error) {
         // Silently fail - don't disrupt user experience if tracking fails
@@ -662,24 +667,38 @@ function AppContent() {
                 onFormOpen={closeAllForms}
                 onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => {
                   try {
-                    const { data, error } = await supabase
-                      .from('status_change_requests')
-                      .insert({ prayer_id: prayerId, requested_status: newStatus, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' })
-                      .select()
-                      .single();
+                    // Use directMutation to avoid Safari minimize hang
+                    const { data, error } = await directMutation<{ id: string }[]>('status_change_requests', {
+                      method: 'POST',
+                      body: { prayer_id: prayerId, requested_status: newStatus, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' },
+                      returning: true,
+                      timeout: 15000
+                    });
                     if (error) throw error;
+                    const requestId = Array.isArray(data) && data.length > 0 ? data[0].id : undefined;
 
                     // send admin notification
                     try {
-                      const { data: prayerRow } = await supabase.from('prayers').select('title, status').eq('id', prayerId).single();
+                      // Get prayer info using directQuery
+                      const { data: prayerRows } = await directQuery<{ title: string; status: string }[]>('prayers', {
+                        select: 'title, status',
+                        eq: { id: prayerId },
+                        limit: 1,
+                        timeout: 10000
+                      });
+                      const prayerRow = prayerRows?.[0];
                       
                       // Fetch admin emails for approval code generation
-                      const { data: admins } = await supabase
-                        .from('email_subscribers')
-                        .select('email')
-                        .eq('is_admin', true)
-                        .eq('is_active', true)
-                        .eq('receive_admin_emails', true);
+                      const { url, anonKey } = getSupabaseConfig();
+                      const adminParams = new URLSearchParams();
+                      adminParams.set('select', 'email');
+                      adminParams.set('is_admin', 'eq.true');
+                      adminParams.set('is_active', 'eq.true');
+                      adminParams.set('receive_admin_emails', 'eq.true');
+                      const adminResponse = await fetch(`${url}/rest/v1/email_subscribers?${adminParams.toString()}`, {
+                        headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` }
+                      });
+                      const admins = await adminResponse.json();
 
                       await sendAdminNotification({ 
                         type: 'status-change', 
@@ -688,8 +707,8 @@ function AppContent() {
                         requestedBy: requesterName, 
                         currentStatus: prayerRow?.status, 
                         requestedStatus: newStatus, 
-                        requestId: data?.id,
-                        adminEmails: admins?.map(a => a.email) || []
+                        requestId,
+                        adminEmails: admins?.map((a: { email: string }) => a.email) || []
                       });
                     } catch (notifyErr) {
                       console.warn('Failed to send status change notification', notifyErr);
@@ -701,32 +720,46 @@ function AppContent() {
                 }}
                 onRequestDelete={async (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => {
                   try {
-                    const { data, error } = await supabase
-                      .from('deletion_requests')
-                      .insert({ prayer_id: prayerId, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' })
-                      .select()
-                      .single();
+                    // Use directMutation to avoid Safari minimize hang
+                    const { data, error } = await directMutation<{ id: string }[]>('deletion_requests', {
+                      method: 'POST',
+                      body: { prayer_id: prayerId, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' },
+                      returning: true,
+                      timeout: 15000
+                    });
                     if (error) throw error;
+                    const requestId = Array.isArray(data) && data.length > 0 ? data[0].id : undefined;
 
                     // send admin notification
                     try {
-                      const { data: prayerRow } = await supabase.from('prayers').select('title').eq('id', prayerId).single();
+                      // Get prayer info using directQuery
+                      const { data: prayerRows } = await directQuery<{ title: string }[]>('prayers', {
+                        select: 'title',
+                        eq: { id: prayerId },
+                        limit: 1,
+                        timeout: 10000
+                      });
+                      const prayerRow = prayerRows?.[0];
                       
                       // Fetch admin emails for approval code generation
-                      const { data: admins } = await supabase
-                        .from('email_subscribers')
-                        .select('email')
-                        .eq('is_admin', true)
-                        .eq('is_active', true)
-                        .eq('receive_admin_emails', true);
+                      const { url, anonKey } = getSupabaseConfig();
+                      const adminParams = new URLSearchParams();
+                      adminParams.set('select', 'email');
+                      adminParams.set('is_admin', 'eq.true');
+                      adminParams.set('is_active', 'eq.true');
+                      adminParams.set('receive_admin_emails', 'eq.true');
+                      const adminResponse = await fetch(`${url}/rest/v1/email_subscribers?${adminParams.toString()}`, {
+                        headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` }
+                      });
+                      const admins = await adminResponse.json();
 
                       await sendAdminNotification({ 
                         type: 'deletion', 
                         title: prayerRow?.title || 'Unknown Prayer', 
                         reason, 
                         requestedBy: requesterName, 
-                        requestId: data?.id,
-                        adminEmails: admins?.map(a => a.email) || []
+                        requestId,
+                        adminEmails: admins?.map((a: { email: string }) => a.email) || []
                       });
                     } catch (notifyErr) {
                       console.warn('Failed to send deletion notification', notifyErr);

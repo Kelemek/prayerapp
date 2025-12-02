@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type BackupStatusType from '../BackupStatus'
-import { supabase } from '../../lib/supabase'
 
 // Helper to get fresh component after module reset
 const getComponent = async (): Promise<typeof BackupStatusType> => {
@@ -13,55 +12,40 @@ const getComponent = async (): Promise<typeof BackupStatusType> => {
   return mod.default
 }
 
-// Mock Supabase using the shared supabase mock so chainable methods are available
+// Default mock data for backup logs
+const defaultBackupLogs = [
+  {
+    id: '1',
+    backup_date: '2025-10-18T08:00:00Z',
+    status: 'success',
+    tables_backed_up: { prayers: 50, prayer_updates: 25, prayer_types: 5 },
+    total_records: 80,
+    duration_seconds: 45,
+    created_at: '2025-10-18T08:00:00Z'
+  },
+  {
+    id: '2',
+    backup_date: '2025-10-17T08:00:00Z',
+    status: 'success',
+    tables_backed_up: { prayers: 48, prayer_updates: 23, prayer_types: 5 },
+    total_records: 76,
+    duration_seconds: 42,
+    created_at: '2025-10-17T08:00:00Z'
+  }
+];
+
+// Mock Supabase with directQuery and directMutation
 vi.mock('../../lib/supabase', async () => {
   const mod = await import('../../testUtils/supabaseMock')
   const sup = mod.createSupabaseMock()
-  // Override the from method to properly handle queries
-  sup.from = vi.fn((table: string) => {
-    if (table === 'backup_logs') {
-      return {
-        select: vi.fn().mockReturnValue({
-          order: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue({
-              data: [
-                {
-                  id: '1',
-                  backup_date: '2025-10-18T08:00:00Z',
-                  status: 'success',
-                  tables_backed_up: { prayers: 50, prayer_updates: 25, prayer_types: 5 },
-                  total_records: 80,
-                  duration_seconds: 45,
-                  created_at: '2025-10-18T08:00:00Z'
-                },
-                {
-                  id: '2',
-                  backup_date: '2025-10-17T08:00:00Z',
-                  status: 'success',
-                  tables_backed_up: { prayers: 48, prayer_updates: 23, prayer_types: 5 },
-                  total_records: 76,
-                  duration_seconds: 42,
-                  created_at: '2025-10-17T08:00:00Z'
-                }
-              ],
-              error: null
-            })
-          })
-        }),
-        insert: vi.fn().mockResolvedValue({ data: null, error: null })
-      }
-    }
-    return {
-      select: () => ({
-        order: () => ({
-          limit: () => Promise.resolve({ data: [], error: null })
-        })
-      }),
-      insert: vi.fn().mockResolvedValue({ data: null, error: null })
-    }
-  })
-  return { supabase: sup }
+  return { 
+    supabase: sup,
+    directQuery: vi.fn(),
+    directMutation: vi.fn()
+  }
 })
+
+import { directQuery, directMutation, supabase } from '../../lib/supabase';
 
 // Mock URL and document APIs for backup download - simplified to avoid DOM conflicts
 const mockCreateObjectURL = vi.fn()
@@ -105,6 +89,18 @@ describe('BackupStatus Component', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     vi.resetModules()
+    // Default mock for directQuery to return backup logs
+    vi.mocked(directQuery).mockImplementation(async (table: string) => {
+      if (table === 'backup_logs') {
+        return { data: defaultBackupLogs, error: null };
+      }
+      if (table === 'backup_tables') {
+        return { data: [{ table_name: 'prayers' }, { table_name: 'prayer_updates' }], error: null };
+      }
+      // For table data queries
+      return { data: [], error: null };
+    });
+    vi.mocked(directMutation).mockResolvedValue({ data: null, error: null });
   })
 
   afterEach(async () => {
@@ -329,18 +325,12 @@ describe('BackupStatus Component', () => {
 
     it('handles no backup logs gracefully', async () => {
       // Mock empty backup logs
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
         if (table === 'backup_logs') {
-          return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: [], error: null })
-              })
-            })
-          } as any
+          return { data: [], error: null };
         }
-        return {} as any
-      })
+        return { data: [], error: null };
+      });
 
       const BackupStatus = await getComponent();
       render(<BackupStatus />)
@@ -353,18 +343,12 @@ describe('BackupStatus Component', () => {
 
     it('handles fetch error gracefully', async () => {
       // Mock fetch error
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
         if (table === 'backup_logs') {
-          return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: null, error: { message: 'Database error' } })
-              })
-            })
-          } as any
+          return { data: null, error: { message: 'Database error' } };
         }
-        return {} as any
-      })
+        return { data: [], error: null };
+      });
 
       // Spy on console.error to avoid test output pollution
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -379,30 +363,24 @@ describe('BackupStatus Component', () => {
 
     it('shows error message in expanded backup details', async () => {
       // Mock backup logs with a failed backup
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
         if (table === 'backup_logs') {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: [
-                    {
-                      id: '1',
-                      backup_date: '2025-10-18T08:00:00Z',
-                      status: 'failed',
-                      error_message: 'Detailed error message here',
-                      total_records: 0,
-                      created_at: '2025-10-18T08:00:00Z'
-                    }
-                  ],
-                  error: null
-                })
-              })
-            })
-          } as any
+            data: [
+              {
+                id: '1',
+                backup_date: '2025-10-18T08:00:00Z',
+                status: 'failed',
+                error_message: 'Detailed error message here',
+                total_records: 0,
+                created_at: '2025-10-18T08:00:00Z'
+              }
+            ],
+            error: null
+          };
         }
-        return {} as any
-      })
+        return { data: [], error: null };
+      });
 
       const user = userEvent.setup()
       const BackupStatus = await getComponent();
@@ -440,18 +418,12 @@ describe('BackupStatus Component', () => {
         created_at: `2025-10-${18 - i}T08:00:00Z`
       }))
 
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
         if (table === 'backup_logs') {
-          return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: mockBackups, error: null })
-              })
-            })
-          } as any
+          return { data: mockBackups, error: null };
         }
-        return {} as any
-      })
+        return { data: [], error: null };
+      });
 
       const BackupStatus = await getComponent();
       render(<BackupStatus />)
@@ -473,18 +445,12 @@ describe('BackupStatus Component', () => {
         created_at: `2025-10-${18 - i}T08:00:00Z`
       }))
 
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
         if (table === 'backup_logs') {
-          return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: mockBackups, error: null })
-              })
-            })
-          } as any
+          return { data: mockBackups, error: null };
         }
-        return {} as any
-      })
+        return { data: [], error: null };
+      });
 
       const user = userEvent.setup()
       const BackupStatus = await getComponent();
@@ -513,57 +479,41 @@ describe('BackupStatus Component', () => {
     })
 
     it('successfully completes manual backup and shows success message', async () => {
-      // Mock successful table data fetch
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
+      // Mock directQuery for backup_tables and table data
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
+        if (table === 'backup_logs') {
+          return {
+            data: [{
+              id: '1',
+              backup_date: '2025-10-18T08:00:00Z',
+              status: 'success',
+              tables_backed_up: { prayers: 50 },
+              total_records: 50,
+              duration_seconds: 30,
+              created_at: '2025-10-18T08:00:00Z'
+            }],
+            error: null
+          };
+        }
         if (table === 'backup_tables') {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockResolvedValue({
-                data: [
-                  { table_name: 'prayers' },
-                  { table_name: 'prayer_updates' }
-                ],
-                error: null
-              })
-            })
-          } as any
-        } else if (table === 'prayers') {
-          return {
-            select: vi.fn().mockResolvedValue({
-              data: [{ id: '1', title: 'Test Prayer' }],
-              error: null
-            })
-          } as any
-        } else if (table === 'prayer_updates') {
-          return {
-            select: vi.fn().mockResolvedValue({
-              data: [{ id: '1', content: 'Test Update' }],
-              error: null
-            })
-          } as any
-        } else if (table === 'backup_logs') {
-          return {
-            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ 
-                  data: [{
-                    id: '1',
-                    backup_date: '2025-10-18T08:00:00Z',
-                    status: 'success',
-                    tables_backed_up: { prayers: 50 },
-                    total_records: 50,
-                    duration_seconds: 30,
-                    created_at: '2025-10-18T08:00:00Z'
-                  }], 
-                  error: null 
-                })
-              })
-            })
-          } as any
+            data: [
+              { table_name: 'prayers' },
+              { table_name: 'prayer_updates' }
+            ],
+            error: null
+          };
         }
-        return {} as any
-      })
+        if (table === 'prayers') {
+          return { data: [{ id: '1', title: 'Test Prayer' }], error: null };
+        }
+        if (table === 'prayer_updates') {
+          return { data: [{ id: '1', content: 'Test Update' }], error: null };
+        }
+        return { data: [], error: null };
+      });
+
+      vi.mocked(directMutation).mockResolvedValue({ data: null, error: null });
 
       const user = userEvent.setup()
       const BackupStatus = await getComponent();
@@ -582,37 +532,27 @@ describe('BackupStatus Component', () => {
     })
 
     it('handles backup failure and shows error message', async () => {
-      // Mock table fetch failure
-      vi.mocked(supabase.from).mockImplementation((table: string) => {
-        if (table === 'backup_tables') {
+      // Mock directQuery to fail for backup_tables
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
+        if (table === 'backup_logs') {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockRejectedValue(new Error('Database connection failed'))
-            })
-          } as any
-        } else if (table === 'backup_logs') {
-          return {
-            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ 
-                  data: [{
-                    id: '1',
-                    backup_date: '2025-10-18T08:00:00Z',
-                    status: 'success',
-                    tables_backed_up: { prayers: 50 },
-                    total_records: 50,
-                    duration_seconds: 30,
-                    created_at: '2025-10-18T08:00:00Z'
-                  }], 
-                  error: null 
-                })
-              })
-            })
-          } as any
+            data: [{
+              id: '1',
+              backup_date: '2025-10-18T08:00:00Z',
+              status: 'success',
+              tables_backed_up: { prayers: 50 },
+              total_records: 50,
+              duration_seconds: 30,
+              created_at: '2025-10-18T08:00:00Z'
+            }],
+            error: null
+          };
         }
-        return {} as any
-      })
+        if (table === 'backup_tables') {
+          throw new Error('Database connection failed');
+        }
+        return { data: [], error: null };
+      });
 
       const user = userEvent.setup()
       const BackupStatus = await getComponent();
@@ -629,42 +569,31 @@ describe('BackupStatus Component', () => {
         expect(mockAlert).toHaveBeenCalledWith('❌ Backup failed: Database connection failed')
       })
     })
-    })
   })
 
   describe('Backup Status Display', () => {
     // Tests in this block set up their own mocks before rendering
 
     it('displays failed backup with error indicator', async () => {
-      // Import fresh supabase FIRST to set up our mock
-      const { supabase: freshSupabase } = await import('../../lib/supabase')
-      
-      // Mock backup logs with a failed backup BEFORE importing component
-      const mockSupabase = vi.mocked(freshSupabase)
-      mockSupabase.from.mockImplementation((table: string) => {
+      // Mock backup logs with a failed backup
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
         if (table === 'backup_logs') {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: [
-                    {
-                      id: '1',
-                      backup_date: '2025-10-18T08:00:00Z',
-                      status: 'failed',
-                      error_message: 'Connection timeout',
-                      total_records: 0,
-                      created_at: '2025-10-18T08:00:00Z'
-                    }
-                  ],
-                  error: null
-                })
-              })
-            })
-          } as any
+            data: [
+              {
+                id: '1',
+                backup_date: '2025-10-18T08:00:00Z',
+                status: 'failed',
+                error_message: 'Connection timeout',
+                total_records: 0,
+                created_at: '2025-10-18T08:00:00Z'
+              }
+            ],
+            error: null
+          };
         }
-        return {} as any
-      })
+        return { data: [], error: null };
+      });
 
       // NOW import and render the component
       const BackupStatus = await getComponent();
@@ -679,34 +608,24 @@ describe('BackupStatus Component', () => {
     })
 
     it('displays in-progress backup status', async () => {
-      // Re-import supabase after module reset
-      const { supabase } = await import('../../lib/supabase')
-      
       // Mock backup logs with an in-progress backup
-      const mockSupabase = vi.mocked(supabase)
-      mockSupabase.from.mockImplementation((table: string) => {
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
         if (table === 'backup_logs') {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: [
-                    {
-                      id: '1',
-                      backup_date: '2025-10-18T08:00:00Z',
-                      status: 'in_progress',
-                      total_records: 0,
-                      created_at: '2025-10-18T08:00:00Z'
-                    }
-                  ],
-                  error: null
-                })
-              })
-            })
-          } as any
+            data: [
+              {
+                id: '1',
+                backup_date: '2025-10-18T08:00:00Z',
+                status: 'in_progress',
+                total_records: 0,
+                created_at: '2025-10-18T08:00:00Z'
+              }
+            ],
+            error: null
+          };
         }
-        return {} as any
-      })
+        return { data: [], error: null };
+      });
 
       const BackupStatus = await getComponent();
       render(<BackupStatus />)
@@ -731,45 +650,29 @@ describe('BackupStatus Component', () => {
     })
 
     it('handles backup failure and shows error message', async () => {
-      // Mock the backup process to fail by overriding just the select method for prayers table
-      const mockSupabase = vi.mocked(supabase)
-      mockSupabase.from.mockImplementation((table: string) => {
-        if (table === 'prayers') {
-          return {
-            select: vi.fn().mockResolvedValue({
-              data: null,
-              error: { message: 'Database connection failed' }
-            })
-          } as any
-        }
+      // Mock directQuery to throw an exception when fetching backup_tables
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
         if (table === 'backup_logs') {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: [
-                    {
-                      id: '1',
-                      backup_date: '2025-10-18T08:00:00Z',
-                      status: 'success',
-                      tables_backed_up: { prayers: 50, prayer_updates: 25, prayer_types: 5 },
-                      total_records: 80,
-                      duration_seconds: 45,
-                      created_at: '2025-10-18T08:00:00Z'
-                    }
-                  ],
-                  error: null
-                })
-              })
-            }),
-            insert: vi.fn().mockResolvedValue({ data: null, error: null })
-          } as any
+            data: [
+              {
+                id: '1',
+                backup_date: '2025-10-18T08:00:00Z',
+                status: 'success',
+                tables_backed_up: { prayers: 50, prayer_updates: 25, prayer_types: 5 },
+                total_records: 80,
+                duration_seconds: 45,
+                created_at: '2025-10-18T08:00:00Z'
+              }
+            ],
+            error: null
+          };
         }
-        return {
-          select: vi.fn().mockResolvedValue({ data: [], error: null }),
-          insert: vi.fn().mockResolvedValue({ data: null, error: null })
-        } as any
-      })
+        if (table === 'backup_tables') {
+          throw new Error('Database connection failed');
+        }
+        return { data: [], error: null };
+      });
 
       const user = userEvent.setup()
       const BackupStatus = await getComponent();
@@ -789,58 +692,34 @@ describe('BackupStatus Component', () => {
     })
 
     it('shows loading state during backup', async () => {
-      // Re-import supabase after module reset
-      const { supabase } = await import('../../lib/supabase')
-      
-      // Setup mock to return backup logs (so component renders properly) and delay insert
-      const mockSupabase = vi.mocked(supabase)
-      mockSupabase.from.mockImplementation((table: string) => {
+      // Mock directQuery with delay for loading state test
+      vi.mocked(directQuery).mockImplementation(async (table: string) => {
         if (table === 'backup_logs') {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: [
-                    {
-                      id: '1',
-                      backup_date: '2025-10-18T08:00:00Z',
-                      status: 'success',
-                      tables_backed_up: { prayers: 50 },
-                      total_records: 50,
-                      duration_seconds: 30,
-                      created_at: '2025-10-18T08:00:00Z'
-                    }
-                  ],
-                  error: null
-                })
-              })
-            }),
-            insert: vi.fn().mockImplementation(async () => {
-              await new Promise(resolve => setTimeout(resolve, 200))
-              return { data: null, error: null }
-            })
-          } as any
+            data: [
+              {
+                id: '1',
+                backup_date: '2025-10-18T08:00:00Z',
+                status: 'success',
+                tables_backed_up: { prayers: 50 },
+                total_records: 50,
+                duration_seconds: 30,
+                created_at: '2025-10-18T08:00:00Z'
+              }
+            ],
+            error: null
+          };
         }
         if (table === 'backup_tables') {
-          return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockResolvedValue({
-                data: [{ table_name: 'prayers' }],
-                error: null
-              })
-            })
-          } as any
+          // Add delay to simulate loading
+          await new Promise(resolve => setTimeout(resolve, 200));
+          return { data: [{ table_name: 'prayers' }], error: null };
         }
         if (table === 'prayers') {
-          return {
-            select: vi.fn().mockResolvedValue({
-              data: [{ id: '1', content: 'Test prayer' }],
-              error: null
-            })
-          } as any
+          return { data: [{ id: '1', content: 'Test prayer' }], error: null };
         }
-        return {} as any
-      })
+        return { data: [], error: null };
+      });
       
       mockConfirm.mockReturnValue(true)
 
@@ -945,5 +824,4 @@ describe('BackupStatus Component', () => {
       expect(loadingButton).toBeDisabled()
     })
   })
-
-
+})

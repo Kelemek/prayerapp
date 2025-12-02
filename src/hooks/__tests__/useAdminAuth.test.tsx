@@ -17,7 +17,10 @@ vi.mock('../../lib/supabase', async () => {
   sup.removeChannel = vi.fn();
   return { 
     supabase: sup,
-    createFreshSupabaseClient: () => sup
+    createFreshSupabaseClient: () => sup,
+    directQuery: vi.fn().mockResolvedValue({ data: [], error: null, count: 0 }),
+    directMutation: vi.fn().mockResolvedValue({ data: null, error: null }),
+    getSupabaseConfig: vi.fn().mockReturnValue({ url: 'https://test.supabase.co', anonKey: 'test-key' })
   };
 });
 
@@ -26,18 +29,20 @@ import { supabase } from '../../lib/supabase';
 describe('AdminAuthProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock fetch for admin status check (uses direct REST API)
+    global.fetch = vi.fn();
   });
 
   it('sets isAdmin true when initial session user is admin', async () => {
     // Mock getSession to return a user session
     vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: { user: { email: 'admin@example.com' } } }, error: null } as any);
 
-    // Mock admin check chain: from(...).select().eq().eq().maybeSingle()
-    const maybeSingle = vi.fn().mockResolvedValue({ data: { is_admin: true }, error: null });
-    const eq2 = vi.fn().mockReturnValue({ maybeSingle });
-    const eq1 = vi.fn().mockReturnValue({ eq: eq2 });
-    const select = vi.fn().mockReturnValue({ eq: eq1 });
-    vi.mocked(supabase.from).mockReturnValue({ select } as any);
+    // Mock directQuery response for admin_settings (timeout settings)
+    // and mock fetch for admin status check
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => [{ is_admin: true }]
+    } as Response);
 
     const TestChild: React.FC = () => {
       const ctx = useContext(AdminAuthContext)!;

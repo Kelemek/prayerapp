@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Save, Settings, Upload, Trash2, ChevronDown } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, directQuery } from '../lib/supabase';
 import type { AllowanceLevel } from '../types/prayer';
 
 interface AppBrandingProps {
@@ -43,11 +43,21 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
   const loadBrandingSettings = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('admin_settings')
-        .select('app_title, app_subtitle, use_logo, light_mode_logo_blob, dark_mode_logo_blob')
-        .eq('id', 1)
-        .maybeSingle();
+      // Use directQuery to avoid Supabase client hang after browser minimize
+      const { data: dataArray, error } = await directQuery<{
+        app_title: string;
+        app_subtitle: string;
+        use_logo: boolean;
+        light_mode_logo_blob: string;
+        dark_mode_logo_blob: string;
+      }[]>('admin_settings', {
+        select: 'app_title,app_subtitle,use_logo,light_mode_logo_blob,dark_mode_logo_blob',
+        eq: { id: 1 },
+        limit: 1,
+        timeout: 15000
+      });
+      
+      const data = dataArray?.[0] || null;
 
       if (error) {
         console.error('Error loading branding settings:', error);
@@ -90,11 +100,17 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
 
       // Try to load permission columns separately in case migration hasn't been run
       try {
-        const { data: permissionData } = await supabase
-          .from('admin_settings')
-          .select('deletions_allowed, updates_allowed')
-          .eq('id', 1)
-          .maybeSingle();
+        const { data: permDataArray } = await directQuery<{
+          deletions_allowed: AllowanceLevel;
+          updates_allowed: AllowanceLevel;
+        }[]>('admin_settings', {
+          select: 'deletions_allowed,updates_allowed',
+          eq: { id: 1 },
+          limit: 1,
+          timeout: 15000
+        });
+        
+        const permissionData = permDataArray?.[0] || null;
 
         if (permissionData?.deletions_allowed) {
           delAllowed = permissionData.deletions_allowed;

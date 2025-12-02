@@ -27,16 +27,19 @@ vi.mock('../../lib/supabase', () => ({
     functions: {
       invoke: vi.fn().mockResolvedValue({ error: null })
     }
-  }
+  },
+  directQuery: vi.fn()
 }));
 
-import { supabase } from '../../lib/supabase';
+import { supabase, directQuery } from '../../lib/supabase';
 
 describe('AdminUserManagement', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     // Reset module cache to clear cachedAdmins between tests
     vi.resetModules();
+    // Setup default mock for directQuery to return empty admins
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
   });
 
   // Helper to get fresh component import after module reset
@@ -51,6 +54,10 @@ describe('AdminUserManagement', () => {
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null }
     ];
 
+    // Mock directQuery for fetching admins
+    vi.mocked(directQuery).mockResolvedValue({ data: admins, error: null });
+    
+    // Also mock supabase.from for any other operations
     const mockChain = createMockChain(admins);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -66,6 +73,7 @@ describe('AdminUserManagement', () => {
 
   it('shows add admin form and validates input', async () => {
     const AdminUserManagement = await getComponent();
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
     const mockChain = createMockChain([]);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -94,6 +102,7 @@ describe('AdminUserManagement', () => {
 
   it('handles loading errors gracefully', async () => {
     const AdminUserManagement = await getComponent();
+    vi.mocked(directQuery).mockResolvedValue({ data: null, error: { message: 'Database error' } });
     const mockChain = createMockChain(null, { message: 'Database error' });
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -106,6 +115,7 @@ describe('AdminUserManagement', () => {
 
   it('shows empty state when no admins exist', async () => {
     const AdminUserManagement = await getComponent();
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
     const mockChain = createMockChain([]);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -118,6 +128,7 @@ describe('AdminUserManagement', () => {
 
   it('successfully adds a new admin', async () => {
     const AdminUserManagement = await getComponent();
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
     const mockChain = createMockChain([]);
     const upsertChain = {
       select: vi.fn().mockReturnThis(),
@@ -151,6 +162,7 @@ describe('AdminUserManagement', () => {
   it('prevents adding admin with existing email', async () => {
     const AdminUserManagement = await getComponent();
     const existingAdmin = { email: 'existing@example.com', name: 'Existing', created_at: new Date().toISOString() };
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
     const mockChain = createMockChain([]);
     const upsertChain = {
       select: vi.fn().mockReturnThis(),
@@ -183,6 +195,7 @@ describe('AdminUserManagement', () => {
 
   it('handles add admin database error', async () => {
     const AdminUserManagement = await getComponent();
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
     const mockChain = createMockChain([]);
     const upsertChain = {
       select: vi.fn().mockReturnThis(),
@@ -215,6 +228,7 @@ describe('AdminUserManagement', () => {
 
   it('validates required fields in add admin form', async () => {
     const AdminUserManagement = await getComponent();
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
     const mockChain = createMockChain([]);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -235,6 +249,7 @@ describe('AdminUserManagement', () => {
 
   it('cancels add admin form', async () => {
     const AdminUserManagement = await getComponent();
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
     const mockChain = createMockChain([]);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -262,6 +277,7 @@ describe('AdminUserManagement', () => {
       { email: 'bob@example.com', name: 'Bob', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
     ];
 
+    vi.mocked(directQuery).mockResolvedValue({ data: admins, error: null });
     const mockChain = createMockChain(admins);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -290,6 +306,7 @@ describe('AdminUserManagement', () => {
       { email: 'bob@example.com', name: 'Bob', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
     ];
 
+    vi.mocked(directQuery).mockResolvedValue({ data: admins, error: null });
     const mockChain = createMockChain(admins);
     const updateChain = {
       select: vi.fn().mockReturnThis(),
@@ -328,6 +345,7 @@ describe('AdminUserManagement', () => {
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: true }
     ];
 
+    vi.mocked(directQuery).mockResolvedValue({ data: admins, error: null });
     const mockChain = createMockChain(admins);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -347,6 +365,7 @@ describe('AdminUserManagement', () => {
       { email: 'bob@example.com', name: 'Bob', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
     ];
 
+    vi.mocked(directQuery).mockResolvedValue({ data: admins, error: null });
     const mockChain = createMockChain(admins);
     const updateChain = {
       select: vi.fn().mockReturnThis(),
@@ -385,6 +404,7 @@ describe('AdminUserManagement', () => {
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
     ];
 
+    vi.mocked(directQuery).mockResolvedValue({ data: admins, error: null });
     const mockChain = createMockChain(admins);
     const updateChain = {
       select: vi.fn().mockReturnThis(),
@@ -416,6 +436,7 @@ describe('AdminUserManagement', () => {
       { email: 'alice@example.com', name: 'Alice', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
     ];
 
+    vi.mocked(directQuery).mockResolvedValue({ data: admins, error: null });
     const mockChain = createMockChain(admins);
     const updateChain = {
       select: vi.fn().mockReturnThis(),
@@ -452,6 +473,7 @@ describe('AdminUserManagement', () => {
       { email: 'bob@example.com', name: 'Bob', created_at: new Date().toISOString(), last_sign_in_at: null, receive_admin_emails: false }
     ];
 
+    vi.mocked(directQuery).mockResolvedValue({ data: admins, error: null });
     const mockChain = createMockChain(admins);
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 
@@ -469,6 +491,7 @@ describe('AdminUserManagement', () => {
 
   it('dismisses success message', async () => {
     const AdminUserManagement = await getComponent();
+    vi.mocked(directQuery).mockResolvedValue({ data: [], error: null });
     const mockChain = createMockChain([]);
     const upsertChain = {
       select: vi.fn().mockReturnThis(),
@@ -505,6 +528,7 @@ describe('AdminUserManagement', () => {
 
   it('dismisses error message', async () => {
     const AdminUserManagement = await getComponent();
+    vi.mocked(directQuery).mockResolvedValue({ data: null, error: { message: 'Database error' } });
     const mockChain = createMockChain(null, { message: 'Database error' });
     vi.mocked(supabase.from).mockReturnValue(mockChain as any);
 

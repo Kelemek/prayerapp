@@ -3,7 +3,7 @@
  * Replaces old Resend and Mailchimp functions
  */
 
-import { supabase } from './supabase'
+import { supabase, directQuery } from './supabase'
 
 export interface SendEmailOptions {
   to: string | string[]
@@ -53,12 +53,14 @@ export async function getTemplate(templateKey: string): Promise<EmailTemplate | 
 
 /**
  * Get all templates
+ * Uses directQuery to avoid Supabase client hang after browser minimize
  */
 export async function getAllTemplates(): Promise<EmailTemplate[]> {
-  const { data, error } = await supabase
-    .from('email_templates')
-    .select('*')
-    .order('name', { ascending: true })
+  const { data, error } = await directQuery<EmailTemplate[]>('email_templates', {
+    select: '*',
+    order: { column: 'name', ascending: true },
+    timeout: 15000
+  })
 
   if (error) {
     console.error('Error fetching templates:', error)

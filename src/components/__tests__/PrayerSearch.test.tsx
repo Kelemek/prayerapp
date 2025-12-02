@@ -84,6 +84,36 @@ vi.mock('../../lib/supabase', () => {
 
 const setMockPrayerData = (data: any[]) => {
   mockPrayerData = data
+  // Also update the global fetch mock to return this data with URL param filtering
+  global.fetch = vi.fn().mockImplementation((url: string) => {
+    let filteredData = [...data];
+    
+    // Parse URL params for filtering
+    try {
+      const urlObj = new URL(url);
+      const statusParam = urlObj.searchParams.get('status');
+      const approvalParam = urlObj.searchParams.get('approval_status');
+      
+      // Apply status filter (e.g., "eq.current")
+      if (statusParam && statusParam.startsWith('eq.')) {
+        const statusValue = statusParam.replace('eq.', '');
+        filteredData = filteredData.filter(p => p.status === statusValue);
+      }
+      
+      // Apply approval filter (e.g., "eq.approved")
+      if (approvalParam && approvalParam.startsWith('eq.')) {
+        const approvalValue = approvalParam.replace('eq.', '');
+        filteredData = filteredData.filter(p => p.approval_status === approvalValue);
+      }
+    } catch (e) {
+      // If URL parsing fails, just return all data
+    }
+    
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(filteredData),
+    });
+  });
 }
 
 describe('PrayerSearch Component', () => {
@@ -92,6 +122,11 @@ describe('PrayerSearch Component', () => {
     // Reset window.confirm mock if any tests manipulate it
     // @ts-ignore
     global.confirm = vi.fn(() => true)
+    // Default fetch mock returns empty array
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([]),
+    })
     setMockPrayerData([])
   })
 

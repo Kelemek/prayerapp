@@ -2,33 +2,27 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, vi, beforeEach, expect } from 'vitest';
 
-// Mock supabase for chainable query behavior
-vi.mock('../../lib/supabase', () => {
-  const chain: any = {};
-  chain.or = () => chain;
-  chain.eq = () => chain;
-  chain.order = () => chain;
-  chain.limit = async () => ({ data: [], error: null });
-
-  return {
-    supabase: {
-      from: (_table: string) => ({
-        select: () => chain
-      })
-    }
-  };
-});
+// Mock supabase
+vi.mock('../../lib/supabase', () => ({
+  supabase: {
+    from: vi.fn()
+  },
+  directQuery: vi.fn(),
+  directMutation: vi.fn()
+}));
 
 import { PrayerSearch } from '../PrayerSearch';
 
 describe('PrayerSearch component - extra tests', () => {
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([])
+    });
   });
 
   it('performs wildcard search when pressing Enter with no criteria', async () => {
-    // Mock supabase to return prayers for wildcard search
     const mockPrayers = [
       {
         id: 'r1',
@@ -54,22 +48,12 @@ describe('PrayerSearch component - extra tests', () => {
       }
     ];
 
-    vi.doMock('../../lib/supabase', () => {
-      const chain: any = {};
-      chain.or = () => chain;
-      chain.eq = () => chain;
-      chain.order = () => chain;
-      chain.limit = async () => ({ data: mockPrayers, error: null });
-
-      return {
-        supabase: {
-          from: (_table: string) => ({ select: () => chain })
-        }
-      };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockPrayers)
     });
 
-    const { PrayerSearch: PS } = await import('../PrayerSearch');
-    render(<PS />);
+    render(<PrayerSearch />);
 
     const input = screen.getByPlaceholderText(/Search by title, requester, email/i) as HTMLInputElement;
 
@@ -84,7 +68,6 @@ describe('PrayerSearch component - extra tests', () => {
   });
 
   it('performs search and renders results when search term provided', async () => {
-    // Mock supabase to return one prayer result when chained
     const mockPrayer = {
       id: 'r1',
       title: 'Test Prayer Title',
@@ -97,35 +80,24 @@ describe('PrayerSearch component - extra tests', () => {
       prayer_updates: []
     };
 
-    // Re-mock module so our test can return the desired data
-    vi.doMock('../../lib/supabase', () => {
-      const chain: any = {};
-      chain.or = () => chain;
-      chain.eq = () => chain;
-      chain.order = () => chain;
-      chain.limit = async () => ({ data: [mockPrayer], error: null });
-
-      return {
-        supabase: {
-          from: (_table: string) => ({ select: () => chain })
-        }
-      };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([mockPrayer])
     });
 
-    const { PrayerSearch: PS } = await import('../PrayerSearch');
-    render(<PS />);
+    render(<PrayerSearch />);
 
     const input = screen.getByPlaceholderText(/Search by title, requester, email/i) as HTMLInputElement;
     // Type a search term and press Enter
-  act(() => {
+    act(() => {
       fireEvent.change(input, { target: { value: 'Alice' } });
       fireEvent.keyPress(input, { key: 'Enter', code: 'Enter', charCode: 13 });
     });
 
-  // Expect the returned prayer title to be rendered
-  await waitFor(() => expect(screen.getByText(/Test Prayer Title/)).toBeTruthy());
-  // And the footer should indicate results were found (number is inside a child element)
-  await waitFor(() => expect(screen.getByText(/Found:/)).toBeTruthy());
+    // Expect the returned prayer title to be rendered
+    await waitFor(() => expect(screen.getByText(/Test Prayer Title/)).toBeTruthy());
+    // And the footer should indicate results were found (number is inside a child element)
+    await waitFor(() => expect(screen.getByText(/Found:/)).toBeTruthy());
   });
 
   it('filters denied approval client-side when approvalFilter=denied', async () => {
@@ -138,32 +110,25 @@ describe('PrayerSearch component - extra tests', () => {
       created_at: new Date().toISOString(),
       description: '',
       approval_status: null,
+      denial_reason: 'Not allowed',
       prayer_updates: [
         { id: 'u1', content: 'update', author: 'Bob', created_at: new Date().toISOString(), denial_reason: 'Not allowed', approval_status: 'denied' }
       ]
     };
 
-    vi.doMock('../../lib/supabase', () => {
-      const chain: any = {};
-      chain.order = () => chain;
-      chain.limit = async () => ({ data: [mockPrayerWithDeniedUpdate], error: null });
-
-      return {
-        supabase: {
-          from: (_table: string) => ({ select: () => chain })
-        }
-      };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([mockPrayerWithDeniedUpdate])
     });
 
-    const { PrayerSearch: PS } = await import('../PrayerSearch');
-    render(<PS />);
+    render(<PrayerSearch />);
 
     // The component renders two select elements (status, approval). Grab the second combobox for approval
     const selects = screen.getAllByRole('combobox');
     const approvalSelect = selects[1] as HTMLSelectElement;
 
     // Change approval filter to 'denied' which triggers an auto-search
-  act(() => {
+    act(() => {
       fireEvent.change(approvalSelect, { target: { value: 'denied' } });
     });
 
