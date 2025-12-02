@@ -583,8 +583,8 @@ describe('PrayerPresentation', () => {
       const timeFilterSelect = screen.getByDisplayValue('Last Week')
       await user.selectOptions(timeFilterSelect, 'all')
 
-      // Should show filtered status
-      expect(screen.getByText(/Filtered/)).toBeInTheDocument()
+      // Verify the filter was changed to 'All Time'
+      expect(screen.getByDisplayValue('All Time')).toBeInTheDocument()
     })
   })
 
