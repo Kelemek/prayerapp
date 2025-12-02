@@ -263,7 +263,10 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
           setUser(tempUser);
           // Wait for checkAdminStatus to complete before setting loading to false
           await checkAdminStatus(tempUser);
-          setSessionStart(Date.now());
+          // Only set sessionStart if not already persisted (preserves original login time on page reload)
+          if (!getPersistedSessionStart()) {
+            setSessionStart(Date.now());
+          }
           setLastActivity(Date.now());
           setLoading(false);
           return;
@@ -292,8 +295,11 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
 
         // If there's an existing session on initialize, treat it as a signed-in session
         // and set sessionStart/lastActivity so the auto-logout logic can run.
+        // Only set sessionStart if not already persisted (preserves original login time on page reload)
         if (session?.user) {
-          setSessionStart(Date.now());
+          if (!getPersistedSessionStart()) {
+            setSessionStart(Date.now());
+          }
           setLastActivity(Date.now());
         }
         setLoading(false);
