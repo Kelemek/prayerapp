@@ -368,7 +368,7 @@ export default function BackupStatus() {
 
   if (!latestBackup) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-3 mb-4">
           <Database className="h-6 w-6 text-gray-400" />
           <h3 className="text-lg font-semibold text-gray-900 dark:!text-white">
@@ -387,7 +387,7 @@ export default function BackupStatus() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div className="flex items-center gap-3">
@@ -437,7 +437,7 @@ export default function BackupStatus() {
       {/* Recent Backups (Last 5) */}
       <div className="space-y-4 mb-6">
         {/* Info Box */}
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
           <div className="flex gap-2">
             <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
             <div className="text-sm text-blue-700 dark:text-blue-300">
@@ -450,7 +450,7 @@ export default function BackupStatus() {
 
         {/* Backup List */}
         <div>
-          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+          <h4 className="text-sm font-semibold text-gray-900 dark:!text-white mb-3">
             Recent Backups
           </h4>
           <div className="space-y-2">
@@ -458,7 +458,7 @@ export default function BackupStatus() {
               <div key={backup.id}>
                 <div
                   onClick={() => setExpandedBackupId(expandedBackupId === backup.id ? null : backup.id)}
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-4 border border-gray-200 dark:border-gray-700 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {backup.status === 'success' ? (
