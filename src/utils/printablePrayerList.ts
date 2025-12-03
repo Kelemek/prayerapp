@@ -195,13 +195,9 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
   (['current', 'answered'] as const).forEach(status => {
     const statusPrayers = prayersByStatus[status];
     if (statusPrayers.length > 0) {
-      // Split into two columns (column-major ordering)
-      const mid = Math.ceil(statusPrayers.length / 2);
-      const col1 = statusPrayers.slice(0, mid);
-      const col2 = statusPrayers.slice(mid);
-
-      const col1HTML = col1.map(prayer => generatePrayerHTML(prayer)).join('');
-      const col2HTML = col2.map(prayer => generatePrayerHTML(prayer)).join('');
+      // Generate all prayer cards - CSS flex-wrap will handle the 2-column layout
+      // This gives row-major ordering: 1 left, 2 right, 3 left, 4 right, etc.
+      const prayersHTML = statusPrayers.map(prayer => generatePrayerHTML(prayer)).join('');
 
       prayerSectionsHTML += `
         <div class="status-section">
@@ -209,8 +205,7 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
             ${statusLabels[status]} (${statusPrayers.length})
           </h2>
           <div class="columns">
-            <div class="col">${col1HTML}</div>
-            <div class="col">${col2HTML}</div>
+            ${prayersHTML}
           </div>
         </div>
       `;
@@ -233,66 +228,66 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
 
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-            line-height: 1.4;
+            line-height: 1.3;
             color: #222;
             background: white;
-            padding: 12px;
+            padding: 8px;
             max-width: 1000px;
             margin: 0 auto;
-            font-size: 13px;
+            font-size: 12px;
           }
 
           .header {
-            margin-bottom: 8px;
-            padding-bottom: 6px;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
             border-bottom: 2px solid #e5e7eb;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
           }
 
           .header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
           }
 
           .header-right {
-            font-size: 12px;
+            font-size: 11px;
             color: #6b7280;
             white-space: nowrap;
           }
 
           .header h1 {
-            font-size: 18px;
+            font-size: 16px;
             color: #1f2937;
             margin: 0;
           }
 
           .header .subtitle {
-            font-size: 14px;
+            font-size: 12px;
             color: #6b7280;
             font-style: italic;
           }
 
           .date-range {
-            font-size: 13px;
+            font-size: 11px;
             color: #4b5563;
           }
 
           .status-section {
-            margin-bottom: 6px;
+            margin-bottom: 4px;
           }
 
           .prayer-item {
             /* keep card look but reduce ink and spacing */
             background: transparent;
             border: 1px solid #e6e6e6;
-            padding: 6px 8px;
-            margin-bottom: 6px;
+            padding: 4px 6px;
+            margin-bottom: 4px;
             border-radius: 2px;
             page-break-inside: avoid;
             break-inside: avoid;
@@ -314,85 +309,95 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
             display: inline-block;
             background: #3b82f6;
             color: white;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             text-align: center;
-            line-height: 20px;
+            line-height: 18px;
             font-weight: 700;
-            font-size: 11px;
-            margin-right: 6px;
+            font-size: 10px;
+            margin-right: 4px;
           }
 
           .prayer-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             color: #111827;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             display: inline;
           }
 
           .prayer-for {
-            font-size: 15px;
+            font-size: 13px;
             color: #4b5563;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             font-weight: 600;
           }
 
           .prayer-meta {
-            font-size: 13px;
+            font-size: 11px;
             color: #6b7280;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             font-style: italic;
             display: flex;
             justify-content: space-between;
-            gap: 8px;
+            gap: 6px;
             align-items: center;
           }
 
           .prayer-description {
-            font-size: 14px;
+            font-size: 12px;
             color: #374151;
-            line-height: 1.5;
-            margin-bottom: 5px;
+            line-height: 1.4;
+            margin-bottom: 3px;
             word-wrap: break-word;
             overflow-wrap: break-word;
           }
 
-          /* Condensed updates section */
+          /* Updates section - more prominent styling */
           .updates-section {
-            margin-top: 5px;
-            padding-top: 5px;
-            border-top: 1px dotted #d1d5db;
+            margin-top: 6px;
+            padding: 6px 8px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 4px;
+            border-left: 3px solid #0ea5e9;
           }
 
           .updates-header {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
-            color: #6b7280;
-            margin-bottom: 3px;
+            color: #0369a1;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
 
           .update-item {
-            font-size: 12px;
-            color: #374151;
+            font-size: 11px;
+            color: #1e3a5f;
             line-height: 1.4;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
+            padding-left: 8px;
+            border-left: 2px solid #7dd3fc;
+          }
+
+          .update-item:last-child {
+            margin-bottom: 0;
           }
 
           .update-meta {
-            font-weight: 600;
-            color: #6b7280;
+            font-weight: 700;
+            color: #0369a1;
           }
           .columns {
             display: flex;
-            gap: 12px;
-            align-items: flex-start;
+            flex-direction: column;
+            gap: 6px;
           }
 
-          .col {
-            flex: 1 1 0;
-            min-width: 0;
+          .prayer-item {
+            width: 100%;
           }
 
           @media screen and (max-width: 768px) {
@@ -415,11 +420,17 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
               line-height: 20px;
               font-size: 11px;
             }
+
+            /* Single column on mobile */
+            .prayer-item {
+              flex: 0 0 100%;
+              max-width: 100%;
+            }
           }
 
           @media print {
             body {
-              padding: 15px;
+              padding: 0;
             }
 
             .no-print {
@@ -434,11 +445,13 @@ function generatePrintableHTML(prayers: Prayer[], timeRange: TimeRange = 'month'
             h2 {
               page-break-after: avoid;
               break-after: avoid;
+              margin-top: 4px;
             }
           }
 
           @page {
             margin: 0.5in;
+            size: letter;
           }
         </style>
       </head>
