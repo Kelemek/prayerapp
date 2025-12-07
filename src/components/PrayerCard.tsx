@@ -554,7 +554,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
       </div>
 
   {/* Centered timestamp for the prayer (positioned relative to the whole card) */}
-  <span className="absolute left-1/2 top-4 transform -translate-x-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-300">{formatDate(prayer.created_at)}</span>
+  <span className="absolute left-1/2 top-4 transform -translate-x-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400">{formatDate(prayer.created_at)}</span>
 
   {/* Prayer Details */}
   <p className="text-gray-600 dark:text-gray-300 mb-4">{prayer.description}</p>
