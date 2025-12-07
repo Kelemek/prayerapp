@@ -579,8 +579,8 @@ describe('PrayerPresentation', () => {
       const settingsButton = screen.getByTitle('Settings')
       await user.click(settingsButton)
 
-      // Find time filter select and change it (default is 'Last Week' now)
-      const timeFilterSelect = screen.getByDisplayValue('Last Week')
+      // Find time filter select and change it (default is 'Last Month' now)
+      const timeFilterSelect = screen.getByDisplayValue('Last Month')
       await user.selectOptions(timeFilterSelect, 'all')
 
       // Verify the filter was changed to 'All Time'
