@@ -333,6 +333,13 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
     });
   };
 
+  // Reusable border class matching the parent prayer card status
+  const statusBorderClass = prayer.status === 'current'
+    ? '!border-[#0047AB] dark:!border-[#0047AB]'
+    : prayer.status === 'answered'
+      ? '!border-[#39704D] dark:!border-[#39704D]'
+      : '!border-[#C9A961] dark:!border-[#C9A961]';
+
   const handleVerified = async (actionData: any) => {
     try {
       // Route to the correct submission function based on action type
@@ -733,7 +740,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
           <div className="space-y-3">
             {/* Show first 2 updates (newest) by default, or all if showAllUpdates is true */}
             {(showAllUpdates ? prayer.updates : prayer.updates.slice(0, 2)).map((update) => (
-              <div key={update.id} className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3">
+              <div key={update.id} className={`bg-gray-100 dark:bg-gray-700 rounded-lg p-6 border ${statusBorderClass}`}>
                 <div className="relative mb-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -769,7 +776,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
                       </button>
                     )}
                   </div>
-                  <span className="absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400">{formatDate(update.created_at)}</span>
+                  <span className="absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-4 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{formatDate(update.created_at)}</span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-300">{update.content}</p>
                 
