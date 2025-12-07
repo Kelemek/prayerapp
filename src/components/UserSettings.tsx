@@ -7,6 +7,7 @@ import { downloadPrintablePromptList } from '../utils/printablePromptList';
 import { getUserInfo } from '../utils/userInfoStorage';
 import { useVerification } from '../hooks/useVerification';
 import { VerificationDialog } from './VerificationDialog';
+import Checkbox from './Checkbox';
 
 interface UserSettingsProps {
   isOpen: boolean;
@@ -670,13 +671,13 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
             <div className="flex items-start gap-2 sm:gap-3">
               <Mail className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" size={18} />
               <div className="flex-1">
-                <label className="flex items-start gap-2 sm:gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={receiveNotifications}
-                    onChange={(e) => setReceiveNotifications(e.target.checked)}
-                    className="mt-1 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-                  />
+                <Checkbox
+                  checked={receiveNotifications}
+                  onChange={(e) => setReceiveNotifications(e.target.checked)}
+                  boxClassName="border-gray-300 bg-white dark:bg-gray-800"
+                  checkClassName="text-blue-600"
+                  wrapperClassName="cursor-pointer"
+                >
                   <div>
                     <div className="font-medium text-gray-800 dark:text-gray-100 text-sm sm:text-base">
                       Receive new prayer notifications
@@ -685,7 +686,7 @@ export const UserSettings: React.FC<UserSettingsProps> = ({ isOpen, onClose }) =
                       Sign up for prayer notifications or change your preference when new prayers are submitted to the prayer list
                     </p>
                   </div>
-                </label>
+                </Checkbox>
               </div>
             </div>
           </div>

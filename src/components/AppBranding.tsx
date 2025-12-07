@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Save, Settings, Upload, Trash2, ChevronDown } from 'lucide-react';
 import { supabase, directQuery } from '../lib/supabase';
+import Checkbox from './Checkbox';
 import type { AllowanceLevel } from '../types/prayer';
 
 interface AppBrandingProps {
@@ -302,17 +303,15 @@ export const AppBranding: React.FC<AppBrandingProps> = ({ onSave }) => {
         </div>
 
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={useLogo}
-              onChange={(e) => setUseLogo(e.target.checked)}
-              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-            />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Use logo instead of title/subtitle
-            </span>
-          </label>
+          <Checkbox
+            checked={useLogo}
+            onChange={(e) => setUseLogo(e.target.checked)}
+            boxClassName="border-gray-300 bg-white dark:bg-gray-800"
+            checkClassName="text-purple-600"
+            wrapperClassName="cursor-pointer"
+          >
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Use logo instead of title/subtitle</span>
+          </Checkbox>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ml-6">
             When enabled, displays custom logo images instead of the app title and subtitle. Upload separate images for light and dark modes.
           </p>

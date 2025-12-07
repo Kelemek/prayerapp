@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, Tag, Trash2, Edit2, GripVertical, Eye, EyeOff } from 'lucide-react';
+import Checkbox from './Checkbox';
 import { supabase, directQuery, directMutation } from '../lib/supabase';
 import type { PrayerTypeRecord } from '../types/prayer';
 
@@ -300,15 +301,15 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
                 />
               </div>
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  <input
-                    type="checkbox"
-                    checked={isActive}
-                    onChange={(e) => setIsActive(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  Active
-                </label>
+                <Checkbox
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                  boxClassName="border-gray-300 bg-white dark:bg-gray-800"
+                  checkClassName="text-blue-600"
+                  wrapperClassName="cursor-pointer"
+                >
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
+                </Checkbox>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Inactive types won't appear in dropdowns
                 </p>

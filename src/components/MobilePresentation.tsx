@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Play, Pause, Settings, X, Timer, Bell, Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
+import Checkbox from './Checkbox';
 import { supabase } from '../lib/supabase';
 import { calculateSmartDurationPrayer, calculateSmartDurationPrompt, formatTime, applyTheme, handleThemeChange as handleThemeChangeUtil } from '../utils/presentationUtils';
 
@@ -676,15 +677,15 @@ export const MobilePresentation: React.FC = () => {
               </div>
 
               <div>
-                <label className="flex items-center gap-3 mb-4">
-                  <input
-                    type="checkbox"
-                    checked={smartMode}
-                    onChange={(e) => setSmartMode(e.target.checked)}
-                    className="w-5 h-5 rounded cursor-pointer"
-                  />
+                <Checkbox
+                  checked={smartMode}
+                  onChange={(e) => setSmartMode(e.target.checked)}
+                  boxClassName="w-5 h-5 rounded"
+                  checkClassName="text-blue-600"
+                  wrapperClassName="mb-4"
+                >
                   <span className="text-base text-gray-900 dark:text-gray-100">Smart Mode (adjust time based on content length)</span>
-                </label>
+                </Checkbox>
               </div>
 
               {!smartMode && (

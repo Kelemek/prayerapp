@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import Checkbox from './Checkbox';
 import { PrayerStatus } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';
@@ -306,17 +307,17 @@ export const PrayerForm: React.FC<PrayerFormProps> = ({ onSubmit, onCancel, isOp
             />
           </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
+          <div>
+            <Checkbox
               id="anonymous"
               checked={formData.is_anonymous}
               onChange={(e) => setFormData({ ...formData, is_anonymous: e.target.checked })}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-900 dark:border-white bg-white dark:bg-gray-800 rounded"
-            />
-            <label htmlFor="anonymous" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-              Make this prayer anonymous (your name will not be shown publicly)
-            </label>
+              boxClassName="border-gray-900 dark:border-white bg-white dark:bg-gray-800"
+              checkClassName="text-blue-600"
+              wrapperClassName="cursor-pointer"
+            >
+              <span className="text-sm text-gray-700 dark:text-gray-300">Make this prayer anonymous (your name will not be shown publicly)</span>
+            </Checkbox>
           </div>
 
           <div>

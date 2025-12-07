@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Trash2, AlertTriangle, X, ChevronDown, ChevronUp, Edit2, Save, XCircle, Plus } from 'lucide-react';
+import Checkbox from './Checkbox';
 import { supabase } from '../lib/supabase';
 import { PrayerStatus } from '../types/prayer';
 
@@ -660,15 +661,15 @@ export const PrayerSearch: React.FC = () => {
       {searchResults.length > 0 && (
         <div className="flex flex-wrap items-start justify-between gap-3 mb-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedPrayers.size === searchResults.length && searchResults.length > 0}
-                onChange={toggleSelectAll}
-                className="rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500"
-              />
-              Select All ({searchResults.length})
-            </label>
+            <Checkbox
+              checked={selectedPrayers.size === searchResults.length && searchResults.length > 0}
+              onChange={toggleSelectAll}
+              boxClassName="border-gray-800 dark:border-gray-600 bg-inherit"
+              checkClassName="text-red-600"
+              wrapperClassName="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+            >
+              <span>Select All ({searchResults.length})</span>
+            </Checkbox>
             {selectedPrayers.size > 0 && (
               <span className="text-sm text-red-600 dark:text-red-400 font-medium">
                 {selectedPrayers.size} selected
@@ -763,12 +764,13 @@ export const PrayerSearch: React.FC = () => {
               >
                 {/* Compact Header - Always Visible */}
                 <div className="flex items-center gap-3 p-3">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={isSelected}
                     onChange={() => toggleSelectPrayer(prayer.id)}
-                    className="rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500"
-                    onClick={(e) => e.stopPropagation()}
+                    boxClassName="border-gray-800 dark:border-gray-600 bg-inherit"
+                    checkClassName="text-red-600"
+                    wrapperClassName="mr-3"
+                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
                   />
                   
                   <button
@@ -968,7 +970,7 @@ export const PrayerSearch: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Basic Information */}
                         <div className="space-y-3">
-                          <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                          <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                             <h6 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase mb-2">
                               Basic Information
                             </h6>
@@ -1003,7 +1005,7 @@ export const PrayerSearch: React.FC = () => {
                         
                         {/* Status Information */}
                         <div className="space-y-3">
-                          <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                          <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                             <h6 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase mb-2">
                               Status Information
                             </h6>
@@ -1048,7 +1050,7 @@ export const PrayerSearch: React.FC = () => {
                       
                       {/* Description */}
                       {prayer.description && (
-                        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                           <h6 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase mb-2">
                             Prayer Description
                           </h6>
@@ -1073,7 +1075,7 @@ export const PrayerSearch: React.FC = () => {
                       
                       {/* Prayer Updates Section */}
                       {prayer.prayer_updates && prayer.prayer_updates.length > 0 && (
-                        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                           <h6 className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase mb-3">
                             Prayer Updates ({prayer.prayer_updates.length})
                           </h6>
@@ -1147,7 +1149,7 @@ export const PrayerSearch: React.FC = () => {
 
                       {/* Add Update Section */}
                       {!editingPrayer && (
-                        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg">
+                        <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                           {addingUpdate === prayer.id ? (
                             <div className="space-y-3">
                               <div className="flex items-center justify-between mb-2">

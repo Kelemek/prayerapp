@@ -5,6 +5,7 @@ import { PrayerStatus, type AllowanceLevel } from '../types/prayer';
 import type { PrayerRequest } from '../types/prayer';
 import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';
 import { useVerification } from '../hooks/useVerification';
+import Checkbox from './Checkbox';
 import { VerificationDialog } from './VerificationDialog';
 
 interface PrayerCardProps {
@@ -618,24 +619,24 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
               className="w-full px-3 py-2 text-sm border border-[#39704D] dark:border-[#39704D] rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#39704D] h-20"
               required
             />
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={updateIsAnonymous}
-                onChange={(e) => setUpdateIsAnonymous(e.target.checked)}
-                className="rounded border-gray-900 dark:border-white bg-white dark:bg-gray-800 text-blue-600 focus:ring-2 focus:ring-blue-500"
-              />
-              <span>Post update anonymously</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={updateMarkAsAnswered}
-                onChange={(e) => setUpdateMarkAsAnswered(e.target.checked)}
-                className="rounded border-gray-900 dark:border-white bg-white dark:bg-gray-800 text-[#39704D] focus:ring-2 focus:ring-[#39704D]"
-              />
-              <span>Mark this prayer as answered</span>
-            </label>
+            <Checkbox
+              checked={updateIsAnonymous}
+              onChange={(e) => setUpdateIsAnonymous(e.target.checked)}
+              boxClassName="border-gray-900 dark:border-white bg-white dark:bg-gray-800"
+              checkClassName="text-blue-600"
+              wrapperClassName="cursor-pointer"
+            >
+              <span className="text-sm text-gray-700 dark:text-gray-300">Post update anonymously</span>
+            </Checkbox>
+            <Checkbox
+              checked={updateMarkAsAnswered}
+              onChange={(e) => setUpdateMarkAsAnswered(e.target.checked)}
+              boxClassName="border-gray-900 dark:border-white bg-white dark:bg-gray-800"
+              checkClassName="text-[#39704D]"
+              wrapperClassName="cursor-pointer"
+            >
+              <span className="text-sm text-gray-700 dark:text-gray-300">Mark this prayer as answered</span>
+            </Checkbox>
             <div className="flex gap-2">
               <button
                 type="submit"

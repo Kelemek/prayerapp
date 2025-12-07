@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Save, RefreshCw, ChevronDown, Settings } from 'lucide-react';
+import Checkbox from './Checkbox';
 import { supabase } from '../lib/supabase';
 import { EmailTemplatesManager } from './EmailTemplatesManager';
 
@@ -267,17 +268,15 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
         <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-md p-4">
           <div className="flex items-start gap-3">
             <div className="flex-1">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={requireEmailVerification}
-                  onChange={(e) => setRequireEmailVerification(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Require Email Verification (2FA)
-                </span>
-              </label>
+              <Checkbox
+                checked={requireEmailVerification}
+                onChange={(e) => setRequireEmailVerification(e.target.checked)}
+                boxClassName="border-gray-300 bg-white dark:bg-gray-800"
+                checkClassName="text-blue-600"
+                wrapperClassName="cursor-pointer"
+              >
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Require Email Verification (2FA)</span>
+              </Checkbox>
               <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 ml-6">
                 When enabled, users must verify their email address with a code before submitting:
               </p>
@@ -392,17 +391,15 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
 
         <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
           {/* Enable Reminders Checkbox */}
-          <label className="flex items-center gap-2 cursor-pointer mb-4">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={enableReminders}
               onChange={(e) => setEnableReminders(e.target.checked)}
-              className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-            />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Enable prayer update reminders
-            </span>
-          </label>
+              boxClassName="border-gray-300 bg-white dark:bg-gray-800"
+              checkClassName="text-orange-600"
+              wrapperClassName="cursor-pointer mb-4"
+            >
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Enable prayer update reminders</span>
+            </Checkbox>
 
           {enableReminders && (
             <>
@@ -430,17 +427,15 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({ onSave }) => {
 
               {/* Auto-Archive Setting */}
               <div className="ml-6">
-                <label className="flex items-center gap-2 cursor-pointer mb-3">
-                  <input
-                    type="checkbox"
-                    checked={enableAutoArchive}
-                    onChange={(e) => setEnableAutoArchive(e.target.checked)}
-                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Auto-archive prayers after reminder if still no update
-                  </span>
-                </label>
+                <Checkbox
+                  checked={enableAutoArchive}
+                  onChange={(e) => setEnableAutoArchive(e.target.checked)}
+                  boxClassName="border-gray-300 bg-white dark:bg-gray-800"
+                  checkClassName="text-orange-600"
+                  wrapperClassName="cursor-pointer mb-3"
+                >
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Auto-archive prayers after reminder if still no update</span>
+                </Checkbox>
                 
                 {enableAutoArchive && (
                   <div className="ml-6 mb-3">

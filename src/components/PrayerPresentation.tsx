@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Settings, Play, Pause, Timer, Bell, X, ChevronLeft, ChevronRight, Sun, Moon, Monitor, ChevronDown } from 'lucide-react';
+import Checkbox from './Checkbox';
 import { supabase } from '../lib/supabase';
 import { calculateSmartDurationPrayer, calculateSmartDurationPrompt, formatTime, applyTheme, handleThemeChange as handleThemeChangeUtil } from '../utils/presentationUtils';
 
@@ -773,15 +774,15 @@ export const PrayerPresentation: React.FC = () => {
               </div>
 
               <div>
-                <label className="flex items-center gap-3 mb-6">
-                  <input
-                    type="checkbox"
-                    checked={smartMode}
-                    onChange={(e) => setSmartMode(e.target.checked)}
-                    className="w-6 h-6 rounded cursor-pointer"
-                  />
+                <Checkbox
+                  checked={smartMode}
+                  onChange={(e) => setSmartMode(e.target.checked)}
+                  boxClassName="w-6 h-6 rounded"
+                  checkClassName="text-blue-600"
+                  wrapperClassName="gap-3 mb-6"
+                >
                   <span className="text-xl text-gray-900 dark:text-gray-100">Smart Mode (adjust time based on content length)</span>
-                </label>
+                </Checkbox>
               </div>
 
               {!smartMode && (
