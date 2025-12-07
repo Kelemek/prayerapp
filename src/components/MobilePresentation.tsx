@@ -42,7 +42,7 @@ export const MobilePresentation: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string[]>(['current', 'answered']);
   const [pendingStatusFilter, setPendingStatusFilter] = useState<string[]>(['current', 'answered']);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [timeFilter, setTimeFilter] = useState<string>('twoweeks');
+  const [timeFilter, setTimeFilter] = useState<string>('month');
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
     if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system')) {

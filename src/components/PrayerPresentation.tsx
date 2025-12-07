@@ -41,7 +41,7 @@ export const PrayerPresentation: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string[]>(['current', 'answered']);
   const [pendingStatusFilter, setPendingStatusFilter] = useState<string[]>(['current', 'answered']);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [timeFilter, setTimeFilter] = useState<string>('week');
+  const [timeFilter, setTimeFilter] = useState<string>('month');
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
     if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system')) {
@@ -423,13 +423,13 @@ export const PrayerPresentation: React.FC = () => {
   };
 
   const goToPrevious = () => {
-    const items = contentType === 'prayers' ? prayers : prompts;
-    setCurrentIndex((currentIndex - 1 + items.length) % items.length);
+    if (currentItems.length === 0) return;
+    setCurrentIndex(prev => (prev - 1 + currentItems.length) % currentItems.length);
   };
 
   const goToNext = () => {
-    const items = contentType === 'prayers' ? prayers : prompts;
-    setCurrentIndex((currentIndex + 1) % items.length);
+    if (currentItems.length === 0) return;
+    setCurrentIndex(prev => (prev + 1) % currentItems.length);
   };
 
   // Get status badge colors matching the main PrayerCard component
@@ -600,7 +600,7 @@ export const PrayerPresentation: React.FC = () => {
   return (
     <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white relative">
       {/* Main Prayer Display */}
-      <div className={`h-screen flex flex-col justify-center px-6 py-6 transition-all duration-300 ${
+      <div className={`h-screen flex flex-col justify-center px-6 py-6 transition-all duration-300 relative z-0 ${
         showControls ? 'pb-28' : 'pb-6'
       }`}>
         {/* Card Container */}
@@ -636,7 +636,7 @@ export const PrayerPresentation: React.FC = () => {
 
       {/* Controls Overlay */}
       <div 
-        className={`fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-6 border-t border-gray-200 dark:border-gray-700 transition-transform duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-6 border-t border-gray-200 dark:border-gray-700 transition-transform duration-300 ${
           showControls ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
