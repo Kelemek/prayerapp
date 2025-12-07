@@ -523,15 +523,9 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
         <div className="flex-1">
           <div className="relative flex items-center gap-2 flex-wrap">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-0 inline">Prayer for {prayer.prayer_for}</h3>
-            {/* Status Badge */}
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              prayer.status === 'current' 
-                ? 'bg-[#0047AB] bg-opacity-20 text-[#0047AB] dark:bg-[#0047AB] dark:bg-opacity-30 dark:text-[#4A90E2]'
-                : prayer.status === 'answered'
-                ? 'bg-[#39704D] bg-opacity-20 text-[#39704D] dark:bg-[#39704D] dark:bg-opacity-30 dark:text-[#5FB876]'
-                : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
-            }`}>
-              {prayer.status === 'current' ? 'Current' : prayer.status === 'answered' ? 'Answered' : 'Archived'}
+            {/* Keep status text in DOM but visually hidden so tests and accessibility remain intact */}
+            <span className="sr-only" data-testid="prayer-status">
+              {prayer.status ? prayer.status.charAt(0).toUpperCase() + prayer.status.slice(1) : 'Unknown'}
             </span>
             <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Requested by <span className="font-medium text-gray-800 dark:text-gray-100">{displayedRequester}</span></span>
           </div>

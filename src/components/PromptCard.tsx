@@ -34,8 +34,8 @@ export const PromptCard: React.FC<PromptCardProps> = ({
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2 flex-1">
-          <Lightbulb className="text-yellow-500 dark:text-yellow-400" size={24} />
-          <h3 className="text-gray-700 dark:text-gray-300">
+          <Lightbulb className="text-[#988F83] dark:text-[#988F83]" size={24} />
+          <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">
             {prompt.title}
           </h3>
         </div>
