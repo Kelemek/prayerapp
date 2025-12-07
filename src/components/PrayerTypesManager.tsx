@@ -1,5 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, Tag, Trash2, Edit2, GripVertical, Eye, EyeOff } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  arrayMove as dndArrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import Checkbox from './Checkbox';
 import { supabase, directQuery, directMutation } from '../lib/supabase';
 import type { PrayerTypeRecord } from '../types/prayer';
@@ -177,38 +194,97 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
     }
   };
 
+  const [reordering, setReordering] = useState(false);
+
+  // Small utility to move array element from one index to another (fallback)
+  function arrayMove<T>(arr: T[], from: number, to: number) {
+    const copy = arr.slice();
+    const [item] = copy.splice(from, 1);
+    copy.splice(to, 0, item);
+    return copy;
+  }
+
   const moveType = async (id: string, direction: 'up' | 'down') => {
     const currentIndex = types.findIndex(t => t.id === id);
     if (currentIndex === -1) return;
-    
+
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     if (targetIndex < 0 || targetIndex >= types.length) return;
 
+    const original = types.slice();
+    const newOrder = arrayMove(types, currentIndex, targetIndex);
+
+    // Optimistically update UI
+    setTypes(newOrder);
+    setReordering(true);
+    setError(null);
+
     try {
-      setError(null);
-      
-      // Swap display orders using directMutation
-      const current = types[currentIndex];
-      const target = types[targetIndex];
-      
-      await directMutation('prayer_types', {
-        method: 'PATCH',
-        eq: { id: current.id },
-        body: { display_order: target.display_order }
-      });
-      
-      await directMutation('prayer_types', {
-        method: 'PATCH',
-        eq: { id: target.id },
-        body: { display_order: current.display_order }
-      });
-      
+      // Update display_order for every type to match the new order (like marksportfolio)
+      const updates = newOrder.map((t, idx) =>
+        directMutation('prayer_types', {
+          method: 'PATCH',
+          eq: { id: t.id },
+          body: { display_order: idx }
+        })
+      );
+
+      await Promise.all(updates);
+
+      // Refresh from server to ensure consistency
       await fetchTypes();
     } catch (err: unknown) {
       console.error('Error reordering prayer types:', err);
-      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred'; setError(errorMessage);
+      const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred';
+      setError(errorMessage);
+      // Revert optimistic update
+      setTypes(original);
+    } finally {
+      setReordering(false);
     }
   };
+
+    // DnD Kit: sensors for pointer + keyboard
+    const sensors = useSensors(
+      useSensor(PointerSensor),
+      useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    async function handleDragEnd(event: DragEndEvent) {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = types.findIndex((t) => t.id === String(active.id));
+      const newIndex = types.findIndex((t) => t.id === String(over.id));
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const newOrder = dndArrayMove(types, oldIndex, newIndex);
+      setTypes(newOrder);
+      setReordering(true);
+      setError(null);
+
+      try {
+        // Persist new order by updating display_order for each item
+        const updates = newOrder.map((t, idx) =>
+          directMutation('prayer_types', {
+            method: 'PATCH',
+            eq: { id: t.id },
+            body: { display_order: idx }
+          })
+        );
+
+        await Promise.all(updates);
+        await fetchTypes();
+      } catch (err: unknown) {
+        console.error('Error saving order:', err);
+        const errorMessage = err && typeof err === 'object' && 'message' in err ? String(err.message) : 'An error occurred';
+        setError(errorMessage);
+        // Revert to server state
+        await fetchTypes();
+      } finally {
+        setReordering(false);
+      }
+    }
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
@@ -355,81 +431,24 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
           <p className="text-sm mt-1">Add your first type to get started</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {types.map((type, index) => (
-            <div
-              key={type.id}
-              className={`flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border ${
-                type.is_active 
-                  ? 'border-gray-200 dark:border-gray-700' 
-                  : 'border-gray-300 dark:border-gray-600 opacity-60'
-              }`}
-            >
-              <div className="flex items-center gap-3 flex-1">
-                <div className="flex flex-col gap-1">
-                  <button
-                    onClick={() => moveType(type.id, 'up')}
-                    disabled={index === 0}
-                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Move up"
-                  >
-                    <GripVertical size={16} className="rotate-180" />
-                  </button>
-                  <button
-                    onClick={() => moveType(type.id, 'down')}
-                    disabled={index === types.length - 1}
-                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title="Move down"
-                  >
-                    <GripVertical size={16} />
-                  </button>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                      {type.name}
-                    </h4>
-                    {!type.is_active && (
-                      <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">
-                        Inactive
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
-                    Order: {type.display_order} • Created {new Date(type.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => toggleActive(type)}
-                  className={`p-2 ${
-                    type.is_active
-                      ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'
-                      : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  } rounded-lg transition-colors`}
-                  title={type.is_active ? 'Deactivate' : 'Activate'}
-                >
-                  {type.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
-                </button>
-                <button
-                  onClick={() => handleEdit(type)}
-                  className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                  title="Edit"
-                >
-                  <Edit2 size={18} />
-                </button>
-                <button
-                  onClick={() => handleDelete(type.id, type.name)}
-                  className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={types.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {types.map((type, index) => (
+                <SortableRow
+                  key={type.id}
+                  type={type}
+                  index={index}
+                  total={types.length}
+                  onEdit={() => handleEdit(type)}
+                  onDelete={() => handleDelete(type.id, type.name)}
+                  onToggle={() => toggleActive(type)}
+                  reordering={reordering}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -447,3 +466,78 @@ export const PrayerTypesManager: React.FC<PrayerTypesManagerProps> = ({ onSucces
     </div>
   );
 };
+
+// SortableRow component used by DnD context
+function SortableRow({
+  type,
+  index,
+  total,
+  onEdit,
+  onDelete,
+  onToggle,
+  reordering,
+}: {
+  type: PrayerTypeRecord;
+  index: number;
+  total: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggle: () => void;
+  reordering: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: type.id });
+
+  const style = {
+    transform: transform ? CSS.Transform.toString(transform) : undefined,
+    transition,
+    opacity: isDragging ? 0.95 : 1,
+    zIndex: isDragging ? 50 : 'auto',
+  } as React.CSSProperties;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      className={`flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border ${
+        type.is_active ? 'border-gray-200 dark:border-gray-700' : 'border-gray-300 dark:border-gray-600 opacity-60'
+      }`}
+    >
+      <div className="flex items-center gap-3 flex-1">
+        <div className="flex flex-col gap-1">
+          <button
+            {...listeners}
+            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            title="Drag to reorder"
+          >
+            <GripVertical size={16} />
+          </button>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h4 className="font-medium text-gray-900 dark:text-gray-100">{type.name}</h4>
+            {!type.is_active && (
+              <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">Inactive</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-500">
+            Order: {type.display_order} • Created {new Date(type.created_at).toLocaleDateString()}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button onClick={onToggle} className={`p-2 ${
+          type.is_active ? 'text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
+        } rounded-lg transition-colors`} title={type.is_active ? 'Deactivate' : 'Activate'}>
+          {type.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
+        </button>
+        <button onClick={onEdit} className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Edit">
+          <Edit2 size={18} />
+        </button>
+        <button onClick={onDelete} className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Delete">
+          <Trash2 size={18} />
+        </button>
+      </div>
+    </div>
+  );
+}
