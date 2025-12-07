@@ -658,8 +658,8 @@ export const PrayerSearch: React.FC = () => {
 
       {/* Bulk Actions */}
       {searchResults.length > 0 && (
-        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-start justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
               <input
                 type="checkbox"
@@ -676,17 +676,17 @@ export const PrayerSearch: React.FC = () => {
             )}
           </div>
           {selectedPrayers.size > 0 && (
-            <div className="flex items-center gap-3">
-              {/* Bulk Status Change */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-700 dark:text-gray-300">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
+              {/* Bulk Status Change - put on its own line on small screens */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <label className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap sm:mr-2">
                   Change Status:
                 </label>
-                <div className="relative">
+                <div className="relative flex-1 sm:flex-none">
                   <select
                     value={bulkStatus}
                     onChange={(e) => setBulkStatus(e.target.value)}
-                    className="appearance-none px-3 py-1.5 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8 cursor-pointer"
+                    className="w-full appearance-none px-3 py-1.5 text-sm border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8 cursor-pointer"
                   >
                     <option value="">Select...</option>
                     <option value={PrayerStatus.CURRENT}>Current</option>
@@ -695,10 +695,14 @@ export const PrayerSearch: React.FC = () => {
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-600 dark:text-blue-400" size={14} />
                 </div>
+              </div>
+
+              {/* Buttons row - placed under status on small screens */}
+              <div className="flex items-center gap-3 w-full sm:w-auto">
                 <button
                   onClick={updateSelectedStatus}
                   disabled={!bulkStatus || updatingStatus}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors text-sm"
                 >
                   {updatingStatus ? (
                     <>
@@ -712,26 +716,25 @@ export const PrayerSearch: React.FC = () => {
                     </>
                   )}
                 </button>
-              </div>
 
-              {/* Delete Button */}
-              <button
-                onClick={deleteSelected}
-                disabled={deleting}
-                className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 transition-colors text-sm"
-              >
-                {deleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 size={16} />
-                    Delete ({selectedPrayers.size})
-                  </>
-                )}
-              </button>
+                <button
+                  onClick={deleteSelected}
+                  disabled={deleting}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-red-400 transition-colors text-sm"
+                >
+                  {deleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={16} />
+                      Delete ({selectedPrayers.size})
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           )}
         </div>
