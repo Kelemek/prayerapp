@@ -658,7 +658,7 @@ export const PrayerSearch: React.FC = () => {
 
       {/* Bulk Actions */}
       {searchResults.length > 0 && (
-        <div className="flex flex-wrap items-start justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
               <input
