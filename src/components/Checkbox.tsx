@@ -33,7 +33,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
       />
 
       <span
-        className={`inline-block h-4 w-4 rounded-sm border-2 flex items-center justify-center flex-none transition-colors ${
+        className={`h-4 w-4 rounded-sm border-2 flex items-center justify-center flex-none transition-colors ${
           boxClassName || 'border-gray-300 bg-white dark:bg-gray-800'
         }`}
         aria-hidden
