@@ -737,9 +737,9 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
               <div key={update.id} className={`bg-gray-100 dark:bg-gray-700 rounded-lg p-6 border ${statusBorderClass}`}>
                 <div className="relative mb-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Requested by <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {update.is_anonymous ? 'Anonymous' : update.author}
-                    </span>
+                    </span></span>
                     {(isAdmin || shouldShowActionButton(deletionsAllowed, prayer.email)) && (
                       <button
                         onClick={async () => {
