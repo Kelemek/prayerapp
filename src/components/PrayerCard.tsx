@@ -527,7 +527,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
             <span className="sr-only" data-testid="prayer-status">
               {prayer.status ? prayer.status.charAt(0).toUpperCase() + prayer.status.slice(1) : 'Unknown'}
             </span>
-            <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Requested by <span className="font-medium text-gray-800 dark:text-gray-100">{displayedRequester}</span></span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Requested by <span className="font-medium text-gray-800 dark:text-gray-100">{displayedRequester}</span></span>
           </div>
         </div>
         {(isAdmin || shouldShowActionButton(deletionsAllowed, deleteRequesterEmail)) && (
