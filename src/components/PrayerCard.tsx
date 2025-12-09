@@ -527,7 +527,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
             <span className="sr-only" data-testid="prayer-status">
               {prayer.status ? prayer.status.charAt(0).toUpperCase() + prayer.status.slice(1) : 'Unknown'}
             </span>
-            <span className="text-sm text-gray-600 dark:text-gray-400">Requested by <span className="font-medium text-gray-800 dark:text-gray-100">{displayedRequester}</span></span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Requested by: <span className="font-medium text-gray-800 dark:text-gray-100">{displayedRequester}</span></span>
           </div>
         </div>
         {(isAdmin || shouldShowActionButton(deletionsAllowed, deleteRequesterEmail)) && (
@@ -737,7 +737,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
               <div key={update.id} className={`bg-gray-100 dark:bg-gray-700 rounded-lg p-6 border ${statusBorderClass}`}>
                 <div className="relative mb-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Requested by <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Requested by: <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {update.is_anonymous ? 'Anonymous' : update.author}
                     </span></span>
                     {(isAdmin || shouldShowActionButton(deletionsAllowed, prayer.email)) && (
