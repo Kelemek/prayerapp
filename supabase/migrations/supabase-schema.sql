@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS prayers (
   description TEXT,
   status TEXT NOT NULL DEFAULT 'current' CHECK (status IN ('current', 'ongoing', 'answered', 'closed')),
   requester TEXT NOT NULL,
-  email VARCHAR(255),
+  prayer_for VARCHAR(255) NOT NULL DEFAULT 'General Prayer',
+  email VARCHAR(255) NOT NULL,
   is_anonymous BOOLEAN DEFAULT false,
   date_requested TIMESTAMPTZ DEFAULT NOW(),
   date_answered TIMESTAMPTZ,
@@ -27,14 +28,15 @@ CREATE TABLE IF NOT EXISTS prayer_updates (
   prayer_id UUID NOT NULL REFERENCES prayers(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   author TEXT NOT NULL,
-  author_email VARCHAR(255),
+  author_email VARCHAR(255) NOT NULL,
   is_anonymous BOOLEAN DEFAULT false,
   approval_status TEXT DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'denied')),
   approved_by VARCHAR(255),
   approved_at TIMESTAMPTZ,
   denial_reason TEXT,
   denied_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Create deletion_requests table
@@ -43,7 +45,7 @@ CREATE TABLE IF NOT EXISTS deletion_requests (
   prayer_id UUID NOT NULL REFERENCES prayers(id) ON DELETE CASCADE,
   reason TEXT,
   requested_by TEXT NOT NULL,
-  requested_email VARCHAR(255),
+  requested_email VARCHAR(255) NOT NULL,
   approval_status TEXT NOT NULL DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'denied')),
   reviewed_by TEXT,
   reviewed_at TIMESTAMPTZ,
@@ -59,11 +61,17 @@ BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql' SET search_path = public;
 
 -- Create trigger for prayers table
 CREATE TRIGGER update_prayers_updated_at 
     BEFORE UPDATE ON prayers 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Create trigger for prayer_updates table
+CREATE TRIGGER update_prayer_updates_updated_at 
+    BEFORE UPDATE ON prayer_updates 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
 
@@ -94,6 +102,7 @@ CREATE POLICY "Allow all operations on deletion_requests" ON deletion_requests
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_prayers_status ON prayers(status);
 CREATE INDEX IF NOT EXISTS idx_prayers_approval_status ON prayers(approval_status);
+CREATE INDEX IF NOT EXISTS idx_prayers_prayer_for ON prayers(prayer_for);
 CREATE INDEX IF NOT EXISTS idx_prayers_is_anonymous ON prayers(is_anonymous);
 CREATE INDEX IF NOT EXISTS idx_prayers_email ON prayers(email);
 CREATE INDEX IF NOT EXISTS idx_prayers_created_at ON prayers(created_at DESC);
@@ -106,12 +115,14 @@ CREATE INDEX IF NOT EXISTS idx_deletion_requests_created_at ON deletion_requests
 
 -- Insert some sample data (optional)
 -- Note: Sample prayers are inserted with approval_status='approved' so they're visible
-INSERT INTO prayers (title, description, requester, approval_status) VALUES 
-  ('Healing for John', 'Please pray for John''s recovery from surgery', 'Sarah Johnson', 'approved'),
-  ('Guidance for Career Decision', 'Seeking God''s wisdom for a new job opportunity', 'Michael Chen', 'approved'),
-  ('Thanksgiving for Safe Travel', 'Praising God for safe arrival after long journey', 'Pastor David', 'approved');
+-- Email addresses are required (NOT NULL), so they must be included
+INSERT INTO prayers (title, description, requester, prayer_for, email, approval_status) VALUES 
+  ('Healing for John', 'Please pray for John''s recovery from surgery', 'Sarah Johnson', 'John', 'sarah.johnson@example.com', 'approved'),
+  ('Guidance for Career Decision', 'Seeking God''s wisdom for a new job opportunity', 'Michael Chen', 'Michael', 'michael.chen@example.com', 'approved'),
+  ('Thanksgiving for Safe Travel', 'Praising God for safe arrival after long journey', 'Pastor David', 'Pastor David', 'pastor.david@example.com', 'approved');
 
 -- Add a sample update (with approval_status='approved' so it's visible)
-INSERT INTO prayer_updates (prayer_id, content, author, approval_status) 
-SELECT id, 'John is recovering well and should be home soon!', 'Sarah Johnson', 'approved'
+-- author_email is required (NOT NULL), so it must be included
+INSERT INTO prayer_updates (prayer_id, content, author, author_email, approval_status) 
+SELECT id, 'John is recovering well and should be home soon!', 'Sarah Johnson', 'sarah.johnson@example.com', 'approved'
 FROM prayers WHERE title = 'Healing for John' LIMIT 1;
