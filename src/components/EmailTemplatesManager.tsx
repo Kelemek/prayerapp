@@ -199,7 +199,8 @@ export const EmailTemplatesManager: React.FC = () => {
                             HTML Preview:
                           </label>
                           <div
-                            className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 overflow-auto max-h-64 text-sm"
+                            className="p-4 bg-white rounded-lg border border-gray-200 dark:border-gray-600 overflow-auto max-h-64 text-sm text-gray-900 [&_*]:!text-inherit"
+                            style={{ colorScheme: 'light' }}
                             dangerouslySetInnerHTML={{ __html: editedTemplate.html_body }}
                           />
                         </div>
