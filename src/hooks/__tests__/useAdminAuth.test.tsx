@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import React, { useContext } from 'react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AdminAuthProvider } from '../useAdminAuth';
 import { AdminAuthContext } from '../../contexts/AdminAuthContext';
@@ -163,4 +163,5 @@ describe('useAdminAuth (session expiry)', () => {
 
     setIntervalSpy.mockRestore();
   });
-});
+
+})

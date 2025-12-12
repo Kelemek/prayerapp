@@ -227,16 +227,17 @@ export const logPerformanceMetrics = (): void => {
  */
 const sendToErrorTracking = async (payload: unknown): Promise<void> => {
   // Check if Datadog RUM is available
-  if ((window as any).DD_RUM) {
+  const win = (globalThis as any).window
+  if (win && win.DD_RUM) {
     try {
-      (window as any).DD_RUM.addError(payload);
+      win.DD_RUM.addError(payload);
     } catch (e) {
       console.debug('Failed to log to Datadog:', e);
     }
   }
 
   // Check if Sentry is available
-  if ((window as any).Sentry) {
+  if (win && win.Sentry) {
     try {
       // Create a proper Error object for Sentry
       const error = new Error((payload as any).message || 'Unknown error');
@@ -245,7 +246,7 @@ const sendToErrorTracking = async (payload: unknown): Promise<void> => {
       }
       
       // Capture with context
-      (window as any).Sentry.captureException(error, {
+      win.Sentry.captureException(error, {
         tags: (payload as any).context?.tags || {},
         contexts: {
           error_details: {

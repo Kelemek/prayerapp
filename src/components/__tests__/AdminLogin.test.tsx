@@ -1,84 +1,151 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import React from 'react';
+import { AdminAuthContext, type AdminAuthContextType } from '../../contexts/AdminAuthContext';
+
+// Ensure no persisted session state interferes with tests
+try {
+  sessionStorage.clear();
+} catch (e) {
+  // sessionStorage may not be available at module-eval in some environments
+}
+
+// We'll provide `AdminAuthContext` in tests instead of mocking the hook module
+const defaultProviderValue: AdminAuthContextType = {
+  isAdmin: true,
+  user: null,
+  sendMagicLink: vi.fn(async () => ({ success: true })),
+  logout: vi.fn(async () => {}),
+  loading: false
+};
+
+const renderWithProvider = (ui: React.ReactElement, value = defaultProviderValue) =>
+  render(<AdminAuthContext.Provider value={value}>{ui}</AdminAuthContext.Provider>);
+
+// Supabase mock with chainable API used in AdminLogin
+const createMockChain = (resolveData: any = null, resolveError: any = null) => ({
+  select: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  maybeSingle: vi.fn().mockResolvedValue({ data: resolveData, error: resolveError })
+});
+
+vi.mock('../../lib/supabase', async () => {
+  const mod = await import('../../testUtils/supabaseMock');
+  const createSupabaseMock = (mod as any).default ?? (mod as any).createSupabaseMock;
+  const supabase = createSupabaseMock({ fromData: {} });
+  return {
+    supabase,
+    handleSupabaseError: vi.fn((err: any) => err?.message || 'Unknown error')
+  } as any;
+});
+
+import { supabase } from '../../lib/supabase';
 import { AdminLogin } from '../AdminLogin';
-import * as useAdminAuth from '../../hooks/useAdminAuthHook';
-// Mock supabase calls used by AdminLogin to check admin email
-vi.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          eq: () => ({
-            maybeSingle: async () => ({ data: { is_admin: true }, error: null })
-          })
-        })
-      })
-    })
-  },
-  createFreshSupabaseClient: () => ({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          eq: () => ({
-            maybeSingle: async () => ({ data: { is_admin: true }, error: null })
-          })
-        })
-      })
-    })
-  })
-}));
 
-// Mock the useAdminAuth hook
-vi.mock('../../hooks/useAdminAuthHook', () => ({
-  useAdminAuth: vi.fn(),
-}));
-
-describe('AdminLogin Component', () => {
-  const mockLogin = vi.fn();
-
+describe('AdminLogin', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useAdminAuth.useAdminAuth as ReturnType<typeof vi.fn>).mockReturnValue({
-      login: mockLogin,
+    sessionStorage.clear();
+    // Ensure default supabase.from is a mock that returns the base chain
+    const baseChain = createMockChain();
+    (supabase as any).from = vi.fn().mockReturnValue(baseChain as any);
+  });
+
+  it('renders and allows typing email', () => {
+    renderWithProvider(<AdminLogin />);
+    const input = screen.getByPlaceholderText('Admin Email Address') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'admin@example.com' } });
+    expect(input.value).toBe('admin@example.com');
+  });
+
+  it('disables submit while loading and re-enables after flow', async () => {
+    const chain = createMockChain({ is_admin: true }, null);
+    (supabase as any).from = vi.fn().mockReturnValue(chain as any);
+    renderWithProvider(<AdminLogin />);
+    const input = screen.getByPlaceholderText('Admin Email Address');
+    fireEvent.change(input, { target: { value: 'admin@example.com' } });
+
+    const button = screen.getByRole('button', { name: /send magic link/i });
+    fireEvent.click(button);
+
+    // Loading state shows spinner text; button disabled
+    await waitFor(() => {
+      expect(button).toBeDisabled();
+    });
+
+    // After success it should show success UI with email
+    await waitFor(() => {
+      expect(screen.getByText(/Magic Link Sent!/i)).toBeInTheDocument();
+      expect(screen.getByText('admin@example.com')).toBeInTheDocument();
     });
   });
-  it('renders magic-link form with correct elements', () => {
-    render(<AdminLogin />);
 
-    expect(screen.getByText('Admin Portal')).toBeDefined();
-    expect(screen.getByText('Sign in with a magic link sent to your email')).toBeDefined();
-    expect(screen.getByPlaceholderText('Admin Email Address')).toBeDefined();
-    expect(screen.getByRole('button', { name: /send magic link/i })).toBeDefined();
-  });
+  it('shows error when email is not an admin', async () => {
+    const chain = createMockChain(null, null); // maybeSingle resolves to { data: null }
+    (supabase as any).from = vi.fn().mockReturnValue(chain as any);
 
-  it('updates email input when typing', async () => {
-    const user = userEvent.setup();
-    render(<AdminLogin />);
-
-    const emailInput = screen.getByPlaceholderText('Admin Email Address') as HTMLInputElement;
-    await user.type(emailInput, 'admin@example.com');
-
-    expect(emailInput.value).toBe('admin@example.com');
-  });
-
-  it('shows loading state while sending magic link', async () => {
-    const user = userEvent.setup();
-    const sendMagicLink = vi.fn(() => new Promise(resolve => setTimeout(() => resolve(true), 100)));
-    (useAdminAuth.useAdminAuth as ReturnType<typeof vi.fn>).mockReturnValue({ sendMagicLink });
-
-    render(<AdminLogin />);
-
-    const emailInput = screen.getByPlaceholderText('Admin Email Address');
-    const submitButton = screen.getByRole('button', { name: /send magic link/i });
-
-    await user.type(emailInput, 'admin@example.com');
-    await user.click(submitButton);
-
-    expect(screen.getByText('Sending magic link...')).toBeDefined();
+    renderWithProvider(<AdminLogin />);
+    fireEvent.change(screen.getByPlaceholderText('Admin Email Address'), { target: { value: 'user@noadmin.com' } });
+    fireEvent.click(screen.getByRole('button', { name: /send magic link/i }));
 
     await waitFor(() => {
-      expect(screen.queryByText('Sending magic link...')).toBeNull();
+      expect(screen.getByText(/does not have admin access/i)).toBeInTheDocument();
     });
   });
-});
+
+  it('shows generic error when admin check returns error', async () => {
+    const chain = createMockChain(null, { message: 'db error' });
+    (supabase as any).from = vi.fn().mockReturnValue(chain as any);
+
+    renderWithProvider(<AdminLogin />);
+    fireEvent.change(screen.getByPlaceholderText('Admin Email Address'), { target: { value: 'admin@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: /send magic link/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/an error occurred/i)).toBeInTheDocument();
+    });
+  });
+
+  it('success path sets sessionStorage and renders success UI', async () => {
+    const chain = createMockChain({ is_admin: true }, null);
+    (supabase as any).from = vi.fn().mockReturnValue(chain as any);
+
+    renderWithProvider(<AdminLogin />);
+    fireEvent.change(screen.getByPlaceholderText('Admin Email Address'), { target: { value: 'admin@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: /send magic link/i }));
+
+    await waitFor(() => {
+      expect(sessionStorage.getItem('magic_link_sent')).toBe('true');
+      expect(sessionStorage.getItem('magic_link_email')).toBe('admin@example.com');
+      expect(screen.getByText(/Magic Link Sent!/i)).toBeInTheDocument();
+    });
+  });
+
+  it('restores success state from sessionStorage on mount', async () => {
+    sessionStorage.setItem('magic_link_sent', 'true');
+    sessionStorage.setItem('magic_link_email', 'saved@admin.com');
+    renderWithProvider(<AdminLogin />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Magic Link Sent!/i)).toBeInTheDocument();
+      expect(screen.getByText('saved@admin.com')).toBeInTheDocument();
+    });
+  });
+
+  it('allows switching to a different email from success view', async () => {
+    sessionStorage.setItem('magic_link_sent', 'true');
+    sessionStorage.setItem('magic_link_email', 'saved@admin.com');
+    renderWithProvider(<AdminLogin />);
+
+    await waitFor(() => screen.getByText(/Magic Link Sent!/i));
+    fireEvent.click(screen.getByRole('button', { name: /send to a different email/i }));
+
+    // Back to form view
+    expect(screen.getByRole('button', { name: /send magic link/i })).toBeInTheDocument();
+    const input = screen.getByPlaceholderText('Admin Email Address') as HTMLInputElement;
+    expect(input.value).toBe('');
+  });
+
+
+  });
+
