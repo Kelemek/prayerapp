@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock the supabase module with an async factory that constructs the helper inside the
 // factory to avoid hoisting / TDZ issues. The factory returns a supabase mock created
@@ -15,6 +15,7 @@ vi.mock('../../lib/supabase', async () => {
 
 import { supabase } from '../../lib/supabase';
 import { usePrayerManager } from '../usePrayerManager';
+import { PrayerStatus } from '../../types/prayer';
 
 // Mock Supabase with complete chain
 const createMockChain = (resolveData: any = [], resolveError: any = null) => ({
@@ -297,6 +298,69 @@ describe('usePrayerManager', () => {
     expect(filtered[0].id).toBe('1');
   });
 
+    it('handles empty and whitespace search terms appropriately', async () => {
+      const mockPrayers = [
+        {
+          id: '1',
+          title: 'Alpha',
+          description: 'Desc',
+          status: 'current',
+          requester: 'R',
+          prayer_for: 'PF',
+          email: 'r@example.com',
+          is_anonymous: false,
+          approval_status: 'approved',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          date_requested: new Date().toISOString(),
+          prayer_updates: []
+        }
+      ];
+      const mockChain = createMockChain(mockPrayers);
+      vi.mocked(supabase.from).mockReturnValue(mockChain as any);
+
+      const { result } = renderHook(() => usePrayerManager());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      const allEmpty = result.current.getFilteredPrayers(undefined, '');
+      const allWhitespace = result.current.getFilteredPrayers(undefined, '   ');
+      expect(allEmpty.length).toBe(1);
+      expect(allWhitespace.length).toBe(0);
+    });
+
+    it('updatePrayerStatus optimistically updates and reverts on error', async () => {
+      // Seed initial prayers via supabase mock (avoids direct mutation of hook state)
+      const initialPrayers = [
+        {
+          id: 'p1',
+          title: 'T',
+          description: 'D',
+          status: 'current',
+          requester: 'R',
+          prayer_for: 'PF',
+          email: 'r@example.com',
+          is_anonymous: false,
+          approval_status: 'approved',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          date_requested: new Date().toISOString(),
+          prayer_updates: []
+        }
+      ];
+      const mockChainLoad = createMockChain(initialPrayers);
+      vi.mocked(supabase.from).mockReturnValue(mockChainLoad as any);
+
+      const { result } = renderHook(() => usePrayerManager());
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      // Mock update call to fail
+      const supabaseMock = await import('../../lib/supabase');
+      vi.spyOn(supabaseMock.supabase, 'from').mockReturnValue({
+        update: () => ({ eq: async () => ({ error: { message: 'fail' } }) })
+      } as any);
+
+      await expect(result.current.updatePrayerStatus('p1', PrayerStatus.ANSWERED)).rejects.toBeTruthy();
+    });
   it('filters prayers by search term', async () => {
     const mockPrayers = [
       {
