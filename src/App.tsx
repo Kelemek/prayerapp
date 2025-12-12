@@ -658,66 +658,12 @@ function AppContent() {
               <PrayerCard
                 key={prayer.id}
                 prayer={prayer}
-                onUpdateStatus={updatePrayerStatus}
                 onAddUpdate={addPrayerUpdate}
                 onDelete={deletePrayer}
                 deletionsAllowed={deletionsAllowed}
                 updatesAllowed={updatesAllowed}
                 registerCloseCallback={registerCloseCallback}
                 onFormOpen={closeAllForms}
-                onRequestStatusChange={async (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => {
-                  try {
-                    // Use directMutation to avoid Safari minimize hang
-                    const { data, error } = await directMutation<{ id: string }[]>('status_change_requests', {
-                      method: 'POST',
-                      body: { prayer_id: prayerId, requested_status: newStatus, reason, requested_by: requesterName, requested_email: requesterEmail, approval_status: 'pending' },
-                      returning: true,
-                      timeout: 15000
-                    });
-                    if (error) throw error;
-                    const requestId = Array.isArray(data) && data.length > 0 ? data[0].id : undefined;
-
-                    // send admin notification
-                    try {
-                      // Get prayer info using directQuery
-                      const { data: prayerRows } = await directQuery<{ title: string; status: string }[]>('prayers', {
-                        select: 'title, status',
-                        eq: { id: prayerId },
-                        limit: 1,
-                        timeout: 10000
-                      });
-                      const prayerRow = prayerRows?.[0];
-                      
-                      // Fetch admin emails for approval code generation
-                      const { url, anonKey } = getSupabaseConfig();
-                      const adminParams = new URLSearchParams();
-                      adminParams.set('select', 'email');
-                      adminParams.set('is_admin', 'eq.true');
-                      adminParams.set('is_active', 'eq.true');
-                      adminParams.set('receive_admin_emails', 'eq.true');
-                      const adminResponse = await fetch(`${url}/rest/v1/email_subscribers?${adminParams.toString()}`, {
-                        headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` }
-                      });
-                      const admins = await adminResponse.json();
-
-                      await sendAdminNotification({ 
-                        type: 'status-change', 
-                        title: prayerRow?.title || 'Unknown Prayer', 
-                        reason, 
-                        requestedBy: requesterName, 
-                        currentStatus: prayerRow?.status, 
-                        requestedStatus: newStatus, 
-                        requestId,
-                        adminEmails: admins?.map((a: { email: string }) => a.email) || []
-                      });
-                    } catch (notifyErr) {
-                      console.warn('Failed to send status change notification', notifyErr);
-                    }
-                  } catch (err) {
-                    console.error('Failed to submit status change request', err);
-                    alert('Failed to submit status change request. Please try again.');
-                  }
-                }}
                 onRequestDelete={async (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => {
                   try {
                     // Use directMutation to avoid Safari minimize hang

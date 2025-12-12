@@ -248,4 +248,172 @@ describe('usePrayerManager', () => {
     // Just verify the structure is correct
     expect(result.current.prayers).toBeDefined();
   });
+
+  it('filters prayers by status', async () => {
+    const mockPrayers = [
+      {
+        id: '1',
+        title: 'Current Prayer',
+        description: 'Test',
+        status: 'current',
+        requester: 'John',
+        prayer_for: 'Friend',
+        email: 'john@example.com',
+        is_anonymous: false,
+        approval_status: 'approved',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        date_requested: new Date().toISOString(),
+        prayer_updates: []
+      },
+      {
+        id: '2',
+        title: 'Answered Prayer',
+        description: 'Test',
+        status: 'answered',
+        requester: 'Jane',
+        prayer_for: 'Family',
+        email: 'jane@example.com',
+        is_anonymous: false,
+        approval_status: 'approved',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        date_requested: new Date().toISOString(),
+        prayer_updates: []
+      }
+    ];
+
+    const mockChain = createMockChain(mockPrayers);
+    vi.mocked(supabase.from).mockReturnValue(mockChain as any);
+
+    const { result } = renderHook(() => usePrayerManager());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const filtered = result.current.getFilteredPrayers('current');
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].id).toBe('1');
+  });
+
+  it('filters prayers by search term', async () => {
+    const mockPrayers = [
+      {
+        id: '1',
+        title: 'Prayer for John',
+        description: 'Help John',
+        status: 'current',
+        requester: 'Mary',
+        prayer_for: 'Friend',
+        email: 'mary@example.com',
+        is_anonymous: false,
+        approval_status: 'approved',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        date_requested: new Date().toISOString(),
+        prayer_updates: []
+      }
+    ];
+
+    const mockChain = createMockChain(mockPrayers);
+    vi.mocked(supabase.from).mockReturnValue(mockChain as any);
+
+    const { result } = renderHook(() => usePrayerManager());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const filtered = result.current.getFilteredPrayers(undefined, 'John');
+    expect(filtered.length).toBe(1);
+  });
+
+  it('searches in prayer updates', async () => {
+    const mockPrayers = [
+      {
+        id: '1',
+        title: 'Test Prayer',
+        description: 'Test',
+        status: 'current',
+        requester: 'John',
+        prayer_for: 'Friend',
+        email: 'john@example.com',
+        is_anonymous: false,
+        approval_status: 'approved',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        date_requested: new Date().toISOString(),
+        prayer_updates: [
+          {
+            id: 'u1',
+            prayer_id: '1',
+            content: 'Great news about the situation',
+            author: 'Admin',
+            approval_status: 'approved',
+            created_at: new Date().toISOString()
+          }
+        ]
+      }
+    ];
+
+    const mockChain = createMockChain(mockPrayers);
+    vi.mocked(supabase.from).mockReturnValue(mockChain as any);
+
+    const { result } = renderHook(() => usePrayerManager());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const filtered = result.current.getFilteredPrayers(undefined, 'situation');
+    expect(filtered.length).toBe(1);
+  });
+
+  it('returns all prayers when no filter is provided', async () => {
+    const mockPrayers = [
+      {
+        id: '1',
+        title: 'Prayer 1',
+        description: 'Test',
+        status: 'current',
+        requester: 'John',
+        prayer_for: 'Friend',
+        email: 'john@example.com',
+        is_anonymous: false,
+        approval_status: 'approved',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        date_requested: new Date().toISOString(),
+        prayer_updates: []
+      },
+      {
+        id: '2',
+        title: 'Prayer 2',
+        description: 'Test',
+        status: 'answered',
+        requester: 'Jane',
+        prayer_for: 'Family',
+        email: 'jane@example.com',
+        is_anonymous: false,
+        approval_status: 'approved',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        date_requested: new Date().toISOString(),
+        prayer_updates: []
+      }
+    ];
+
+    const mockChain = createMockChain(mockPrayers);
+    vi.mocked(supabase.from).mockReturnValue(mockChain as any);
+
+    const { result } = renderHook(() => usePrayerManager());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const filtered = result.current.getFilteredPrayers();
+    expect(filtered.length).toBe(2);
+  });
 });
