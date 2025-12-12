@@ -1,20 +1,43 @@
 import React, { useState, useEffect, memo } from 'react';
 import { Trash2, ChevronDown } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
-import { PrayerStatus, type AllowanceLevel } from '../types/prayer';
-import type { PrayerRequest } from '../types/prayer';
+import type { AllowanceLevel, PrayerRequest } from '../types/prayer';
 import { getUserInfo, saveUserInfo } from '../utils/userInfoStorage';
 import { useVerification } from '../hooks/useVerification';
 import Checkbox from './Checkbox';
 import { VerificationDialog } from './VerificationDialog';
 
+// Type definitions for action data
+interface PrayerUpdateData {
+  prayerId: string;
+  content: string;
+  author: string;
+  authorEmail: string;
+  isAnonymous: boolean;
+  markAsAnswered?: boolean;
+}
+
+interface PrayerDeleteData {
+  prayerId: string;
+  reason: string;
+  requesterName: string;
+  requesterEmail: string;
+}
+
+interface UpdateDeleteData {
+  updateId: string;
+  reason: string;
+  requesterName: string;
+  requesterEmail: string;
+}
+
+type ActionData = PrayerUpdateData | PrayerDeleteData | UpdateDeleteData;
+
 interface PrayerCardProps {
   prayer: PrayerRequest;
-  onUpdateStatus: (id: string, status: PrayerStatus) => void;
   onAddUpdate: (id: string, content: string, author: string, authorEmail: string, isAnonymous: boolean, markAsAnswered?: boolean) => void;
   onDelete: (id: string) => void;
   onRequestDelete: (prayerId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
-  onRequestStatusChange: (prayerId: string, newStatus: PrayerStatus, reason: string, requesterName: string, requesterEmail: string) => Promise<void>;
   onDeleteUpdate: (updateId: string) => Promise<void>;
   onRequestUpdateDelete: (updateId: string, reason: string, requesterName: string, requesterEmail: string) => Promise<unknown>;
   registerCloseCallback: (callback: () => void) => () => void;
@@ -26,11 +49,9 @@ interface PrayerCardProps {
 
 export const PrayerCard: React.FC<PrayerCardProps> = memo(({ 
   prayer, 
-  onUpdateStatus, 
   onAddUpdate, 
   onDelete,
   onRequestDelete,
-  onRequestStatusChange,
   onDeleteUpdate,
   onRequestUpdateDelete,
   registerCloseCallback,
@@ -72,7 +93,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
     email: string;
     actionType: 'prayer_update' | 'prayer_deletion' | 'status_change' | 'update_deletion';
     codeActionType: 'prayer_update' | 'deletion_request' | 'status_change_request' | 'update_deletion_request';
-    actionData: any;
+    actionData: ActionData | null;
   }>({
     isOpen: false,
     codeId: null,
@@ -114,18 +135,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
     return registerCloseCallback(closeAllForms);
   }, [registerCloseCallback]);
 
-  // Helper functions to check permissions based on allowance level
-  const canPerformAction = (allowanceLevel: AllowanceLevel, userEmail: string): boolean => {
-    if (allowanceLevel === 'everyone') {
-      return true;
-    } else if (allowanceLevel === 'admin-only') {
-      return false;
-    } else if (allowanceLevel === 'original-requestor') {
-      return userEmail.toLowerCase() === prayer.email.toLowerCase();
-    }
-    return false;
-  };
-
+  // Helper function to check if action button should be shown based on allowance level
   const shouldShowActionButton = (allowanceLevel: AllowanceLevel, userEmail?: string): boolean => {
     if (allowanceLevel === 'everyone') {
       return true;
@@ -135,14 +145,6 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
       return true; // Show button, but validation happens on submit
     }
     return false;
-  };
-
-  const getPermissionMessage = (actionType: 'delete' | 'update'): string => {
-    const allowanceLevel = actionType === 'delete' ? deletionsAllowed : updatesAllowed;
-    if (allowanceLevel === 'original-requestor') {
-      return `Only the person who originally requested this prayer can submit ${actionType} requests.`;
-    }
-    return '';
   };
 
   // Helper to open a form (closes all other forms first)
@@ -217,7 +219,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
     }
   };
 
-  const submitUpdate = async (updateData: any) => {
+  const submitUpdate = async (updateData: PrayerUpdateData) => {
     try {
       // include author email, anonymous flag, and mark as answered when adding an update
       await onAddUpdate(updateData.prayerId, updateData.content, updateData.author, updateData.authorEmail, updateData.isAnonymous, updateData.markAsAnswered);
@@ -300,7 +302,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
     }
   };
 
-  const submitDeleteRequest = async (deleteData: any) => {
+  const submitDeleteRequest = async (deleteData: PrayerDeleteData) => {
     try {
       await onRequestDelete(deleteData.prayerId, deleteData.reason, deleteData.requesterName, deleteData.requesterEmail);
       setDeleteReason('');
@@ -340,18 +342,18 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
       ? '!border-[#39704D] dark:!border-[#39704D]'
       : '!border-[#C9A961] dark:!border-[#C9A961]';
 
-  const handleVerified = async (actionData: any) => {
+  const handleVerified = async (actionData: ActionData) => {
     try {
       // Route to the correct submission function based on action type
       switch (verificationState.actionType) {
         case 'prayer_update':
-          submitUpdate(actionData);
+          await submitUpdate(actionData as PrayerUpdateData);
           break;
         case 'prayer_deletion':
-          await submitDeleteRequest(actionData);
+          await submitDeleteRequest(actionData as PrayerDeleteData);
           break;
         case 'update_deletion':
-          await submitUpdateDeletion(actionData);
+          await submitUpdateDeletion(actionData as UpdateDeleteData);
           break;
       }
       
@@ -480,7 +482,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = memo(({
     }
   };
 
-  const submitUpdateDeletion = async (updateDeleteData: any) => {
+  const submitUpdateDeletion = async (updateDeleteData: UpdateDeleteData) => {
     try {
       setIsSubmittingUpdateDelete(true);
       setUpdateDeleteError(null);
