@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
-    "test:ui": "vitest --ui",
+    "test:ui": "vitest --ui --coverage",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "coverage:summary": "node scripts/coverage-summary.js",

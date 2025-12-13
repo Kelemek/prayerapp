@@ -235,4 +235,375 @@ describe('emailNotifications', () => {
     await emailNotifications.sendDeniedPreferenceChangeNotification({ name: 'D2', email: 'd2@example.com', receiveNotifications: false, denialReason: 'r2' });
     expect(consoleError).toHaveBeenCalled();
   });
+
+  describe('sendAdminNotification - Additional Coverage', () => {
+    it('uses provided adminEmails instead of querying database', async () => {
+      (sendEmail as any).mockResolvedValue(undefined);
+
+      await emailNotifications.sendAdminNotification({
+        type: 'prayer',
+        title: 'Test Prayer',
+        adminEmails: ['provided@example.com', 'also-provided@example.com']
+      });
+
+      expect(supabase.from).not.toHaveBeenCalled();
+      expect(sendEmail).toHaveBeenCalled();
+    });
+
+    it('handles error when fetching admin emails from database', async () => {
+      const finalResult = Promise.resolve({ data: null, error: new Error('DB Error') });
+      const chain3 = { eq: () => finalResult };
+      const chain2 = { eq: () => chain3 };
+      const chain1 = { eq: () => chain2 };
+      const selectChain = { select: () => chain1 };
+      (supabase.from as any).mockReturnValue(selectChain);
+
+      await emailNotifications.sendAdminNotification({
+        type: 'prayer',
+        title: 'Test Prayer'
+      });
+
+      expect(consoleError).toHaveBeenCalled();
+    });
+
+    it('logs and returns when admins data is null from database', async () => {
+      const finalResult = Promise.resolve({ data: null, error: null });
+      const chain3 = { eq: () => finalResult };
+      const chain2 = { eq: () => chain3 };
+      const chain1 = { eq: () => chain2 };
+      const selectChain = { select: () => chain1 };
+      (supabase.from as any).mockReturnValue(selectChain);
+
+      await emailNotifications.sendAdminNotification({
+        type: 'prayer',
+        title: 'No Admin Result'
+      });
+
+      expect(consoleWarn).toHaveBeenCalled();
+    });
+
+    it('generates approval link for prayer requests with requestId', async () => {
+      (sendEmail as any).mockResolvedValue(undefined);
+      const { getTemplate } = await import('../emailService');
+      (getTemplate as any).mockResolvedValue(null); // Will use fallback
+
+      const finalResult = Promise.resolve({ data: [{ email: 'admin@example.com' }], error: null });
+      const chain3 = { eq: () => finalResult };
+      const chain2 = { eq: () => chain3 };
+      const chain1 = { eq: () => chain2 };
+      const selectChain = { select: () => chain1 };
+      (supabase.from as any).mockReturnValue(selectChain);
+
+      await emailNotifications.sendAdminNotification({
+        type: 'prayer',
+        title: 'Prayer with Link',
+        requestId: 'prayer-123'
+      });
+
+      expect(sendEmail).toHaveBeenCalled();
+    });
+
+    it('skips approval link generation for status-change type', async () => {
+      (sendEmail as any).mockResolvedValue(undefined);
+
+      const finalResult = Promise.resolve({ data: [{ email: 'admin@example.com' }], error: null });
+      const chain3 = { eq: () => finalResult };
+      const chain2 = { eq: () => chain3 };
+      const chain1 = { eq: () => chain2 };
+      const selectChain = { select: () => chain1 };
+      (supabase.from as any).mockReturnValue(selectChain);
+
+      await emailNotifications.sendAdminNotification({
+        type: 'status-change',
+        title: 'Status Change',
+        requestId: 'req-123'
+      });
+
+      // Should send email with default link since status-change type skips approval code
+      expect(sendEmail).toHaveBeenCalled();
+    });
+
+    it('uses fallback HTML generation when template is missing', async () => {
+      (sendEmail as any).mockResolvedValue(undefined);
+      const { getTemplate } = await import('../emailService');
+      (getTemplate as any).mockResolvedValue(null);
+
+      const finalResult = Promise.resolve({ data: [{ email: 'admin@example.com' }], error: null });
+      const chain3 = { eq: () => finalResult };
+      const chain2 = { eq: () => chain3 };
+      const chain1 = { eq: () => chain2 };
+      const selectChain = { select: () => chain1 };
+      (supabase.from as any).mockReturnValue(selectChain);
+
+      await emailNotifications.sendAdminNotification({
+        type: 'prayer',
+        title: 'Test',
+        description: 'Desc'
+      });
+
+      expect(sendEmail).toHaveBeenCalled();
+      const call = (sendEmail as any).mock.calls[0][0];
+      expect(call.htmlBody).toBeTruthy();
+    });
+
+    it('handles sendEmail error gracefully', async () => {
+      (sendEmail as any).mockRejectedValue(new Error('Send failed'));
+
+      const finalResult = Promise.resolve({ data: [{ email: 'admin@example.com' }], error: null });
+      const chain3 = { eq: () => finalResult };
+      const chain2 = { eq: () => chain3 };
+      const chain1 = { eq: () => chain2 };
+      const selectChain = { select: () => chain1 };
+      (supabase.from as any).mockReturnValue(selectChain);
+
+      await emailNotifications.sendAdminNotification({
+        type: 'prayer',
+        title: 'Will Fail'
+      });
+
+      expect(consoleError).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendRequesterApprovalNotification', () => {
+    it('sends approval notification to requester with valid email', async () => {
+      (sendEmail as any).mockResolvedValue(undefined);
+
+      await emailNotifications.sendRequesterApprovalNotification({
+        title: 'Prayer Title',
+        description: 'Prayer Description',
+        requester: 'John',
+        requesterEmail: 'john@example.com',
+        prayerFor: 'Peace'
+      });
+
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: ['john@example.com']
+        })
+      );
+    });
+
+    it('warns when requesterEmail is empty string', async () => {
+      await emailNotifications.sendRequesterApprovalNotification({
+        title: 'T',
+        description: 'D',
+        requester: 'NoEmail',
+        requesterEmail: '',
+        prayerFor: 'All'
+      });
+
+      expect(consoleWarn).toHaveBeenCalled();
+    });
+
+    it('handles sendEmail errors in approval notification', async () => {
+      (sendEmail as any).mockRejectedValue(new Error('Send error'));
+
+      await emailNotifications.sendRequesterApprovalNotification({
+        title: 'T',
+        description: 'D',
+        requester: 'User',
+        requesterEmail: 'user@example.com',
+        prayerFor: 'Health'
+      });
+
+      expect(consoleError).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendApprovedPrayerNotification', () => {
+    it('sends to all subscribers when prayer is approved', async () => {
+      (sendEmailToAllSubscribers as any).mockResolvedValue({ ok: true });
+
+      await emailNotifications.sendApprovedPrayerNotification({
+        title: 'Approved Prayer',
+        description: 'Now showing to everyone',
+        requester: 'John',
+        requesterEmail: 'john@example.com',
+        prayerFor: 'World',
+        status: 'open'
+      } as any);
+
+      expect(sendEmailToAllSubscribers).toHaveBeenCalled();
+    });
+
+    it('handles sendEmailToAllSubscribers errors', async () => {
+      (sendEmailToAllSubscribers as any).mockRejectedValue(new Error('Bulk send failed'));
+
+      await emailNotifications.sendApprovedPrayerNotification({
+        title: 'T',
+        description: 'D',
+        requester: 'R',
+        requesterEmail: 'r@example.com',
+        prayerFor: 'All',
+        status: 'open'
+      } as any);
+
+      expect(consoleError).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendDeniedPrayerNotification', () => {
+    it('sends denial notification to requester with reason', async () => {
+      (sendEmail as any).mockResolvedValue(undefined);
+
+      await emailNotifications.sendDeniedPrayerNotification({
+        title: 'Denied Prayer',
+        description: 'Did not meet guidelines',
+        requester: 'Jane',
+        requesterEmail: 'jane@example.com',
+        denialReason: 'Inappropriate content'
+      });
+
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: ['jane@example.com']
+        })
+      );
+    });
+
+    it('warns when requesterEmail is empty for denial', async () => {
+      await emailNotifications.sendDeniedPrayerNotification({
+        title: 'Denied',
+        description: 'Content',
+        requester: 'NoEmail',
+        requesterEmail: '',
+        denialReason: 'Nope'
+      });
+
+      expect(consoleWarn).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendDeniedUpdateNotification', () => {
+    it('sends denial to update author', async () => {
+      (sendEmail as any).mockResolvedValue(undefined);
+
+      await emailNotifications.sendDeniedUpdateNotification({
+        prayerTitle: 'Prayer Title',
+        content: 'Update content',
+        author: 'UpdateAuthor',
+        authorEmail: 'author@example.com',
+        denialReason: 'Spelling errors'
+      });
+
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: ['author@example.com']
+        })
+      );
+    });
+
+    it('warns when authorEmail is empty for update denial', async () => {
+      await emailNotifications.sendDeniedUpdateNotification({
+        prayerTitle: 'P',
+        content: 'C',
+        author: 'NoEmail',
+        authorEmail: '',
+        denialReason: 'Bad update'
+      });
+
+      expect(consoleWarn).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendApprovedUpdateNotification', () => {
+    it('sends approved update notification to subscribers', async () => {
+      const { getTemplate } = await import('../emailService');
+      (getTemplate as any).mockResolvedValue({
+        id: 'id-1',
+        template_key: 'approved_update',
+        subject: 'Update: {{prayerTitle}}',
+        html_body: 'HTML: {{updateContent}}',
+        text_body: 'Text: {{updateContent}}',
+        description: 'Template'
+      });
+
+      (sendEmailToAllSubscribers as any).mockResolvedValue({ ok: true });
+
+      await emailNotifications.sendApprovedUpdateNotification({
+        prayerTitle: 'Prayer',
+        content: 'Update text',
+        author: 'Author',
+        markedAsAnswered: false
+      } as any);
+
+      expect(sendEmailToAllSubscribers).toHaveBeenCalled();
+    });
+
+    it('uses answered template when markedAsAnswered is true', async () => {
+      const { getTemplate } = await import('../emailService');
+      (getTemplate as any).mockResolvedValue({
+        id: 'id-2',
+        template_key: 'prayer_answered',
+        subject: 'Answered: {{prayerTitle}}',
+        html_body: 'Answered HTML',
+        text_body: 'Answered text',
+        description: 'Template'
+      });
+
+      (sendEmailToAllSubscribers as any).mockResolvedValue({ ok: true });
+
+      await emailNotifications.sendApprovedUpdateNotification({
+        prayerTitle: 'Prayer',
+        content: 'Update',
+        author: 'Author',
+        markedAsAnswered: true
+      } as any);
+
+      expect(sendEmailToAllSubscribers).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendPreferenceChangeNotification', () => {
+    it('sends preference change notification to admins', async () => {
+      const finalResult = Promise.resolve({ data: [{ email: 'admin@example.com' }], error: null });
+      const mockSelect = {
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue(finalResult)
+          })
+        })
+      };
+      (supabase.from as any).mockReturnValue({
+        select: vi.fn().mockReturnValue(mockSelect)
+      });
+
+      (sendEmail as any).mockResolvedValue(undefined);
+
+      await emailNotifications.sendPreferenceChangeNotification({
+        name: 'John',
+        email: 'john@example.com',
+        receiveNotifications: true
+      });
+
+      expect(sendEmail).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendApprovedPreferenceChangeNotification', () => {
+    it('sends approval for enabled notifications', async () => {
+      (sendEmail as any).mockResolvedValue(undefined);
+
+      await emailNotifications.sendApprovedPreferenceChangeNotification({
+        name: 'Jane',
+        email: 'jane@example.com',
+        receiveNotifications: true
+      });
+
+      expect(sendEmail).toHaveBeenCalled();
+    });
+
+    it('sends approval for disabled notifications', async () => {
+      (sendEmail as any).mockResolvedValue(undefined);
+
+      await emailNotifications.sendApprovedPreferenceChangeNotification({
+        name: 'Jack',
+        email: 'jack@example.com',
+        receiveNotifications: false
+      });
+
+      expect(sendEmail).toHaveBeenCalled();
+    });
+  });
 });

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useContext } from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -114,10 +115,8 @@ describe('AdminAuthProvider', () => {
 });
 
 describe('useAdminAuth (session expiry)', () => {
-  let DateNowSpy: any;
-
   beforeEach(() => {
-    DateNowSpy = vi.spyOn(Date, 'now').mockImplementation(() => 1_000_000);
+    vi.spyOn(Date, 'now').mockImplementation(() => 1_000_000);
     vi.clearAllMocks();
   });
 
@@ -143,7 +142,7 @@ describe('useAdminAuth (session expiry)', () => {
     }));
 
     // Mock onAuthStateChange to return a subscription (no immediate handler invocation needed)
-    sup.auth.onAuthStateChange.mockImplementation((handler: any) => {
+    sup.auth.onAuthStateChange.mockImplementation(() => {
       return { data: { subscription: { unsubscribe: () => {} } } };
     });
 

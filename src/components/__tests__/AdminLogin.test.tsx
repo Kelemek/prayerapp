@@ -1,13 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 import { AdminAuthContext, type AdminAuthContextType } from '../../contexts/AdminAuthContext';
 
 // Ensure no persisted session state interferes with tests
-try {
-  sessionStorage.clear();
-} catch (e) {
-  // sessionStorage may not be available at module-eval in some environments
+if (typeof sessionStorage !== 'undefined') {
+  try {
+    sessionStorage.clear();
+  } catch {
+    // sessionStorage may not be available at module-eval in some environments
+  }
 }
 
 // We'll provide `AdminAuthContext` in tests instead of mocking the hook module
