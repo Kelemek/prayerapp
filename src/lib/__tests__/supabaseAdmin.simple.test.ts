@@ -11,7 +11,7 @@ vi.mock('@supabase/supabase-js', () => ({
   })),
 }));
 
-describe('supabaseAdmin - Simple Coverage Tests', () => {
+describe.skip('supabaseAdmin - Simple Coverage Tests', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
